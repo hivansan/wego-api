@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  mysql:
+    image: "mariadb:10.6.4-focal"
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: toor
+      MARIADB_USER: root
+      MARIADB_DATABASE: wego
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:

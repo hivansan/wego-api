@@ -1,0 +1,64 @@
+{
+  "name": "Collection",
+  "base": "PersistedModel",
+  "idInjection": true,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "slug": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "floorPrice": {
+      "type": "string"
+    },
+    "maxPrice": {
+      "type": "string"
+    },
+    "owners": {
+      "type": "string"
+    },
+    "wegoScore": {
+      "type": "string"
+    },
+    "volumeTraded": {
+      "type": "string"
+    },
+    "maxSupply": {
+      "description": "max of items that can be minted",
+      "type": "string"
+    },
+    "totalSupply": {
+      "description": "total minted items",
+      "type": "string"
+    },
+    "releaseDate": {
+      "type": "string"
+    },
+    "released": {
+      "type": "boolean"
+    },
+    "contractAddress": {
+      "type": "string"
+    },
+    "imgPortrait": {
+      "type": "string"
+    },
+    "imgMain": {
+      "type": "string"
+    },
+    "featuredCollection": {
+      "type": "boolean"
+    },
+    "featuredScore": {
+      "type": "number"
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [],
+  "methods": {}
+}

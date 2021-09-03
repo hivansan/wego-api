@@ -1,0 +1,30 @@
+https://mainnet.infura.io/v3/c5e5cb06445c43c2b0305c12450cc0b5
+
+secret: 17194b3e267e46508f847fbd1d40ac3f
+
+curl — user :17194b3e267e46508f847fbd1d40ac3f \
+https://rinkeby.infura.io/v3/c5e5cb06445c43c2b0305c12450cc0b5
+
+curl — user :17194b3e267e46508f847fbd1d40ac3f \
+https://mainnet.infura.io/v3/c5e5cb06445c43c2b0305c12450cc0b5
+
+
+curl https://mainnet.infura.io/v3/c5e5cb06445c43c2b0305c12450cc0b5 \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
+
+
+
+------------------------------
+balance of the contract
+
+curl https://mainnet.infura.io/v3/YOUR-PROJECT-ID \
+-X POST \
+-H "Content-Type: application/json" \
+-d '{"jsonrpc":"2.0","method":"eth_getBalance","params": ["0xBf4eD7b27F1d666546E30D74d50d173d20bca754", "latest"],"id":1}'
+The response you receive back will look like this:
+
+{"jsonrpc":"2.0","id":1,"result":"0x1887fd3c2b394d81a33d"}
+
+Once again, by converting the hexadecimal 1887fd3c2b394d81a33d to decimal, you’ll get back 115845353546137586475837. What does this string of numbers mean? This the balance of Ether in that contract in wei. You may want to convert this to Ether. If 1 Ether equals 10¹⁸ wei, simply move the decimal eighteen places to the left. Voila! Now we know there’s a balance of 115845.353546137586475837 Ether in TheDAO Withdraw contract.
