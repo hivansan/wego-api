@@ -1,5 +1,5 @@
 {
-  "name": "Contract",
+  "name": "Scraper",
   "base": "Model",
   "idInjection": true,
   "options": {

@@ -42,7 +42,7 @@ module.exports.postItems = async (adresses) => {
     const data = qs.stringify({ address });
     const config = {
       method: 'post',
-      url: 'http://localhost:3000/api/Contracts/getAbi',
+      url: 'http://localhost:3000/api/Scrapers/getAbi',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',

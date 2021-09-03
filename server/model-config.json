@@ -21,7 +21,7 @@
     "dataSource": "mysqlDs",
     "public": true
   },
-  "Contract": {
+  "Scraper": {
     "dataSource": null,
     "public": true
   },
