@@ -26,32 +26,32 @@ module.exports = (Asset) => {
 
     try {
       const [rariMeta, rariNft, openseaNft] = await arrayFetch(urls);
-      const asset = await Asset.create(
-        { contract, tokenId: id },
-        {
-          //TODO: add supply
-          name: rariMeta.name,
-          contract,
-          tokenId: id,
-          owners: rariNft.owners,
-          description: rariMeta.description,
-          imageBig: rariMeta.image.url.BIG,
-          imageSmall: rariMeta.image.url.PREVIEW,
-          properties: openseaNft.traits,
-          //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
-          rariScore: openseaNft.traits.reduce(
-            (acc, t) =>
-              acc +
-              1 / (t.trait_count / openseaNft.collection.stats.total_supply),
-            0
-          ),
-        }
-      );
+      const asset = await Asset.create({
+        contract,
+        tokenId: id,
+        //TODO: add supply
+        name: rariMeta.name,
+        contract,
+        tokenId: id,
+        owners: rariNft.owners,
+        description: rariMeta.description,
+        imageBig: rariMeta.image.url.BIG,
+        imageSmall: rariMeta.image.url.PREVIEW,
+        properties: openseaNft.traits,
+        //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
+        rariScore: openseaNft.traits.reduce(
+          (acc, t) =>
+            acc +
+            1 / (t.trait_count / openseaNft.collection.stats.total_supply),
+          0
+        ),
+      });
       return asset;
     } catch (error) {
       throw error;
     }
   };
+
   Asset.remoteMethod('search', {
     http: {
       verb: 'get',
