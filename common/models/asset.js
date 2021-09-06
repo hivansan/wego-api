@@ -52,4 +52,53 @@ module.exports = (Asset) => {
       throw error;
     }
   };
+  Asset.remoteMethod('search', {
+    http: {
+      verb: 'get',
+    },
+    accepts: [
+      {
+        arg: 'q',
+        type: 'string',
+        required: true,
+      },
+    ],
+    returns: {
+      type: 'object',
+      root: true,
+    },
+  });
+
+  function sleep(s) {
+    return new Promise((resolve) => setTimeout(resolve, s * 1000));
+  }
+
+  Asset.search = async (q) => {
+    console.log('hola');
+
+    await sleep(2);
+    return {
+      q,
+      exactMatch: {
+        type: 'nft', // collection
+        address: '0x123..',
+        image: '',
+      },
+      nfts: [
+        {
+          tokenId: 'tokenId',
+          address: 'address',
+          image: 'image',
+          name: 'name',
+        },
+      ],
+      collecetions: [
+        {
+          tokenId: 'tokenId',
+          image: 'image',
+          name: 'name',
+        },
+      ],
+    };
+  };
 };
