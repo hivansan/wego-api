@@ -55,6 +55,10 @@
     },
     "featuredScore": {
       "type": "number"
+    },
+    "osData": {
+      "description": "opensea data",
+      "type": "object"
     }
   },
   "validations": [],
