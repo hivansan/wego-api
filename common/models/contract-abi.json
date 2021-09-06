@@ -19,6 +19,9 @@
       "type": "number",
       "dataType": "BIGINT"
     },
+    "tokenUri": {
+      "type": "string"
+    },
     "isJSON": {
       "type": "boolean",
       "default": false
