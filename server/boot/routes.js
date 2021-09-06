@@ -10,7 +10,7 @@ module.exports = (app) => {
     await sleep(2);
 
     res.json({
-      q: req.query,
+      q: req.query?.q,
       exactMatch: {
         type: 'nft', // collection
         address: '0x123..',
