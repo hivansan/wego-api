@@ -24,6 +24,7 @@
     "loopback-component-storage": "^3.7.0",
     "loopback-connector-mongodb": "^6.0.1",
     "loopback-connector-mysql": "^5.4.4",
+    "moment": "^2.29.1",
     "node-fetch": "^2.6.1",
     "pm2": "^4.4.0",
     "raven": "^2.6.4",

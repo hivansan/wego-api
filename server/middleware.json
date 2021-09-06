@@ -4,6 +4,13 @@
   },
   "initial": {
     "compression": {},
+    "cors": {
+      "params": {
+        "origin": true,
+        "credentials": true,
+        "maxAge": 86400
+      }
+    },
     "helmet#xssFilter": {},
     "helmet#frameguard": {
       "params": {
@@ -21,18 +28,24 @@
     "helmet#noSniff": {},
     "helmet#noCache": {
       "enabled": false
-    },
-    "cors": {
-      "params": {
-        "origin": true,
-        "credentials": true,
-        "maxAge": 86400
-      }
     }
   },
   "session": {},
   "auth": {},
-  "parse": {},
+  "auth:after": {},
+  "parse": {
+    "body-parser#json": {
+      "params": {
+        "limit": "20mb"
+      }
+    },
+    "body-parser#urlencoded": {
+      "params": {
+        "limit": "20mb",
+        "extended": true
+      }
+    }
+  },
   "routes": {
     "loopback#rest": {
       "paths": [
