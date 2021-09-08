@@ -15,6 +15,9 @@
     "abi": {
       "type": "object"
     },
+    "abiMethod": {
+      "type": "string"
+    },
     "totalSupply": {
       "type": "number",
       "dataType": "BIGINT"
