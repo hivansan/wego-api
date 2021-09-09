@@ -1,6 +1,6 @@
 'use strict';
 
-const contractHelpers = require('../../lib/contract.helpers');
+const scraperHelper = require('../../lib/scraper.helpers');
 
 module.exports = (Scraper) => {
   Scraper.remoteMethod('getTokenIdJSON', {
@@ -23,7 +23,7 @@ module.exports = (Scraper) => {
   });
 
   Scraper.getTokenIdJSON = async (address, tokenId) => {
-    return contractHelpers.getWeb3({
+    return scraperHelper.getWeb3({
       address,
       methodParams: tokenId,
       method: 'tokenURI',
@@ -45,7 +45,7 @@ module.exports = (Scraper) => {
   });
 
   // this also saves the abi if it doesn't exist
-  Scraper.getAbi = contractHelpers.getAbi;
+  Scraper.getAbi = scraperHelper.getAbi;
 
   Scraper.remoteMethod('saveAbis', {
     accepts: [],
@@ -55,7 +55,7 @@ module.exports = (Scraper) => {
     },
   });
 
-  Scraper.saveAbis = contractHelpers.saveAbis;
+  Scraper.saveAbis = scraperHelper.saveAbis;
 
   Scraper.remoteMethod('saveSupply', {
     accepts: [],
@@ -65,9 +65,9 @@ module.exports = (Scraper) => {
     },
   });
 
-  Scraper.saveSupply = contractHelpers.saveSupply;
+  Scraper.saveSupply = scraperHelper.saveSupply;
 
-  Scraper.remoteMethod('saveTokenUri', {
+  Scraper.remoteMethod('saveTokensUri', {
     accepts: [],
     returns: {
       type: 'object',
@@ -75,7 +75,17 @@ module.exports = (Scraper) => {
     },
   });
 
-  Scraper.saveTokenUri = contractHelpers.saveTokenUri;
+  Scraper.saveTokensUri = scraperHelper.saveTokensUri;
+
+  Scraper.remoteMethod('saveCollections', {
+    accepts: [],
+    returns: {
+      type: 'object',
+      root: true,
+    },
+  });
+
+  Scraper.saveCollections = scraperHelper.saveCollections;
 };
 
 // const Web3 = require("web3")

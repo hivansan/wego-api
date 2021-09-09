@@ -36,13 +36,17 @@ const getAllItems = async () => {
   // console.log(items);
 };
 
-module.exports.postItems = async (adresses) => {
+module.exports.postItems = async (adresses, method) => {
   const items = adresses ? adresses : nftAddresses;
   for (const address of items) {
-    const data = qs.stringify({ address });
+    const data =
+      method === 'getTokenIdJSON'
+        ? qs.stringify({ address, tokenId: 1 })
+        : qs.stringify({ address });
+
     const config = {
       method: 'post',
-      url: 'http://localhost:3000/api/Scrapers/getAbi',
+      url: 'http://localhost:3000/api/Scrapers/' + method,
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',

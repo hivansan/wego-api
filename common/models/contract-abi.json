@@ -15,9 +15,15 @@
     "abi": {
       "type": "object"
     },
+    "abiMethod": {
+      "type": "string"
+    },
     "totalSupply": {
       "type": "number",
       "dataType": "BIGINT"
+    },
+    "tokenUri": {
+      "type": "string"
     },
     "isJSON": {
       "type": "boolean",
