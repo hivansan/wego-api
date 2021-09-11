@@ -8,7 +8,7 @@ const client = new Client({ node: 'http://localhost:9200' });
 
 /**
  * Example call:
- * 
+ *
  * `./bin/load.js --file=./top-100.json`
  */
 
@@ -16,7 +16,6 @@ const bail = err => {
   console.error(err);
   process.exit(1);
 }
-console.log(__dirname, process.argv.find(s => s.startsWith('--file=')));
 
 const filePath = process.argv.find(s => s.startsWith('--file='))?.replace('--file=', '');
 const resolvedPath = filePath && path.resolve(__dirname, '..', filePath);

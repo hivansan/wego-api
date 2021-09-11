@@ -13,10 +13,6 @@
       "./mixins"
     ]
   },
-  "Indexed": {
-    "dataSource": "mysqlDs",
-    "public": true
-  },
   "Asset": {
     "dataSource": "mysqlDs",
     "public": true
