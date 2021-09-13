@@ -10,9 +10,9 @@
       "type": "string"
     },
     "contract": {
-      "description": "contract's address",
       "type": "string",
-      "required": true
+      "required": true,
+      "description": "contract's address"
     },
     "tokenId": {
       "type": "number",
@@ -42,6 +42,13 @@
     },
     "rariScore": {
       "type": "number"
+    },
+    "createdAt": {
+      "type": "date",
+      "default": "$now"
+    },
+    "updatedAt": {
+      "type": "date"
     }
   },
   "validations": [],
