@@ -25,7 +25,7 @@ module.exports = {
     dev: {
       user: 'ubuntu',
       host: 'wego-api',
-      ref: 'origin/master',
+      ref: 'origin/main',
       repo: 'git@github.com:wegobattle/api.git',
       path: '/home/ubuntu/api',
       // 'pre-deploy-local':
@@ -37,7 +37,7 @@ module.exports = {
     prod: {
       user: 'ubuntu',
       host: 'wego-api',
-      ref: 'origin/master',
+      ref: 'origin/main',
       repo: 'git@github.com:wegobattle/api.git',
       path: '/home/ubuntu/api',
       // 'pre-deploy-local':
