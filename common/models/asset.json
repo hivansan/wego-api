@@ -9,33 +9,33 @@
     "name": {
       "type": "string"
     },
-    "contract": {
+    "contractAddress": {
       "type": "string",
-      "required": true,
-      "description": "contract's address"
+      "required": true
     },
     "tokenId": {
       "type": "number",
       "required": true
     },
     "owners": {
-      "type": [
-        "string"
-      ],
-      "required": false
+      "type": "object"
+    },
+    "owner": {
+      "type": "text"
     },
     "description": {
-      "type": "text",
-      "required": false
+      "type": "text"
     },
     "imageBig": {
-      "type": "string",
-      "required": false
+      "type": "string"
+    },
+    "animationUrl": {
+      "type": "string"
     },
     "imageSmall": {
       "type": "string"
     },
-    "properties": {
+    "traits": {
       "type": [
         "object"
       ]

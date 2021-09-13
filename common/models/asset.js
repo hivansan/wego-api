@@ -5,12 +5,12 @@ const { arrayFetch } = require('../../lib/fetchNParse');
 module.exports = (Asset) => {
   Asset.remoteMethod('get', {
     http: {
-      path: '/:contract/:id',
+      path: '/:contractAddress/:tokenId',
       verb: 'get',
     },
     accepts: [
-      { arg: 'contract', type: 'string', required: true },
-      { arg: 'id', type: 'string', required: true },
+      { arg: 'contractAddress', type: 'string', required: true },
+      { arg: 'tokenId', type: 'string', required: true },
     ],
     returns: {
       type: 'object',
@@ -18,27 +18,36 @@ module.exports = (Asset) => {
     },
   });
 
-  Asset.get = async (contract, id) => {
+  Asset.get = async (contractAddress, tokenId) => {
+    // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/0xa7f767865fce8236f71adda56c60cf2e91dadc00:504/meta`,
+    // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/0xa7f767865fce8236f71adda56c60cf2e91dadc00:504`,
+    // `https://api.opensea.io/api/v1/asset/0xa7f767865fce8236f71adda56c60cf2e91dadc00/504/`,
     const urls = [
-      `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contract}:${id}/meta`,
-      `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contract}:${id}`,
-      `https://api.opensea.io/api/v1/asset/${contract}/${id}/`,
+      // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}/meta`,
+      `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
+      `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
     ];
 
     try {
-      const [rariMeta, rariNft, openseaNft] = await arrayFetch(urls);
+      // [rariMeta, rariNft, openseaNft]
+      let assetDB = await Asset.findOne({
+        where: {
+          contractAddress,
+          tokenId,
+        },
+      });
+      if (assetDB) return assetDB;
+      return;
+      const [rariNft, openseaNft] = await arrayFetch(urls);
       const asset = await Asset.create({
-        contract,
-        tokenId: id,
-        //TODO: add supply
-        name: rariMeta.name,
-        contract,
-        tokenId: id,
+        tokenId,
+        name: openseaNft.name,
+        contractAddress,
         owners: rariNft.owners,
-        description: rariMeta.description,
-        imageBig: rariMeta.image.url.BIG,
-        imageSmall: rariMeta.image.url.PREVIEW,
-        properties: openseaNft.traits,
+        description: openseaNft.description, //  rariMeta.description,
+        imageBig: openseaNft.image_original_url, // rariMeta.image.url.BIG,
+        imageSmall: openseaNft.image_preview_url, // rariMeta.image.url.PREVIEW,
+        traits: openseaNft.traits,
         //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
         rariScore: openseaNft.traits.reduce(
           (acc, t) =>
