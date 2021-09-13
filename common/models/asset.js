@@ -37,7 +37,7 @@ module.exports = (Asset) => {
         },
       });
       if (assetDB) return assetDB;
-      return;
+
       const [rariNft, openseaNft] = await arrayFetch(urls);
       const asset = await Asset.create({
         tokenId,
