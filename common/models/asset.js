@@ -49,12 +49,17 @@ module.exports = (Asset) => {
         imageSmall: openseaNft.image_preview_url, // rariMeta.image.url.PREVIEW,
         traits: openseaNft.traits,
         //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
-        rariScore: openseaNft.traits.reduce(
-          (acc, t) =>
-            acc +
-            1 / (t.trait_count / openseaNft.collection.stats.total_supply),
-          0
-        ),
+        rariScore:
+          openseaNft?.traits?.length &&
+          openseaNft.collection?.stats?.total_supply
+            ? openseaNft.traits.reduce(
+                (acc, t) =>
+                  acc +
+                  1 /
+                    (t.trait_count / openseaNft.collection.stats.total_supply),
+                0
+              )
+            : null,
       });
       return asset;
     } catch (error) {
