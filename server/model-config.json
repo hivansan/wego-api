@@ -28,5 +28,9 @@
   "ContractAbi": {
     "dataSource": "mysqlDs",
     "public": false
+  },
+  "Trait": {
+    "dataSource": "mysqlDs",
+    "public": true
   }
 }

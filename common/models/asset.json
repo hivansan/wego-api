@@ -9,8 +9,7 @@
     "name": {
       "type": "string"
     },
-    "contract": {
-      "description": "contract's address",
+    "contractAddress": {
       "type": "string",
       "required": true
     },
@@ -19,29 +18,37 @@
       "required": true
     },
     "owners": {
-      "type": [
-        "string"
-      ],
-      "required": false
+      "type": "object"
+    },
+    "owner": {
+      "type": "text"
     },
     "description": {
-      "type": "text",
-      "required": false
+      "type": "text"
     },
     "imageBig": {
-      "type": "string",
-      "required": false
+      "type": "string"
+    },
+    "animationUrl": {
+      "type": "string"
     },
     "imageSmall": {
       "type": "string"
     },
-    "properties": {
+    "traits": {
       "type": [
         "object"
       ]
     },
     "rariScore": {
       "type": "number"
+    },
+    "createdAt": {
+      "type": "date",
+      "default": "$now"
+    },
+    "updatedAt": {
+      "type": "date"
     }
   },
   "validations": [],
