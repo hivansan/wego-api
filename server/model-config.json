@@ -14,11 +14,11 @@
     ]
   },
   "Asset": {
-    "dataSource": "mysqlDs",
+    "dataSource": "es",
     "public": true
   },
   "Collection": {
-    "dataSource": "mysqlDs",
+    "dataSource": "es",
     "public": true
   },
   "Scraper": {

@@ -1,6 +1,6 @@
 'use strict';
 const axios = require('axios');
-const { arrayFetch, fetchNParse } = require('../../lib/fetchNParse');
+const { arrayFetch, fetchNParse } = require('../../lib/network');
 const scraperHelpers = require('../../lib/scraper.helpers');
 
 module.exports = function (Collection) {
@@ -39,8 +39,8 @@ module.exports = function (Collection) {
           slug: os.collection.slug,
           name: os.name,
           // wegoScore: '0',
-        releaseDate: '',
-        released: true,
+          releaseDate: '',
+          released: true,
           contractAddress,
           imgPortrait: os.collection.banner_image_url,
           imgMain: os.image_url,
