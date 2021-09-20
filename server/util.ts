@@ -23,4 +23,6 @@ export const respond = <B>(fn: RequestFn<B>) => (
   })
 );
 
+export const error = (status: number, msg: string) => Promise.resolve({ status, body: { msg } });
+
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));

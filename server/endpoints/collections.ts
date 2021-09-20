@@ -11,23 +11,20 @@ import { toInt } from '../../models/util';
  * JS values into typed values.
  */
 const params = {
-  getAsset: object('AssetParams', {
+  getAsset: object('CollectionParams', {
     contractAddress: string,
     tokenId: toInt
   })
 };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-  app.get('/api/assets/:contractAddress/:tokenId', respond(req => {
+  app.get('/api/assets/:contractAddress/:tokenId', respond<any>(req => {
 
     return params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
-      AssetLoader.fromDb(db, contractAddress, tokenId)
-        /**
-         * @TODO Call AssetLoader.fromRemote() if it is null.
-         */
+      AssetLoader.fromCollection(contractAddress, tokenId)
         .then(body => ({ body }))
         .catch(e => {
-          console.error('[Get Asset]', e);
+          console.error('[From Collection]', e);
           return error(503, 'Service error');
         })
     )).defaultTo(error(400, 'Bad request'))

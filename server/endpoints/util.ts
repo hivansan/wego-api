@@ -1,4 +1,4 @@
-import { curry, evolve, pipe, trim } from 'ramda';
+import { always, anyPass, cond, converge, curry, evolve, identity, is, map, mergeRight, pipe, reduce, trim } from 'ramda';
 
 export const toString = s => s + "";
 
@@ -20,3 +20,15 @@ export const toResult = pipe(
     value: { description: pipe(toString, truncate(500, '...'), trim) }
   })
 );
+
+export const mapObject = curry((mapper, object) => {
+  const keyMapper = (key) => ({
+    [key]: cond([
+      [is(Function), fn => fn(object)],
+      [anyPass([is(String), is(Number), is(Boolean)]), identity],
+      [always(true), converge(mapObject, [identity, always(object)])],
+    ])(mapper[key]),
+  });
+
+  return pipe(Object.keys, map(keyMapper), reduce(mergeRight, {} as any))(mapper);
+});

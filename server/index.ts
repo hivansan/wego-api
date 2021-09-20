@@ -5,10 +5,12 @@ const db = new Client({ node: 'http://localhost:9200' });
 
 const routes = [
   'assets',
+  'collections',
   'match',
-  'search'
+  'search',
+  'score'
 ];
 
-routes.forEach(name => require(`./endpoints/${name}`)({ app, db }));
+routes.forEach(name => require(`./endpoints/${name}`).default({ app, db }));
 
 start();
