@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { object, string } from '@ailabs/ts-utils/dist/decoder';
+import { array, nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
@@ -12,15 +12,19 @@ import { toInt } from '../../models/util';
 const params = {
   getAsset: object('AssetParams', {
     slug: string,
-    tokenId: string
+    tokenId: string,
+    /**
+     * @TODO (Nate) Figure out mapping structure from querystring to object
+     */
+    traits: nullable(array(string))
   })
 };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets/:slug/:tokenId', respond(req => {
 
-    return params.getAsset(req.params).map(({ slug, tokenId }) => (
-      AssetLoader.fromDb(db, slug, tokenId)
+    return params.getAsset(req.params).map(({ slug, tokenId, traits }) => (
+      AssetLoader.fromDb(db, slug, tokenId, {} /** @TODO traits */)
         /**
          * @TODO Call AssetLoader.fromRemote() if it is null.
          */

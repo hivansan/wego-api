@@ -9,14 +9,19 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { URLSearchParams } from 'url';
 
-export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, tokenId: string) {
+export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, tokenId: string, traits?: { [key: string]: string[] }) {
+  /**
+   * @TODO Map traits to ES query
+   */
+  const traitQuery: any[] = Object.entries(traits || []).map(([type, values]) => []);
+
   return Query.findOne(db, 'assets', {
     filter: {
       bool: {
-        must: [
+        must: traitQuery.concat([
           { term: { tokenId: tokenId } },
           { term: { 'contract.address': contract } }
-        ]
+        ])
       }
     }
   });
@@ -106,6 +111,9 @@ export async function collection(slug: string): Promise<Collection.Collection & 
   };
   const queryParams = new URLSearchParams(params).toString();
   const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
+  /**
+   * @TODO Get contractAddress from here
+   */
   const { data } = await axios(url);
 
   const [asset] = data.assets[0];
