@@ -33,7 +33,7 @@ const getUriType = (uri) => {
   return uri;
 };
 
-const getAbi = async (address) => {
+export const getAbi = async (address) => {
   const { Contract, ContractAbi } = app.models;
   console.log('address', address);
   // return { address };
@@ -63,7 +63,7 @@ const getAbi = async (address) => {
   }
 };
 
-const saveAbis = async () => {
+export const saveAbis = async () => {
   const { ContractAbi } = app.models;
   // return { address };
   try {
@@ -81,7 +81,7 @@ const saveAbis = async () => {
   }
 };
 
-const saveTokensUri = async () => {
+export const saveTokensUri = async () => {
   const { ContractAbi, Scraper } = app.models;
   // return { address };
   try {
@@ -132,7 +132,7 @@ const saveTokensUri = async () => {
   }
 };
 
-const saveSupply = async () => {
+export const saveSupply = async () => {
   const { ContractAbi } = app.models;
   // return { address };
   try {
@@ -173,7 +173,7 @@ const saveSupply = async () => {
 };
 
 // { method, address, methodParams, saveParam }
-const getWeb3 = async (params) => {
+export const getWeb3 = async (params) => {
   // console.log('hola', params);
 
   const { ContractAbi } = app.models;
@@ -206,7 +206,7 @@ const getWeb3 = async (params) => {
   }
 };
 
-const saveCollections = async () => {
+export const saveCollections = async () => {
   const { Collection } = app.models;
 
   const limit = 50000;
@@ -232,13 +232,4 @@ const saveCollections = async () => {
   } catch (error) {
     console.log('error', error);
   }
-};
-
-module.exports = {
-  getAbi,
-  saveAbis,
-  saveSupply,
-  getWeb3,
-  saveTokensUri,
-  saveCollections,
 };

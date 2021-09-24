@@ -2,7 +2,7 @@ import { clamp, pipe } from 'ramda';
 import { toResult } from './util';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
-import { nullable, object, parse, string } from '@ailabs/ts-utils/dist/decoder';
+import { nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { toInt } from '../../models/util';
 import Result from '@ailabs/ts-utils/dist/result';
 import { respond } from '../util';
@@ -30,19 +30,16 @@ const searchQuery = object('Search', {
   /**
    * Default to 10 results, limit max result size to 50.
    */
-  limit: nullable(pipe(string, toInt, Result.map(clamp(1, 50))), 10)
+  limit: nullable(pipe(toInt, Result.map(clamp(1, 50))), 10)
 });
 
 const queryError = Promise.resolve({ status: 400, body: { msg: 'Bad query' } });
 
 export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
-  app.get('/api/search', respond<any>(req => (
+  app.get('/api/search', respond(req => (
     searchQuery(req.query).map(({ q, page, limit }) => {
-      const query = !q ? {} : {
-        multi_match: { query: q, fuzziness: 6, fields: searchFields }
-      };
-      return Query.find(db, 'assets', query, { limit, offset: limit * (page - 1) })
+      return Query.search(db, 'assets', searchFields, q || '', { limit, offset: limit * (page - 1) })
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },

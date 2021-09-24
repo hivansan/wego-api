@@ -43,19 +43,17 @@ export const postItems = async (adresses, method) => {
         ? qs.stringify({ address, tokenId: 1 })
         : qs.stringify({ address });
 
-    const config = {
-      method: 'post',
-      url: 'http://localhost:3000/api/Scrapers/' + method,
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-      },
-      data,
-    };
     try {
       await sleep(0.2);
-      const res = axios(config);
-      // console.log('res', res?.data);
+
+      const res = axios('http://localhost:3000/api/Scrapers/' + method, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        data,
+      });
     } catch (error) {
       console.log(error);
     }

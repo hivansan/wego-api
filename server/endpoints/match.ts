@@ -25,7 +25,7 @@ const matchParams = object('MatchParams', {
 const queryError = Promise.resolve({ status: 404, body: { msg: 'Asset not found' } });
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => (
-  app.get('/api/match/:contract/:id', respond<any>(req => (
+  app.get('/api/match/:contract/:id', respond(req => (
     matchParams(req).map(({ query: { limit }, params: { id, contract } }) => {
       return Query.findOne(db, 'assets', {
         filter: {

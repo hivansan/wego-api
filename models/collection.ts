@@ -38,20 +38,39 @@ export type CollectionStats = Decoded<typeof collectionStats>;
 export const collectionStats = object('Collection', {
   // Collection contract address, used as a unique ID
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
-  // description: "total minted items"
-  totalSupply: string, // number?
   featuredCollection: boolean,
   featuredScore: number,
+
+  wegoScore: number,
+
+  oneDayVolume: number,
+  oneDayChange: number,
+  oneDaySales: number,
+  oneDayAveragePrice: number,
+  sevenDayVolume: number,
+  sevenDayChange: number,
+  sevenDaySales: number,
+  sevenDayAveragePrice: number,
+  thirtyDayVolume: number,
+  thirtyDayChange: number,
+  thirtyDaySales: number,
+  thirtyDayAveragePrice: number,
+  totalVolume: number,
+  totalSales: number,
+  // description: "total minted items"
+  totalSupply: number,
   // description: "max of items that can be minted"
-  maxSupply: string,
-  volumeTraded: string,
+  maxSupply: number,
+  count: number,
+  numOwners: number,
+  averagePrice: number,
+  numReports: number,
+  marketCap: number,
 
   /**
-   * Maybe these should be numbers though?
+   * What's the difference between this and total volume?
    */
-  floorPrice: string,
-  maxPrice: string,
-  wegoScore: string,
-
-  owners: array(string),
+  volumeTraded: number,
+  maxPrice: number,
+  floorPrice: number,
 });

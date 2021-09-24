@@ -1,19 +1,19 @@
 import { Request, Response } from "express";
 
-type Result<Body> = {
+type ResponseVal = {
   status?: number;
   headers?: { [key: string]: any },
-  body?: Body;
+  body?: any;
 };
 
-type RequestFn<Body = any> = (req: Request) => Result<Body> | Promise<Result<Body>>;
+type RequestFn = (req: Request) => ResponseVal | Promise<ResponseVal>;
 
 /**
  * Simple utility function to build Express request handlers. Pass in a callback that accepts a `Request` object,
- * and return a `Result` value, or a `Result` wrapped in a promise.
+ * and return a `ResponseVal` value, or a `ResponseVal` wrapped in a promise.
  */
-export const respond = <B>(fn: RequestFn<B>) => (
-  (req: Request, res: Response) => Promise.resolve(fn(req)).then((result: Result<B>) => {
+export const respond = (fn: RequestFn) => (
+  (req: Request, res: Response) => Promise.resolve(fn(req)).then((result: ResponseVal) => {
     result.status && res.status(result.status) || res.status(200);
     result.headers && res.set(result.headers);
     (result.body !== undefined) ? res.json(result.body) : res.end();

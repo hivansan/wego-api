@@ -1,11 +1,15 @@
 'use strict';
 
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
+import { URLSearchParams } from 'url';
 import { ETHERSCAN_PUBLICKEY } from './constants';
 
 const baseURL = 'https://api.etherscan.io/api';
 
-class Etherscan {
+export default class Etherscan {
+
+  public axios: AxiosInstance;
+
   constructor() {
     this.axios = axios.create({
       baseURL: baseURL + '?apikey=' + ETHERSCAN_PUBLICKEY,
@@ -58,5 +62,3 @@ class Etherscan {
     }
   }
 }
-
-module.exports = Etherscan;

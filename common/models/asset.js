@@ -51,14 +51,14 @@ module.exports = (Asset) => {
         //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
         rariScore:
           openseaNft?.traits?.length &&
-          openseaNft.collection?.stats?.total_supply
+            openseaNft.collection?.stats?.total_supply
             ? openseaNft.traits.reduce(
-                (acc, t) =>
-                  acc +
-                  1 /
-                    (t.trait_count / openseaNft.collection.stats.total_supply),
-                0
-              )
+              (acc, t) =>
+                acc +
+                1 /
+                (t.trait_count / openseaNft.collection.stats.total_supply),
+              0
+            )
             : null,
       });
       return asset;
