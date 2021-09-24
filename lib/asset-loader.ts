@@ -9,12 +9,12 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { URLSearchParams } from 'url';
 
-export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, tokenId: number) {
+export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, tokenId: string) {
   return Query.findOne(db, 'assets', {
     filter: {
       bool: {
         must: [
-          { term: { id: tokenId } },
+          { term: { tokenId: tokenId } },
           { term: { 'contract.address': contract } }
         ]
       }
@@ -98,11 +98,9 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-export async function collection(
-  contractAddress: Asset.Address
-): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
+export async function collection(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
   const params: any = {
-    asset_contract_address: contractAddress,
+    collection: slug,
     offset: 0,
     limit: 1,
   };

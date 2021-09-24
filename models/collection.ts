@@ -36,7 +36,7 @@ export const collection = object('Collection', {
  */
 export type CollectionStats = Decoded<typeof collectionStats>;
 export const collectionStats = object('Collection', {
-  // Collection contract address, used as a unique ID
+  slug: string,
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   featuredCollection: boolean,
   featuredScore: number,

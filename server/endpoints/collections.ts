@@ -1,12 +1,12 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { inList, nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
+import { Decoded, inList, nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Query from '../../lib/query';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe } from 'ramda';
+import { clamp, pipe, objOf } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
 /**
@@ -15,7 +15,7 @@ import Result from '@ailabs/ts-utils/dist/result';
  */
 const params = {
   getCollection: object('CollectionParams', {
-    contractAddress: string,
+    slug: string,
   }),
   listCollections: object('CollectionsQuery', {
     page: nullable(toInt, 1),
@@ -26,6 +26,8 @@ const params = {
     sort: nullable(inList(['volume', 'avgPrice', 'numOwners'] as const), null),
   })
 };
+
+type CollectionQuery = Decoded<typeof params.listCollections>;
 
 const searchQuery = object('Search', {
   q: nullable(string),
@@ -49,18 +51,26 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections', respond(req => {
     const { page, limit, sort } = params.listCollections(req.query).defaultTo({ page: 1, limit: 10, sort: null });
-    /**
-     * @TODO Map results, figure out sort
-     */
-    Query.find(db, 'collection_stats', {}, { limit, page })
-
-    return { body: {} };
+    const fromSort = {
+      'volume': 'thirtyDayVolume',
+      'avgPrice': 'thirtyDayAveragePrice',
+      'numOwners': 'numOwners',
+    };
+    return Query.find(db, 'collection_stats', {}, {
+      limit,
+      page,
+      sort: sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
+    }).then(objOf('body'))
+      .catch((e) => {
+        console.error('Badness!', e);
+        return error(404, 'Not found');
+      })
   }));
 
-  app.get('/api/collections/:contractAddress', respond(req => {
+  app.get('/api/collections/:slug', respond(req => {
 
-    return params.getCollection(req.params).map(({ contractAddress }) => (
-      AssetLoader.collection(contractAddress)
+    return params.getCollection(req.params).map(({ slug }) => (
+      AssetLoader.collection(slug)
         .then(body => body === null ? error(404, 'Not found') : { body } as any)
         .catch(e => {
           console.error('[Collection]', e);

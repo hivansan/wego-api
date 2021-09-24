@@ -1,18 +1,19 @@
 import { curry } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 
-type Options = {
+export type Options = {
   limit?: number,
-  offset?: number
+  offset?: number,
+  sort?: { [key: string]: { order: 'asc' | 'desc' } }[]
 };
 
 export const find = curry((
   db: ElasticSearch.Client,
   index: string,
   query: any,
-  { limit, offset }: Options
+  { limit, offset, sort }: Options
 ): Promise<any> => (
-  db.search({ index: index, from: offset || 0, size: limit, body: { query } })
+  db.search({ index: index, from: offset || 0, size: limit, body: { query }, sort: sort || ([] as any[]) })
 ));
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (
@@ -57,3 +58,6 @@ export const update = curry(<Doc>(
     ? db.update({ refresh: true, index, id: idOrQuery, body: { doc } })
     : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } })
 ));
+
+
+// Make exists and upsert functions

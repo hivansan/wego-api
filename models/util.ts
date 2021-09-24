@@ -3,7 +3,7 @@
  */
 
 import { Result } from '@ailabs/ts-utils';
-import { pipe } from 'ramda';
+import { pipe, tap } from 'ramda';
 import { parse, string } from '@ailabs/ts-utils/dist/decoder';
 
 export const date = (val: string): Result<Error, Date> => (
