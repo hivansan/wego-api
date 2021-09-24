@@ -1,4 +1,4 @@
-import { curry } from 'ramda';
+import { curry, prop } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 
 export type Options = {
@@ -59,5 +59,19 @@ export const update = curry(<Doc>(
     : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } })
 ));
 
+export type CountOptions = {
+  q?: string,
+  expand_wildcards?: 'open' | 'closed' | 'hidden' | 'none' | 'all',
+  min_score?: number,
+};
 
-// Make exists and upsert functions
+export const count = curry((
+  db: ElasticSearch.Client,
+  index: string,
+  query: { [key: string]: any },
+  opts: CountOptions
+): Promise<{ count: number }> => (
+  db.count({ index, body: query, ...opts }).then(prop('body')) as Promise<{ count: number }>
+));
+
+/** @TODO (Nate) Make upsert function */
