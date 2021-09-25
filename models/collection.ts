@@ -1,6 +1,6 @@
 import { Result } from '@ailabs/ts-utils';
-import { Decoded, array, number, object, string, boolean, Decoder } from '@ailabs/ts-utils/dist/decoder';
-import { match } from './util';
+import { Decoded, array, number, object, string, boolean, Decoder, nullable } from '@ailabs/ts-utils/dist/decoder';
+import { date, match } from './util';
 
 import "reflect-metadata";
 
@@ -26,9 +26,14 @@ export const collection = object('Collection', {
   released: boolean,
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   imgPortrait: url,
+  imgLarge: url,
   imgMain: url,
-  // description: "opensea data"
-  osData: Result.ok // <-- this is an escape hatch... basically lets any value through
+  twitter: nullable(string),
+  discord: nullable(string),
+  instagram: nullable(string),
+  telegram: nullable(string),
+  website: nullable(string),
+  // updatedAt: date,
 });
 
 /**
@@ -60,18 +65,18 @@ export const collectionStats = object('Collection', {
   // description: "total minted items"
   totalSupply: number,
   // description: "max of items that can be minted"
-  maxSupply: number,
   count: number,
   numOwners: number,
   averagePrice: number,
   numReports: number,
   marketCap: number,
-
+  floorPrice: number,
+  
   /**
    * What's the difference between this and total volume?
    * R: this is the same
    */
-  volumeTraded: number,
-  maxPrice: number,
-  floorPrice: number,
+  // volumeTraded: number,
+  // maxSupply: number,
+  // maxPrice: number,
 });

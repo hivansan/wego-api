@@ -130,12 +130,17 @@ export async function collection(slug: string): Promise<Collection.Collection & 
     const collection: Collection.Collection = {
       contractAddress,
       slug: os.collection.slug,
-      name: os.name,
-      releaseDate: '',
+      name: os.collection.name,
+      releaseDate: os.collection.created_date,
       released: true,
       imgPortrait: os.collection.banner_image_url,
-      imgMain: os.image_url,
-      osData: {} // ???
+      imgMain: os.collection.image_url,
+      imgLarge: os.collection.large_image_url,
+      twitter: os.collection.twitter_username,
+      discord: os.collection.discord_url,
+      instagram: os.collection.instagram_username,
+      telegram: os.collection.telegram_url,
+      website: os.collection.external_url,
     };
 
     const stats: Collection.CollectionStats = {
@@ -144,14 +149,7 @@ export async function collection(slug: string): Promise<Collection.Collection & 
       wegoScore: 0,
       featuredCollection: false,
       featuredScore: 0,
-
-      /**
-       * How do we get data for these?
-       */
-      volumeTraded: 0,
-      maxSupply: 0,
-      maxPrice: 0,
-
+      
       oneDayVolume: os.collection.stats.one_day_volume,
       oneDayChange: os.collection.stats.one_day_change,
       oneDaySales: os.collection.stats.one_day_sales,
@@ -176,7 +174,7 @@ export async function collection(slug: string): Promise<Collection.Collection & 
     };
     return Object.assign(collection, { stats });
   } catch (e) {
-    console.log(e);
+    console.log('err--', JSON.stringify(e));
     return null;
   }
 }

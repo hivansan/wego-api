@@ -24,11 +24,18 @@ export const rarible = object('RaribleNFT', {
 });
 
 export const openSeaCollectionStats = object('OpenSeaCollection', {
-  name: string,
-  image_url: string,
   collection: object('Collection', {
     slug: string,
+    name: string,
+    created_date: string,
     banner_image_url: string,
+    image_url: string,
+    large_image_url: string,
+    twitter_username: nullable(string),
+    discord_url: nullable(string),
+    instagram_username: nullable(string),
+    telegram_url: nullable(string),
+    external_url: nullable(string),
     stats: object('Stats', {
       one_day_volume: number,
       one_day_change: number,
