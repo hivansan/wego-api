@@ -9,7 +9,7 @@ import * as Query from '../../lib/query';
 import { Options } from '../../lib/query';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf } from 'ramda';
+import { clamp, pipe, objOf, always } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
 /**
@@ -26,7 +26,10 @@ const params = {
      * Default to 10 results, limit max result size to 50.
      */
     limit: nullable(pipe(toInt, Result.map(clamp(1, 50))), 10),
-    sort: nullable(inList(['volume', 'avgPrice', 'numOwners'] as const), null),
+    sort: pipe(
+      nullable(inList(['id', 'volume', 'avgPrice', 'numOwners'] as const), null),
+      Result.mapError(always(null))
+    ),
     q: nullable(string, null)
   })
 };
