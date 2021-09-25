@@ -69,6 +69,7 @@ export const collectionStats = object('Collection', {
 
   /**
    * What's the difference between this and total volume?
+   * R: this is the same
    */
   volumeTraded: number,
   maxPrice: number,

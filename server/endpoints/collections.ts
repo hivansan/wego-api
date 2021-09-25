@@ -56,11 +56,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       'avgPrice': 'thirtyDayAveragePrice',
       'numOwners': 'numOwners',
     };
-    return Query.find(db, 'collection_stats', {}, {
+    console.log(`[/api/collectionsparms] -`, page, limit, sort);
+    
+    return Query.find(db, 'collections', {}, {
       limit,
       page,
       sort: sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
-    }).then(objOf('body'))
+    })
+      .then(objOf('body'))  
       .catch((e) => {
         console.error('Badness!', e);
         return error(404, 'Not found');
