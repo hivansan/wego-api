@@ -30,6 +30,7 @@ const params = {
       nullable(inList(['id', 'volume', 'avgPrice', 'numOwners'] as const), null),
       Result.mapError(always(null))
     ),
+    sortOrder: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null)
   })
 };
@@ -49,7 +50,15 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   ];
 
   app.get('/api/collections', respond(req => {
-    const { page, limit, sort, q } = params.listCollections(req.query).defaultTo({ page: 1, limit: 10, sort: null, q: null });
+    const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
+      .defaultTo({ 
+        page: 1, 
+        limit: 10, 
+        sort: null, 
+        q: null, 
+        sortOrder: 'desc', 
+    });
+
     const fromSort = {
       'volume': 'thirtyDayVolume',
       'avgPrice': 'thirtyDayAveragePrice',
@@ -62,7 +71,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return Query.search(db, 'collections', searchFields, q || '' , { 
       limit,
       page,
-      sort: sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
+      sort: sort ? [{ [fromSort[sort]]: { order: sortOrder } }] : []
     })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
         body: {
