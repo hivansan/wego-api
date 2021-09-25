@@ -111,14 +111,13 @@ export async function collection(slug: string): Promise<Collection.Collection & 
   };
   const queryParams = new URLSearchParams(params).toString();
   const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
-  /**
-   * @TODO Get contractAddress from here
-   */
+  
+  
   const { data } = await axios(url);
+  const [asset] = data.assets;
 
-  const [asset] = data.assets[0];
-
-  if (!asset || !asset.token_id) {
+  const contractAddress = asset.asset_contract?.address;
+  if (!asset || !asset.token_id || !contractAddress) {
     return null;
   }
 
@@ -141,6 +140,7 @@ export async function collection(slug: string): Promise<Collection.Collection & 
 
     const stats: Collection.CollectionStats = {
       contractAddress,
+      slug,
       wegoScore: 0,
       featuredCollection: false,
       featuredScore: 0,
