@@ -3,6 +3,20 @@ const axios = require('axios');
 const { arrayFetch } = require('../../lib/fetchNParse');
 
 module.exports = (Asset) => {
+  Asset.stats = stats.asset;
+
+  Asset.remoteMethod('stats', {
+    http: {
+      path: '/stats/:contractAddress/:tokenId',
+      verb: 'get',
+    },
+    accepts: [
+      { arg: 'contractAddress', type: 'string', required: true },
+      { arg: 'tokenId', type: 'string', required: true },
+    ],
+    returns: { type: 'object', root: true },
+  });
+
   Asset.remoteMethod('get', {
     http: {
       path: '/:contractAddress/:tokenId',
