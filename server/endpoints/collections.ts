@@ -1,9 +1,12 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Decoded, inList, nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
+import { toResult } from './util';
+
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Query from '../../lib/query';
+import { Options } from '../../lib/query';
 
 import { toInt } from '../../models/util';
 import { clamp, pipe, objOf } from 'ramda';
@@ -39,7 +42,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   const searchFields = [
     'name^3',
     'contractAddress^4',
-    'description'
+    'description',
   ];
 
   app.get('/api/collections', respond(req => {
@@ -48,17 +51,24 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       'volume': 'thirtyDayVolume',
       'avgPrice': 'thirtyDayAveragePrice',
       'numOwners': 'numOwners',
+      'id': 'id',
     };
-    console.log(`[/api/collectionsparams] -`, page, limit, sort);
+    console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
     
-    return Query.find(db, 'collections', { term: { slug: q } } , {
+    // sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
+    return Query.search(db, 'collections', searchFields, q || '' , { 
       limit,
       page,
       sort: sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
     })
-      .then(objOf('body'))  
+      .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+        body: {
+          meta: { q, took, timedOut, total: total.value },
+          results: hits.map(toResult)
+        }
+      }))
       .catch((e) => {
-        console.error('Badness!', e?.meta?.body?.error);
+        console.error('Badness!', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
         return error(404, 'Not found');
       })
   }));
