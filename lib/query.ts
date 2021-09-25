@@ -12,9 +12,13 @@ export const find = curry((
   index: string,
   query: any,
   { limit, offset, sort }: Options
-): Promise<any> => (
-  db.search({ index: index, from: offset || 0, size: limit, body: { query }, sort: sort || ([] as any[]) })
-));
+): Promise<any> => db.search({
+  index,
+  from: offset || 0,
+  size: limit,
+  sort: sort || ([] as any[]),
+  ...(query && Object.keys(query).length ? { body: { query } } : {})
+}));
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (
   find(db, index, query, { limit: 1 }).then(({ body: { hits: { hits: toMatch } } }) => (
