@@ -24,6 +24,7 @@ const params = {
      */
     limit: nullable(pipe(toInt, Result.map(clamp(1, 50))), 10),
     sort: nullable(inList(['volume', 'avgPrice', 'numOwners'] as const), null),
+    q: nullable(string, null)
   })
 };
 
@@ -34,38 +35,30 @@ const searchQuery = object('Search', {
 });
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-  /**
-   * @TODO I don't think I understood this one
-   */
-  // app.get('/api/assets/:contractAddress/:tokenId', respond(req => {
 
-  //   return params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
-  //     AssetLoader.fromCollection(contractAddress, tokenId)
-  //       .then(body => ({ body }))
-  //       .catch(e => {
-  //         console.error('[From Collection]', e);
-  //         return error(503, 'Service error');
-  //       })
-  //   )).defaultTo(error(400, 'Bad request'))
-  // }));
+  const searchFields = [
+    'name^3',
+    'contractAddress^4',
+    'description'
+  ];
 
   app.get('/api/collections', respond(req => {
-    const { page, limit, sort } = params.listCollections(req.query).defaultTo({ page: 1, limit: 10, sort: null });
+    const { page, limit, sort, q } = params.listCollections(req.query).defaultTo({ page: 1, limit: 10, sort: null, q: null });
     const fromSort = {
       'volume': 'thirtyDayVolume',
       'avgPrice': 'thirtyDayAveragePrice',
       'numOwners': 'numOwners',
     };
-    console.log(`[/api/collectionsparms] -`, page, limit, sort);
+    console.log(`[/api/collectionsparams] -`, page, limit, sort);
     
-    return Query.find(db, 'collections', {}, {
+    return Query.find(db, 'collections', { term: { slug: q } } , {
       limit,
       page,
       sort: sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
     })
       .then(objOf('body'))  
       .catch((e) => {
-        console.error('Badness!', e);
+        console.error('Badness!', e?.meta?.body?.error);
         return error(404, 'Not found');
       })
   }));
