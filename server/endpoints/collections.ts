@@ -88,7 +88,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/collections/:slug', respond(req => {
 
     return params.getCollection(req.params).map(({ slug }) => (
-      AssetLoader.collection(slug)
+      AssetLoader.collectionFromRemote(slug)
         .then(body => body === null ? error(404, 'Not found') : { body } as any)
         .catch(e => {
           console.error('[Collection]', e);

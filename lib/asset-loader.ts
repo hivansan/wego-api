@@ -104,7 +104,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-export async function collection(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
+export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
   const params: any = {
     collection: slug,
     offset: 0,
