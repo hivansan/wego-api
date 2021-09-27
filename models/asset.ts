@@ -15,15 +15,16 @@ export const asset = object('Asset', {
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   tokenId: string,
   owners: array(string),
-  owner: nullable(string),
-  description: string,
-  imageBig: string,
+  owner: nullable(Object),
+  description: nullable(string),
   animationUrl: nullable(string),
+  imageBig: string,
   imageSmall: string,
   traits: array(trait),
   rariScore: number,
   createdAt: toDate,
   updatedAt: toDate,
+  tokenMetadata: nullable(string),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {

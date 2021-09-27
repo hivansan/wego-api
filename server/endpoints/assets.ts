@@ -11,7 +11,7 @@ import { toInt } from '../../models/util';
  */
 const params = {
   getAsset: object('AssetParams', {
-    slug: string,
+    contractAddress: string,
     tokenId: string,
     /**
      * @TODO (Nate) Figure out mapping structure from querystring to object
@@ -21,18 +21,30 @@ const params = {
 };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-  app.get('/api/assets/:slug/:tokenId', respond(req => {
 
-    return params.getAsset(req.params).map(({ slug, tokenId, traits }) => (
-      AssetLoader.fromDb(db, slug, tokenId, {} /** @TODO traits */)
-        /**
-         * @TODO Call AssetLoader.fromRemote() if it is null.
-         */
+  /**
+   * this should always look first directly into Opensea and upsert it to our db.
+   */
+  app.get('/api/asset/:contractAddress/:tokenId', respond(req => {
+
+    return params.getAsset(req.params).map(({ contractAddress, tokenId, traits }) => (
+      AssetLoader.fromRemote(contractAddress, tokenId)
         .then(body => ({ body }))
+        
         .catch(e => {
           console.error('[Get Asset]', e);
           return error(503, 'Service error');
         })
+      // AssetLoader.fromDb(db, contractAddress, tokenId, {} /** @TODO traits */)
+
+      //   /**
+      //    * @TODO Call AssetLoader.fromRemote() if it is null.
+      //    */
+      //   .then(body => ({ body }))
+      //   .catch(e => {
+      //     console.error('[Get Asset]', e);
+      //     return error(503, 'Service error');
+      //   })
     )).defaultTo(error(400, 'Bad request'))
   }));
 };

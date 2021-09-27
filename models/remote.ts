@@ -6,16 +6,17 @@ export type Address = string;
 
 export const openSea = object('OpenSeaNFT', {
   name: string,
-  contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
+  // contractAddress: string,// match<Address>(/^0x[a-f0-9]{40}$/),
   collection: object('OpenSeaCollection', {
     stats: object('Stats', {
       total_supply: number
     })
   }),
-  animation_original_url: string,
-  description: string,
+  animation_original_url: nullable(string),
+  description: nullable(string),
   image_original_url: string,
   image_preview_url: string,
+  token_metadata: string,
   traits: nullable(array(Result.ok), [])
 });
 
@@ -23,7 +24,7 @@ export const rarible = object('RaribleNFT', {
   owners: array(string)
 });
 
-export const openSeaCollectionStats = object('OpenSeaCollection', {
+export const openSeaCollection = object('OpenSeaCollection', {
   collection: object('Collection', {
     slug: string,
     name: string,

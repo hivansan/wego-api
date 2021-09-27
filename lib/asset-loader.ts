@@ -49,6 +49,7 @@ export async function fromRemote(contractAddress, tokenId) {
     imageSmall: openSea.image_preview_url, // rariMeta.image.url.PREVIEW,
     animationUrl: openSea.animation_original_url,
     //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
+    tokenMetadata: openSea.token_metadata,
     rariScore: !openSea.traits.length || !openSea.collection.stats.total_supply
       ? null
       : openSea.traits.reduce(
@@ -61,9 +62,9 @@ export async function fromRemote(contractAddress, tokenId) {
     traits: openSea.traits,
   })));
 
+  return asset;
   return Query
 
-  return asset;
 };
 
 /**
@@ -124,7 +125,7 @@ export async function collection(slug: string): Promise<Collection.Collection & 
   try {
     const assetUrl = `http://api.opensea.io/api/v1/asset/${contractAddress}/${asset.token_id}/`;
     const os = await Network.fetchNParse(assetUrl)
-      .then(Remote.openSeaCollectionStats)
+      .then(Remote.openSeaCollection)
       .then(Result.toPromise);
 
     const collection: Collection.Collection = {
