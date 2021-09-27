@@ -1,4 +1,4 @@
-import { array, Decoded, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
+import { array, boolean, Decoded, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { match } from './util';
 import Result from '@ailabs/ts-utils/dist/result';
 
@@ -17,7 +17,36 @@ export const openSea = object('OpenSeaNFT', {
   image_original_url: string,
   image_preview_url: string,
   token_metadata: string,
-  traits: nullable(array(Result.ok), [])
+  traits: nullable(array(Result.ok), []),
+  
+  // id: nullable(number),
+  // token_id: nullable(string),
+  // num_sales: nullable(number),
+  // background_color: nullable(Object),
+  // image_url: nullable(string),
+
+  // image_thumbnail_url: nullable(string),
+
+  // animation_url: nullable(Object),
+
+
+  // external_link: nullable(Object),
+  // asset_contract: nullable(Object),
+  // permalink: nullable(string),
+
+  // decimals: nullable(number),
+
+  // owner: nullable(Object),
+  // sell_orders: nullable(Object),
+  // creator: nullable(Object),
+
+  // last_sale: nullable(Object),
+  // top_bid: nullable(Object),
+  // listing_date: nullable(Object),
+  // is_presale: nullable(boolean),
+  // transfer_fee_payment_token: nullable(Object),
+  // transfer_fee: nullable(Object),
+  
 });
 
 export const rarible = object('RaribleNFT', {
