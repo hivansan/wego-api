@@ -27,13 +27,8 @@ export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, 
   });
 }
 
-export async function fromRemote(contractAddress, tokenId) {
-  // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/0xa7f767865fce8236f71adda56c60cf2e91dadc00:504/meta`,
-  // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/0xa7f767865fce8236f71adda56c60cf2e91dadc00:504`,
-  // `https://api.opensea.io/api/v1/asset/0xa7f767865fce8236f71adda56c60cf2e91dadc00/504/`,
-
+export async function assetFromRemote(contractAddress, tokenId) {
   const [rariNft, openseaNft] = await Network.arrayFetch([
-    // `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}/meta`,
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
   ]);
@@ -68,11 +63,6 @@ export async function fromRemote(contractAddress, tokenId) {
 };
 
 /**
- * curl --request GET \
- * --url 'https://api.opensea.io/api/v1/assets?token_ids=9974&asset_contract_address=0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d&order_direction=desc&offset=0&limit=20'
- *
- * --url 'https://api.opensea.io/api/v1/assets?order_direction=desc&offset=0&limit=1&collection=infinites-ai'
- * 
  * @TODO This needs a decoder so we validate we're getting the right data
  */
 export async function fromCollection(contractAddress: Asset.Address, tokenId?: number) {
@@ -179,3 +169,38 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     return null;
   }
 }
+export async function assetsFromRemote(
+    slug?: string | undefined | null, 
+    limit?: number,
+    offset?: number,
+    sortBy?: string | null,
+    sortDirection?: string,
+    q?: string | null,
+  ): Promise<any | null> {
+    
+  try {
+    const params: any = {
+      collection: slug,
+      offset,
+      limit,
+    };
+    if (!!sortBy) params.order_by = sortBy;
+    if (!!sortDirection) params.order_direction = sortDirection;
+    
+    const queryParams = new URLSearchParams(params).toString();
+    const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
+      
+    const { data } = await axios(url);  
+    const { assets } = data;
+        
+    if (!assets?.length) {
+      return null;
+    }
+    
+    return assets;
+  } catch (e) {
+    console.log('err--', JSON.stringify(e));
+    return null;
+  }
+}
+
