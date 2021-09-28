@@ -8,8 +8,6 @@ import { toInt } from '../../models/util';
 import { clamp, pipe, objOf, always } from 'ramda';
 import * as Query from '../../lib/query';
 
-
-
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
  * JS values into typed values.
@@ -72,14 +70,24 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * this should only be used in the collection details for infinite scroll of the assets - not for a search
    */
   app.get('/api/assets', respond(req => {
-
-    return params.getAssets(req.query).map(({ slug, limit, offset, sortBy, sortDirection, q }) => (
-      AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
-        .then(body => body === null ? error(404, 'Not found') : { body } as any)
-        .catch(e => {
-          console.error('[Collection]', e);
-          return error(503, 'Service error');
-        })
-    )).defaultTo(error(400, 'Bad request'))
+    return params
+      .getAssets(req.query)
+      .map(({ slug, limit, offset, sortBy, sortDirection, q }) =>
+        AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
+          .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
+          .then(({ body }) => {
+            const docs = body.flatMap((doc) => [
+              { index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } },
+              doc,
+            ]);
+            db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
+            return { body };
+          })
+          .catch((e) => {
+            console.error('[Collection]', e);
+            return error(503, 'Service error');
+          })
+      )
+      .defaultTo(error(400, 'Bad request'));
   }));
 };
