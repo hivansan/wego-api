@@ -17,7 +17,10 @@ export const find = curry((
   from: offset || 0,
   size: limit,
   // sort: sort || ([] as any[]),
-  ...(query && Object.keys(query).length ? { body: { query, sort } } : {})
+  body: { 
+    ...(query && Object.keys(query).length ? { query } : {}),
+    sort 
+  },
 }));
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (

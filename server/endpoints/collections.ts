@@ -12,6 +12,8 @@ import { toInt } from '../../models/util';
 import { clamp, pipe, objOf, always } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
+import { COLLECTION_SORTS } from '../../lib/constants';
+
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
  * JS values into typed values.
@@ -27,7 +29,7 @@ const params = {
      */
     limit: nullable(pipe(toInt, Result.map(clamp(1, 50))), 10),
     sort: pipe(
-      nullable(inList(['id', 'volume', 'avgPrice', 'numOwners'] as const), null),
+      nullable(inList(COLLECTION_SORTS), null),
       Result.mapError(always(null))
     ),
     sortOrder: nullable(inList(['asc', 'desc'] as const), 'desc'),
@@ -49,6 +51,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     'description',
   ];
 
+  // const fromSort = {
+  //   'volume': 'thirtyDayVolume',
+  //   'avgPrice': 'thirtyDayAveragePrice',
+  //   'numOwners': 'numOwners',
+  //   'id': 'id',
+  // };
+
   app.get('/api/collections', respond(req => {
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
       .defaultTo({ 
@@ -59,19 +68,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         sortOrder: 'desc', 
     });
 
-    const fromSort = {
-      'volume': 'thirtyDayVolume',
-      'avgPrice': 'thirtyDayAveragePrice',
-      'numOwners': 'numOwners',
-      'id': 'id',
-    };
     console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
     
     // sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
     return Query.search(db, 'collections', searchFields, q || '' , { 
       limit,
       page,
-      sort: sort ? [{ [fromSort[sort]]: { order: sortOrder } }] : []
+      sort: sort ? [{ [ sort ]: { order: sortOrder } }] : []
     })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
         body: {
