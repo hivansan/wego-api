@@ -60,18 +60,18 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections', respond(req => {
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
-      .defaultTo({ 
-        page: 1, 
-        limit: 10, 
-        sort: null, 
-        q: null, 
-        sortOrder: 'desc', 
-    });
+      .defaultTo({
+        page: 1,
+        limit: 10,
+        sort: null,
+        q: null,
+        sortOrder: 'desc',
+      });
 
     console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
-    
+
     // sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
-    return Query.search(db, 'collections', searchFields, q || '' , { 
+    return Query.search(db, 'collections', searchFields, q || '', {
       limit,
       page,
       sort: sort ? [{ [ sort ]: { order: sortOrder } }] : []

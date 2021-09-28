@@ -9,25 +9,30 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { URLSearchParams } from 'url';
 
-export async function fromDb(db: ElasticSearch.Client, contract: Asset.Address, tokenId: string, traits?: { [key: string]: string[] }) {
+export async function fromDb(
+  db: ElasticSearch.Client,
+  contract: Asset.Address,
+  tokenId?: string,
+  traits?: { [key: string]: string[] }
+) {
   /**
    * @TODO Map traits to ES query
    */
   const traitQuery: any[] = Object.entries(traits || []).map(([type, values]) => []);
+  const search: any[] = ([{ term: { 'contract.address': contract } }] as any[]).concat(
+    tokenId ? [{ term: { tokenId } }] : []
+  );
 
   return Query.findOne(db, 'assets', {
     filter: {
       bool: {
-        must: traitQuery.concat([
-          { term: { tokenId: tokenId } },
-          { term: { 'contract.address': contract } }
-        ])
+        must: traitQuery.concat(search)
       }
     }
   });
 }
 
-export async function assetFromRemote(contractAddress, tokenId) {
+export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.Asset | null> {
   const [rariNft, openseaNft] = await Network.arrayFetch([
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
@@ -57,9 +62,7 @@ export async function assetFromRemote(contractAddress, tokenId) {
     traits: openSea.traits,
   })));
 
-  if (asset.isError()) return null
-  return asset.defaultTo({} as any);
-
+  return asset.defaultTo(null as any);
 };
 
 /**
@@ -102,8 +105,8 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   };
   const queryParams = new URLSearchParams(params).toString();
   const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
-  
-  
+
+
   const { data } = await axios(url);
   const [asset] = data.assets;
 
@@ -140,7 +143,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
       wegoScore: 0,
       featuredCollection: false,
       featuredScore: 0,
-      
+
       oneDayVolume: os.collection.stats.one_day_volume,
       oneDayChange: os.collection.stats.one_day_change,
       oneDaySales: os.collection.stats.one_day_sales,
@@ -171,14 +174,14 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
 }
 
 export async function assetsFromRemote(
-    slug?: string | undefined | null, 
-    limit?: number,
-    offset?: number,
-    sortBy?: string | null,
-    sortDirection?: string,
-    q?: string | null,
-  ): Promise<any | null> {
-    
+  slug?: string | undefined | null,
+  limit?: number,
+  offset?: number,
+  sortBy?: string | null,
+  sortDirection?: string,
+  q?: string | null,
+): Promise<any | null> {
+
   try {
     const params: any = {
       collection: slug,
@@ -187,17 +190,17 @@ export async function assetsFromRemote(
     };
     if (!!sortBy) params.order_by = sortBy;
     if (!!sortDirection) params.order_direction = sortDirection;
-    
+
     const queryParams = new URLSearchParams(params).toString();
     const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
-      
-    const { data } = await axios(url);  
+
+    const { data } = await axios(url);
     const { assets } = data;
-        
+
     if (!assets?.length) {
       return null;
     }
-    
+
     return assets;
   } catch (e) {
     console.log('err--', JSON.stringify(e));

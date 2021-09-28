@@ -29,4 +29,4 @@ export const COLLECTION_SORTS = [
   'numReports',
   'marketCap',
   'id'
-];
+] as const;
