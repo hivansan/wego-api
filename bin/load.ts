@@ -9,17 +9,17 @@ const client = new Client({ node: 'http://localhost:9200' });
 /**
  * Example call:
  *
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./top-100.json --index=assets`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./initial-collections.json --index=collections`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
  */
 
-const bail = err => {
+const bail = (err) => {
   console.error(err);
   process.exit(1);
-}
+};
 
-const filePath = process.argv.find(s => s.startsWith('--file='))?.replace('--file=', '');
-const index: any = process.argv.find(s => s.startsWith('--index='))?.replace('--index=', '');
+const filePath = process.argv.find((s) => s.startsWith('--file='))?.replace('--file=', '');
+const index: any = process.argv.find((s) => s.startsWith('--index='))?.replace('--index=', '');
 const resolvedPath = filePath && path.resolve(__dirname, '..', filePath);
 
 if (!filePath) {
@@ -45,6 +45,16 @@ if (index == 'collections' && (!content || !content.collections || !content.coll
   bail('Failed to read or parse valid JSON content');
 }
 
-const body = content![index].flatMap(doc => [{ index: { _index: index } }, doc]) 
+// content![index].flatMap((doc) => console.log(`${doc.asset_contract.address}:${doc.token_id}`, doc.slug, index));
+const body = content![index].flatMap((doc) => [
+  {
+    index: {
+      _index: index,
+      _type: '_doc',
+      _id: index == 'collections' ? doc.slug : `${doc.asset_contract.address}:${doc.token_id}`,
+    },
+  },
+  doc,
+]);
 
 client.bulk({ refresh: true, body }).then(console.log.bind(console, 'Done'));
