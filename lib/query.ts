@@ -49,6 +49,13 @@ export const create = curry(<Doc>(db: ElasticSearch.Client, index: string, doc: 
 ));
 
 /**
+ * Insert a single doc or an array of docs into the database.
+ */
+export const createWithIndex = curry(<Doc>(db: ElasticSearch.Client, index: string, doc: Doc, id: string) => (
+    db.index({ refresh: true, index, body: doc, id})
+));
+
+/**
  * Update a single document by specifying an ID, or multiple documents by specifying a query. The
  * update (`doc`) is a partial document.
  */

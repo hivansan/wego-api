@@ -57,8 +57,8 @@ export async function assetFromRemote(contractAddress, tokenId) {
     traits: openSea.traits,
   })));
 
-  return asset;
-  return Query
+  if (asset.isError()) return null
+  return asset.defaultTo({} as any);
 
 };
 
@@ -107,7 +107,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   const { data } = await axios(url);
   const [asset] = data.assets;
 
-  const contractAddress = asset.asset_contract?.address;
+  const contractAddress = asset?.asset_contract?.address;
   if (!asset || !asset.token_id || !contractAddress) {
     return null;
   }
@@ -169,6 +169,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     return null;
   }
 }
+
 export async function assetsFromRemote(
     slug?: string | undefined | null, 
     limit?: number,

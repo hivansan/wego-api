@@ -6,6 +6,9 @@ import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
 import { clamp, pipe, objOf, always } from 'ramda';
+import * as Query from '../../lib/query';
+
+
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -18,7 +21,7 @@ const params = {
     /**
      * @TODO (Nate) Figure out mapping structure from querystring to object
      */
-    traits: nullable(array(string)),
+    // traits: nullable(array(string)),
   }),
   getAssets: object('AssetsParams', {
     slug: string,
@@ -40,19 +43,23 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    */
   app.get('/api/asset/:contractAddress/:tokenId', respond(req => {
 
-    return params.getAsset(req.params).map(({ contractAddress, tokenId, traits }) => (
+    return params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
       AssetLoader.assetFromRemote(contractAddress, tokenId)
+        .then(body => body === null ? error(404, 'Not found') : body as any)
+        .then((body) => {      
+          Query.createWithIndex(db, 'assets', body, `${body.contractAddress}:${body.tokenId}`)
+          return body;
+        })
         .then(body => ({ body }))
-        
         .catch(e => {
           console.error('[Get Asset]', e);
           return error(503, 'Service error');
         })
       // AssetLoader.fromDb(db, contractAddress, tokenId, {} /** @TODO traits */)
 
-      //   /**
-      //    * @TODO Call AssetLoader.assetFromRemote() if it is null.
-      //    */
+      /**
+       * @TODO Call AssetLoader.assetFromRemote() if it is null.
+       */
       //   .then(body => ({ body }))
       //   .catch(e => {
       //     console.error('[Get Asset]', e);
@@ -60,7 +67,10 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       //   })
     )).defaultTo(error(400, 'Bad request'))
   }));
-  
+
+  /**
+   * this should only be used in the collection details for infinite scroll of the assets - not for a search
+   */
   app.get('/api/assets', respond(req => {
 
     return params.getAssets(req.query).map(({ slug, limit, offset, sortBy, sortDirection, q }) => (
