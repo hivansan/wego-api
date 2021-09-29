@@ -4,13 +4,16 @@ import fs from 'fs';
 import path from 'path';
 
 import { Client } from '@elastic/elasticsearch';
-const client = new Client({ node: 'http://localhost:9200' });
+const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 /**
  * Example call:
  *
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=asset_mysql.json --index=assets`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=assetTrait_mysql.json --index=asset_traits`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=collection_mysql.json --index=collections`
  */
 
 const bail = (err) => {
@@ -19,7 +22,7 @@ const bail = (err) => {
 };
 
 const filePath = process.argv.find((s) => s.startsWith('--file='))?.replace('--file=', '');
-const index: any = process.argv.find((s) => s.startsWith('--index='))?.replace('--index=', '');
+let index: any = process.argv.find((s) => s.startsWith('--index='))?.replace('--index=', '');
 const resolvedPath = filePath && path.resolve(__dirname, '..', filePath);
 
 if (!filePath) {
@@ -44,17 +47,46 @@ if (index == 'assets' && (!content || !content.assets || !content.assets!.length
 if (index == 'collections' && (!content || !content.collections || !content.collections!.length)) {
   bail('Failed to read or parse valid JSON content');
 }
+if (index == 'asset_traits' && (index = 'assetTraits') && (!content || !content.assetTraits || !content.assetTraits!.length)) {
+  bail('Failed to read or parse valid JSON content');
+}
 
 // content![index].flatMap((doc) => console.log(`${doc.asset_contract.address}:${doc.token_id}`, doc.slug, index));
-const body = content![index].flatMap((doc) => [
-  {
-    index: {
-      _index: index,
-      _type: '_doc',
-      _id: index == 'collections' ? doc.slug : `${doc.asset_contract.address}:${doc.token_id}`,
-    },
-  },
-  doc,
-]);
+const _id = (doc) => {
+  if (index == 'collections') return doc.slug;
+  else if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
+  else return `${doc.contractAddress}:${doc.traitType}:${doc.value.split(' ').reduce((acc, v) => acc + '_' + v, '')}`;
+};
 
-client.bulk({ refresh: true, body }).then(console.log.bind(console, 'Done'));
+async function load() {
+  let ix = 0;
+  const maxChop = (array, step = 1_000) => {
+    if (step % 2 != 0) throw new Error('step must be divisible by 2');
+    let max = 1_000;
+    while (Buffer.byteLength(JSON.stringify(array.slice(0, max + step))) * 8 < 200_000_000 && array.length > max) {
+      max += step;
+      // console.log(`max: ${max}`);
+      // console.log(Buffer.byteLength(JSON.stringify(array.slice(0, max))) * 8);
+    }
+    return array.splice(0, max);
+  };
+
+  const body = content![index].flatMap((doc) => [
+    {
+      index: {
+        _index: index,
+        _type: '_doc',
+        _id: _id(doc),
+      },
+    },
+    doc,
+  ]);
+
+  while (body.length > 0) {
+    let chop = maxChop(body);
+    await client.bulk({ refresh: true, body: chop });
+    ix += chop.length;
+    console.log(`${ix.toLocaleString()} objects done. ${body.length} left.`);
+  }
+}
+load();
