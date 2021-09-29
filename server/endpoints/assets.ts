@@ -44,7 +44,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
       AssetLoader.assetFromRemote(contractAddress, tokenId)
         .then(body => body === null ? error(404, 'Not found') : body as any)
-        .then((body) => {      
+        .then((body) => {
           Query.createWithIndex(db, 'assets', body, `${body.contractAddress}:${body.tokenId}`)
           return body;
         })

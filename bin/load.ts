@@ -55,7 +55,7 @@ if (index == 'asset_traits' && (index = 'assetTraits') && (!content || !content.
 const _id = (doc) => {
   if (index == 'collections') return doc.slug;
   else if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
-  else return `${doc.contractAddress}:${doc.traitType}:${doc.value.split(' ').reduce((acc, v) => acc + '_' + v, '')}`;
+  else if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.split(' ').reduce((acc, v) => acc + '_' + v, '')}`;
 };
 
 async function load() {
