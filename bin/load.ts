@@ -67,7 +67,7 @@ const _id = (doc) => {
   if (index == 'collections') return doc.slug;
   if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
   if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
-  if (index == 'traits') return `${doc.slug}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
+  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toLowerCase().split(' ').join('-')}`;
 };
 
 async function load() {
