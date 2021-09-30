@@ -45,20 +45,13 @@ const searchQuery = object('Search', {
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
-  const searchFields = [
-    'name^3',
-    'contractAddress^4',
-    'description',
-  ];
-
-  // const fromSort = {
-  //   'volume': 'thirtyDayVolume',
-  //   'avgPrice': 'thirtyDayAveragePrice',
-  //   'numOwners': 'numOwners',
-  //   'id': 'id',
-  // };
 
   app.get('/api/collections', respond(req => {
+    const searchFields = [
+      'name^3',
+      'contractAddress^4',
+      'description',
+    ];
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
       .defaultTo({
         page: 1,
@@ -101,5 +94,21 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           return error(503, 'Service error');
         })
     )).defaultTo(error(400, 'Bad request'))
+  }));
+
+  app.get('/api/collections/:slug/traits', respond(req => {
+    const { slug } = params.getCollection(req.params).defaultTo({  slug: ''});
+
+    return Query.find(db, 'traits', { match : { slug } }, { limit: 100 })
+      .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+        body: {
+          meta: { took, timedOut, total: total.value },
+          results: hits.map(toResult).map(r => r.value)
+        }
+      }))
+      .catch((e) => {
+        console.error('Badness!', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
+        return error(404, 'Not found');
+      })
   }));
 };
