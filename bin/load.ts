@@ -16,6 +16,9 @@ const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=collections.json --index=collections`
  * 
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=data/assets.json --index=assets`
+ * 
+ *  curl localhost:3001/api/Traits > data/traits.json
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=data/traits.json --index=traits`
  */
 
 const bail = (err) => {
@@ -57,11 +60,14 @@ if (!content.length){
   bail('Failed to read or parse valid JSON content');
 }
 
+console.log(`${index} length: ${content.length}`);
+
 // content![index].flatMap((doc) => console.log(`${doc.asset_contract.address}:${doc.token_id}`, doc.slug, index));
 const _id = (doc) => {
   if (index == 'collections') return doc.slug;
-  else if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
-  else if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.split(' ').reduce((acc, v) => acc + '_' + v, '')}`;
+  if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
+  if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
+  if (index == 'traits') return `${doc.slug}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
 };
 
 async function load() {
@@ -89,10 +95,11 @@ async function load() {
   ]);
 
   while (body.length > 0) {
-    let chop = maxChop(body);
-    await client.bulk({ refresh: true, body: chop });
+    const chop = maxChop(body);
+    const result = await client.bulk({ refresh: true, body: chop });
+    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
+    console.log(`${(ix/2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length/2} left.`);
     ix += chop.length;
-    console.log(`${ix.toLocaleString()} objects done. ${body.length} left.`);
   }
 }
 load();
