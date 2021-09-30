@@ -93,6 +93,9 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params.getCollection(req.params).map(({ slug }) => (
       AssetLoader.collectionFromRemote(slug)
         .then(body => body === null ? error(404, 'Not found') : { body } as any)
+        /**
+         * @TODO save to local
+         */
         .catch(e => {
           console.error('[Collection]', e);
           return error(503, 'Service error');

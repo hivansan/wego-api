@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { array, nullable, object, string, inList } from '@ailabs/ts-utils/dist/decoder';
+import { array, nullable, object, string, inList, oneOf } from '@ailabs/ts-utils/dist/decoder';
 import Result from '@ailabs/ts-utils/dist/result';
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
@@ -22,7 +22,7 @@ const params = {
     // traits: nullable(array(string)),
   }),
   getAssets: object('AssetsParams', {
-    slug: string,
+    slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(1, 10000))), 0),
     sortBy: pipe(
@@ -31,6 +31,7 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
+    traits: nullable(oneOf<string | string[]>([string, array(string)]), [])
   }),
 };
 
@@ -72,8 +73,10 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req => {
     return params
       .getAssets(req.query)
-      .map(({ slug, limit, offset, sortBy, sortDirection, q }) =>
-        AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
+      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
+        traits = Array.isArray(traits) ? traits : [traits] as any;
+        // return AssetLoader.fromDb(db, slug, '', {} /** @TODO traits */)
+        return AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
           .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
           .then(({ body }) => {
             const docs = body.flatMap((doc) => [
@@ -87,6 +90,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             console.error('[Collection]', e);
             return error(503, 'Service error');
           })
+        }
       )
       .defaultTo(error(400, 'Bad request'));
   }));

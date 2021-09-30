@@ -11,7 +11,7 @@ import { URLSearchParams } from 'url';
 
 export async function fromDb(
   db: ElasticSearch.Client,
-  contract: Asset.Address,
+  slug?: string,
   tokenId?: string,
   traits?: { [key: string]: string[] }
 ) {
@@ -19,7 +19,7 @@ export async function fromDb(
    * @TODO Map traits to ES query
    */
   const traitQuery: any[] = Object.entries(traits || []).map(([type, values]) => []);
-  const search: any[] = ([{ term: { 'contract.address': contract } }] as any[]).concat(
+  const search: any[] = ([{ term: { slug } }] as any[]).concat(
     tokenId ? [{ term: { tokenId } }] : []
   );
 

@@ -11,9 +11,11 @@ const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 
  *
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=asset_mysql.json --index=assets`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=assetTrait_mysql.json --index=asset_traits`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=collection_mysql.json --index=collections`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=assets.json --index=assets`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=assetTraits.json --index=asset_traits`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=collections.json --index=collections`
+ * 
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=data/assets.json --index=assets`
  */
 
 const bail = (err) => {
@@ -40,14 +42,18 @@ try {
   bail(`Something bad happened while trying to import: ${e.message}`);
 }
 
-if (index == 'assets' && (!content || !content.assets || !content.assets!.length)) {
-  bail('Failed to read or parse valid JSON content');
-}
+// if (index == 'assets' && (!content || !content.assets || !content.assets!.length)) {
+//   bail('Failed to read or parse valid JSON content');
+// }
 
-if (index == 'collections' && (!content || !content.collections || !content.collections!.length)) {
-  bail('Failed to read or parse valid JSON content');
-}
-if (index == 'asset_traits' && (index = 'assetTraits') && (!content || !content.assetTraits || !content.assetTraits!.length)) {
+// if (index == 'collections' && (!content || !content.collections || !content.collections!.length)) {
+//   bail('Failed to read or parse valid JSON content');
+// }
+// if (index == 'asset_traits' && (index = 'assetTraits') && (!content || !content.assetTraits || !content.assetTraits!.length)) {
+//   bail('Failed to read or parse valid JSON content');
+// }
+
+if (!content.length){
   bail('Failed to read or parse valid JSON content');
 }
 
@@ -71,7 +77,7 @@ async function load() {
     return array.splice(0, max);
   };
 
-  const body = content![index].flatMap((doc) => [
+  const body = content.flatMap((doc) => [
     {
       index: {
         _index: index,
