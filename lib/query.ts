@@ -17,9 +17,9 @@ export const find = curry((
   from: offset || 0,
   size: limit,
   // sort: sort || ([] as any[]),
-  body: { 
+  body: {
     ...(query && Object.keys(query).length ? { query } : {}),
-    sort 
+    sort
   },
 }));
 
@@ -43,6 +43,46 @@ export const search = curry((
 ));
 
 /**
+ * @HACK Example of query composition without actually doing the query
+ */
+export const search2 = curry((
+  fields: string[],
+  query: string | null,
+) => (
+  !query ? {} : { multi_match: { query, fuzziness: 6, fields } }
+));
+
+export const byTraits = curry((slug: string, traits?: { [key: string]: string | number | (string | number)[] }) => ({
+  bool: {
+    must: [
+      slug ? { "match": { slug } } : null,
+      ...(Object.entries(traits || {}).map(([type, value]) => {
+        return Array.isArray(value)
+          ? {
+            bool: {
+              must: [
+                { match: { 'traits.trait_type': type } }
+              ],
+              should: value.map(val => ({ match: { 'traits.value': val } })),
+              minimum_should_match: 1
+            }
+          } : {
+            bool: {
+              must: [
+                { match: { 'traits.trait_type': type } },
+                { match: { 'traits.value': value } }
+              ]
+            }
+          }
+      }))
+    ]
+  }
+}));
+
+// Example:
+// const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
+
+/**
  * Insert a single doc or an array of docs into the database.
  */
 export const create = curry(<Doc>(db: ElasticSearch.Client, index: string, doc: Doc | Doc[]) => (
@@ -55,7 +95,7 @@ export const create = curry(<Doc>(db: ElasticSearch.Client, index: string, doc: 
  * Insert a single doc or an array of docs into the database.
  */
 export const createWithIndex = curry(<Doc>(db: ElasticSearch.Client, index: string, doc: Doc, id: string) => (
-    db.index({ refresh: true, index, body: doc, id})
+  db.index({ refresh: true, index, body: doc, id })
 ));
 
 /**
