@@ -117,7 +117,7 @@ export const saveAssetsFromCollections = () =>
     .then(map(pick(['slug', 'totalSupply'])))
     .then(sortBy(prop('totalSupply')))
     .then(collections => collections.reverse())
-    .then(async (collections: any) => {      
+    .then(async (collections: any) => {
       for (const collection of collections) {
         console.log(`working on ${collection.slug} colle totalsupply: ${collection.totalSupply}`);
         await saveAssetsFromCollection(collection.slug)

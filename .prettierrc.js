@@ -5,5 +5,5 @@ module.exports = {
   endOfLine: 'lf',
   singleQuote: true,
   jsxSingleQuote: true,
-  printWidth: 150,
+  printWidth: 250,
 };
