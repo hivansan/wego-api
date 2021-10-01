@@ -20,36 +20,34 @@ export async function fromDb(
   const q = {
     bool: {
       must: [
-        slug ? { "match": { slug } } : null,
+        slug ? { match: { slug } } : null,
         /**
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...(Object.entries(traits || {}).map(([type, value]) => {
+        ...Object.entries(traits || {}).map(([type, value]) => {
           return Array.isArray(value)
             ? {
-              bool: {
-                must: [
-                  { match: { 'traits.trait_type': type } }
-                ],
-                should: value.map(val => ({ match: { 'traits.value': val } })),
-                minimum_should_match: 1
+                bool: {
+                  must: [{ match: { 'traits.trait_type': type } }],
+                  should: value.map((val) => ({ match: { 'traits.value': val } })),
+                  minimum_should_match: 1,
+                },
               }
-            } : {
-              bool: {
-                must: [
-                  { match: { 'traits.trait_type': type } },
-                  { match: { 'traits.value': value } }
-                ]
-              }
-            }
-        }))
-      ]
-    }
+            : {
+                bool: {
+                  must: [
+                    { match: { 'traits.trait_type': type } },
+                    { match: { 'traits.value': value } }
+                  ],
+                },
+              };
+        }),
+      ],
+    },
   };
 
-  console.log('Query', util.inspect(q, false, null, true));
-
+  // console.log('Query', util.inspect(q, false, null, true));
   return Query.findOne(db, 'assets', q);
 }
 

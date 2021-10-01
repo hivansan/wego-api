@@ -7,7 +7,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "start": "nodemon server/index.ts",
+    "start": "nodemon server/index.ts --ignore data",
     "posttest": "npm run lint"
   },
   "dependencies": {

@@ -2,6 +2,7 @@ import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { array, nullable, object, string, inList, oneOf } from '@ailabs/ts-utils/dist/decoder';
 import Result from '@ailabs/ts-utils/dist/result';
+
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
@@ -31,7 +32,8 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
-    traits: nullable(oneOf<string | string[]>([string, array(string)]), [])
+    // traits: nullable(oneOf<string | string[]>([string, array(string)]), [])
+    traits: nullable(string, null),
   }),
 };
 
@@ -84,24 +86,27 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
-        traits = Array.isArray(traits) ? traits : [traits] as any;
-        // return AssetLoader.fromDb(db, slug, '', {} /** @TODO traits */)
-        return AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
-          .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
-          .then(({ body }) => {
-            const docs = body.flatMap((doc) => [
-              { index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } },
-              doc,
-            ]);
-            db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
-            return { body };
-          })
-          .catch((e) => {
-            console.error('[Collection]', e);
-            return error(503, 'Service error');
-          })
+        traits = traits ? JSON.parse(traits) : null;
+        return traits
+          ? AssetLoader.fromDb(db, slug, undefined, traits as any)
+              .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
+              .then((body) => ({ body }))
+              .catch((e) => {
+                console.error('[Get Asset]', e);
+                return error(503, e.message + ': ' + JSON.stringify(e.meta));
+              })
+          : AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
+              .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
+              .then(({ body }) => {
+                const docs = body.flatMap((doc) => [{ index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } }, doc]);
+                db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
+                return { body };
+              })
+              .catch((e) => {
+                console.error('[Collection]', e);
+                return error(503, 'Service error');
+              });
       }
-      )
-      .defaultTo(error(400, 'Bad request'));
+      ).defaultTo(error(400, 'Bad request'));
   }));
 };
