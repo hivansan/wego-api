@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { array, nullable, object, string, inList, oneOf, dict, parse } from '@ailabs/ts-utils/dist/decoder';
+import { array, nullable, object, string, inList, oneOf, dict, parse, number } from '@ailabs/ts-utils/dist/decoder';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
@@ -36,7 +36,12 @@ const params = {
       string,
       Result.chain(pipe<any, any, any>(
         Result.attempt(JSON.parse),
-        Result.chain(dict(oneOf<string | string[]>([string, array(string)])))
+        Result.chain(dict(oneOf<string | string[] | number | number[]>([
+          string,
+          array(string),
+          number,
+          array(number)
+        ])))
       ))
     ), {})
   }),
@@ -91,7 +96,6 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
-        traits = traits ? JSON.parse(traits) : null;
         return traits
           ? AssetLoader.fromDb(db, slug, undefined, traits as any)
             .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
