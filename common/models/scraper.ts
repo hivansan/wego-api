@@ -9,7 +9,7 @@ import axios, { AxiosRequestConfig } from 'axios';
 
 import * as QuerySQL from '../../lib/query.mysql';
 import { URLSearchParams } from 'url';
-import { fromPairs, map, pipe, props } from 'ramda';
+import { curry, fromPairs, map, pick, pipe, prop, props, descend, sortBy, sortWith } from 'ramda';
 const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 const bail = (err) => {
@@ -18,12 +18,12 @@ const bail = (err) => {
 };
 
 const slugName: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
+const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
 
 const xForm = pipe(
   map(props(['trait_type', 'value'])),
   fromPairs as any
 )
-
 
 const openseaAssetMapper = (asset: any) => ({
   tokenId: asset.token_id,
@@ -52,14 +52,12 @@ const openseaAssetMapper = (asset: any) => ({
 });
 
 
-const saveAssetsFromCollection = async (slug?: string) => {
+export const saveAssetsFromCollection = async (slug?: string) => {
   try {
     // const { Collection, Asset } = Scraper.app.models;
-    const collection = await QuerySQL.findOne(`select * from Collection where slug = '${slug}' limit 1`)
-   
-    if (!collection?.slug) return;
-        
-    const today = moment();      
+    const collection = await QuerySQL.findOne(`select * from Collection where slug is not null and slug = '${slug}' and updatedAt < '${moment().subtract(3, "days").format("YYYY-MM-DD HH:mm:ss")}' limit 1`)
+
+    const today = moment();
     const updatedDate = moment(collection.updatedAt);
     const shouldUpdate = !collection.updatedAt || today.diff(updatedDate, 'days') > 3;
       // assetsCount != null &&
@@ -104,11 +102,31 @@ const saveAssetsFromCollection = async (slug?: string) => {
       if (err) console.log(`[write file err] ${err}`);
     });
     QuerySQL.run(`update Collection set updatedAt = '${moment().format("YYYY-MM-DD HH:mm:ss")}' where slug = '${slug}'`)
-    
+
     return {}
   } catch (error) {
-    throw error;
+    // throw error;
+    return
   }
 };
 
-saveAssetsFromCollection(slugName);
+export const saveAssetsFromCollections = () =>
+  QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(3, "days").format("YYYY-MM-DD HH:mm:ss")}';`)
+    // .then(map(Object))
+    // .then(sortWith(descend(prop('totalSupply'))))
+    .then(map(pick(['slug', 'totalSupply'])))
+    .then(sortBy(prop('totalSupply')))
+    .then(collections => collections.reverse())
+    .then(async (collections: any) => {      
+      for (const collection of collections) {
+        console.log(`working on ${collection.slug} colle totalsupply: ${collection.totalSupply}`);
+        await saveAssetsFromCollection(collection.slug)
+      }
+    })
+    // for mass
+    // .then(collections => Promise.all(collections.map(pipe(prop('slug'), saveAssetsFromCollection))))
+    .catch(e => {
+      console.error('[save assets from collections]', e);
+    });
+
+
