@@ -37,6 +37,16 @@ const params = {
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
+  app.get('/api/assets/test', respond(req => {
+    return AssetLoader.fromDb(db, 'citadel-of-the-machines', undefined, { Class: 'Director', Speed: [54, 59, 58, 40] })
+      .then(body => body === null ? error(404, 'Not found') : body as any)
+      .then(body => ({ body }))
+      .catch(e => {
+        console.error('[Get Asset]', e);
+        return error(503, e.message + ': ' + JSON.stringify(e.meta));
+      })
+  }));
+
   /**
    * this should always look first directly into Opensea and upsert it to our db.
    */
@@ -90,7 +100,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             console.error('[Collection]', e);
             return error(503, 'Service error');
           })
-        }
+      }
       )
       .defaultTo(error(400, 'Bad request'));
   }));

@@ -6,6 +6,7 @@ import * as Collection from '../models/collection';
 import * as Remote from '../models/remote';
 import * as Query from './query';
 import Result from '@ailabs/ts-utils/dist/result';
+import util from 'util';
 
 import { URLSearchParams } from 'url';
 
@@ -13,23 +14,43 @@ export async function fromDb(
   db: ElasticSearch.Client,
   slug?: string,
   tokenId?: string,
-  traits?: { [key: string]: string[] }
+  traits?: { [key: string]: string | number | (string | number)[] }
 ) {
-  /**
-   * @TODO Map traits to ES query
-   */
-  const traitQuery: any[] = Object.entries(traits || []).map(([type, values]) => []);
-  const search: any[] = ([{ term: { slug } }] as any[]).concat(
-    tokenId ? [{ term: { tokenId } }] : []
-  );
 
-  return Query.findOne(db, 'assets', {
-    filter: {
-      bool: {
-        must: traitQuery.concat(search)
-      }
+  const q = {
+    bool: {
+      must: [
+        slug ? { "match": { slug } } : null,
+        /**
+         * @TODO Either get rid of tokenId or also take contract address
+         */
+        // tokenId ? { "match": { tokenId } } : null,
+        ...(Object.entries(traits || {}).map(([type, value]) => {
+          return Array.isArray(value)
+            ? {
+              bool: {
+                must: [
+                  { match: { 'traits.trait_type': type } }
+                ],
+                should: value.map(val => ({ match: { 'traits.value': val } })),
+                minimum_should_match: 1
+              }
+            } : {
+              bool: {
+                must: [
+                  { match: { 'traits.trait_type': type } },
+                  { match: { 'traits.value': value } }
+                ]
+              }
+            }
+        }))
+      ]
     }
-  });
+  };
+
+  console.log('Query', util.inspect(q, false, null, true));
+
+  return Query.findOne(db, 'assets', q);
 }
 
 export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.Asset | null> {
