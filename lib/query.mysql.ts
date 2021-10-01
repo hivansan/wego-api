@@ -8,7 +8,7 @@ const { mysqlDs } = datasources;
  * @param {String} - q : query
  * @param {String} - queryType: findOne | find | update | create
  */
-export const run = (q: string, queryType?: string): Promise<any> =>
+export const run = (q: string): Promise<any> =>
   new Promise((resolve, reject) => {
     const con = mysql.createConnection(mysqlDs);
     con.connect((err) => {
@@ -22,4 +22,5 @@ export const run = (q: string, queryType?: string): Promise<any> =>
     });
   });
 
-export const findOne = async (q) => (await run(q))[0];
+export const findOne = async (q: string) => (await run(q))[0];
+export const find = async (q: string) => await run(q);
