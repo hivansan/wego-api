@@ -6,7 +6,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always } from 'ramda';
+import { clamp, pipe, objOf, always, identity } from 'ramda';
 import * as Query from '../../lib/query';
 
 /**
@@ -115,7 +115,10 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               console.error('[Collection]', e);
               return error(503, 'Service error');
             });
-      }
-      ).defaultTo(error(400, 'Bad request'));
+      })
+      .fold(
+        err => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }),
+        identity
+      )
   }));
 };

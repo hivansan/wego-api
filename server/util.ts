@@ -23,6 +23,6 @@ export const respond = (fn: RequestFn) => (
   })
 );
 
-export const error = (status: number, msg: string) => Promise.resolve({ status, body: { msg } });
+export const error = (status: number, msg: string, extra: {} = {}) => Promise.resolve({ status, body: { msg, ...extra } });
 
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
