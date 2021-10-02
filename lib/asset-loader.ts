@@ -48,7 +48,7 @@ export async function fromDb(
   };
 
   // console.log('Query', util.inspect(q, false, null, true));
-  return Query.findOne(db, 'assets', q);
+  return Query.find(db, 'assets', q, {});
 }
 
 export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.Asset | null> {

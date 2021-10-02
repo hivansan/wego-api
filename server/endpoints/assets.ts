@@ -8,6 +8,7 @@ import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
 import { clamp, pipe, objOf, always, identity } from 'ramda';
 import * as Query from '../../lib/query';
+import { toResult } from './util';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -95,13 +96,22 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req => {
     return params
       .getAssets(req.query)
-      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
-        return traits
-          ? AssetLoader.fromDb(db, slug, undefined, traits as any)
+      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => (
+        traits
+          ? AssetLoader.fromDb(db, slug, undefined, traits)
+            // .then(body => {
+            //   console.log(body);
+            //   return body;
+            // })
             .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
-            .then((body) => ({ body }))
+            .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+              body: {
+                meta: { took, timedOut, total: total.value },
+                results: hits.map(toResult).map(r => r.value)
+              }
+            }))
             .catch((e) => {
-              console.error('[Get Asset]', e);
+              console.error('[Get Assets]', e);
               return error(503, e.message + ': ' + JSON.stringify(e.meta));
             })
           : AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
@@ -114,8 +124,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             .catch((e) => {
               console.error('[Collection]', e);
               return error(503, 'Service error');
-            });
-      })
+            })
+      ))
       .fold(
         err => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }),
         identity
