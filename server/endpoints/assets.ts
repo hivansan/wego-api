@@ -33,14 +33,14 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
-    traits: nullable(pipe(
+    traits: nullable<{ [key: string]: string | number | (string | number)[] }>(pipe(
       string,
-      Result.chain(pipe<any, any, any>(
+      parse(pipe<any, any, any>(
         Result.attempt(JSON.parse),
-        Result.chain(dict(oneOf<string | string[] | number | number[]>([
+        parse(dict(oneOf<string | number | (string | number)[]>([
           string,
-          array(string),
           number,
+          array(string),
           array(number)
         ])))
       ))
