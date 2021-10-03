@@ -97,7 +97,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => (
-        traits
+        Object.keys(traits).length
           ? AssetLoader.fromDb(db, slug, undefined, traits)
             // .then(body => {
             //   console.log(body);
