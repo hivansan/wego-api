@@ -17,7 +17,7 @@ import * as Query from '../../lib/query';
  * show up in the search.
  */
 const searchFields = [
-  'name^3',
+  'name^4',
   'traits.trait_type^4',
   'traits.value^4',
   'description^2',
@@ -38,8 +38,9 @@ const queryError = Promise.resolve({ status: 400, body: { msg: 'Bad query' } });
 export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/search', respond(req => (
-    searchQuery(req.query).map(({ q, page, limit }) => {
-      return Query.search(db, 'assets', searchFields, q || '', { limit, offset: limit * (page - 1) })
+    searchQuery(req.query).map(({ q, page, limit }) => 
+      Query.search(db, '', searchFields, q || '', { limit, offset: limit * (page - 1) })
+        // .then(body => {console.log('body', body.body.hits); return body; })
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
@@ -48,8 +49,8 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
         })).catch(e => {
           console.error('[Bad query]', e);
           return queryError;
-        });
-    }).defaultTo(queryError)
+        })
+    ).defaultTo(queryError)
   )));
 
 };

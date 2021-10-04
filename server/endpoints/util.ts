@@ -12,8 +12,8 @@ export const truncate = curry((length: number, suffix: string, val: string) => (
  * Map an individual ElasticSearch hit to a search result response.
  */
 export const toResult = pipe(
-  ({ _score: score, _source: value }) => ({
-    meta: { score },
+  ({ _score: score, _source: value, _index }) => ({
+    meta: { score, index: _index },
     value
   }),
   evolve({
