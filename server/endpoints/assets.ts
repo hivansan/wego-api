@@ -44,14 +44,14 @@ const params = {
           array(number)
         ])))
       ))
-    ), {})
+    ), {}),
   }),
 };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/assets/test', respond(req => {
-    return AssetLoader.fromDb(db, 'citadel-of-the-machines', undefined, { Class: 'Director', Speed: [54, 59, 58, 40] })
+    return AssetLoader.fromDb(db, 'citadel-of-the-machines', undefined, { Class: 'Director', Speed: [54, 59, 58, 40] }, undefined)
       .then(body => body === null ? error(404, 'Not found') : body as any)
       .then(body => ({ body }))
       .catch(e => {
@@ -63,7 +63,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   /**
    * this should always look first directly into Opensea and upsert it to our db.
    */
-  app.get('/api/asset/:contractAddress/:tokenId', respond(req => 
+  app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
     params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
       AssetLoader.assetFromRemote(contractAddress, tokenId)
         .then(body => body === null ? error(404, 'Not found') : body as any)
@@ -97,7 +97,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => (
         Object.keys(traits).length
-          ? AssetLoader.fromDb(db, slug, undefined, traits)
+          ? AssetLoader.fromDb(db, slug, undefined, traits, offset)
             // .then(body => {
             //   console.log(body);
             //   return body;
