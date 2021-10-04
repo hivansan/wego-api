@@ -11,14 +11,13 @@ const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 
  *
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=assets.json --index=assets`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=assetTraits.json --index=asset_traits`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=collections.json --index=collections`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/traits.json --index=asset_traits`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/collections.json --index=collections`
  * 
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=data/assets.json --index=assets`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
  * 
- *  curl localhost:3001/api/Traits > data/traits.json
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=data/traits.json --index=traits`
+ * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/traits.json --index=traits`
  */
 
 const bail = (err) => {

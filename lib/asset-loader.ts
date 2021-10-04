@@ -57,7 +57,8 @@ export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.A
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
   ]);
 
-  const asset: Result<any, Asset.Asset> = Remote.openSea(openseaNft).chain(openSea => Remote.rarible(rariNft).map(rari => Asset.init({
+  const asset: Result<any, Asset.Asset> = Remote.openSea(openseaNft)
+    .chain(openSea => Remote.rarible(rariNft).map(rari => Asset.init({
     name: openSea.name,
     tokenId,
     contractAddress,
@@ -79,6 +80,7 @@ export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.A
         0
       ),
     traits: openSea.traits,
+    collection: openSea.collection,
   })));
 
   return asset.defaultTo(null as any);

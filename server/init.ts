@@ -16,5 +16,5 @@ export const start = () => {
   app.listen(port, () => {
     app.emit('started');
     console.log('Web server listening at port %s', port);
-  })
+  });
 };

@@ -48,9 +48,9 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections', respond(req => {
     const searchFields = [
-      'name^3',
-      'contractAddress^4',
-      'description',
+      'name^4',
+      'contractAddress^3',
+      'descriptionˆ2',
     ];
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
       .defaultTo({

@@ -63,9 +63,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   /**
    * this should always look first directly into Opensea and upsert it to our db.
    */
-  app.get('/api/asset/:contractAddress/:tokenId', respond(req => {
-
-    return params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
+  app.get('/api/asset/:contractAddress/:tokenId', respond(req => 
+    params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
       AssetLoader.assetFromRemote(contractAddress, tokenId)
         .then(body => body === null ? error(404, 'Not found') : body as any)
         .then((body) => {
@@ -88,7 +87,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       //     return error(503, 'Service error');
       //   })
     )).defaultTo(error(400, 'Bad request'))
-  }));
+  ));
 
   /**
    * this should only be used in the collection details for infinite scroll of the assets - not for a search

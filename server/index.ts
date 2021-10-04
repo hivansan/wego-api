@@ -8,7 +8,7 @@ const routes = [
   'collections',
   'match',
   'search',
-  'score'
+  'score',
 ];
 
 routes.forEach(name => require(`./endpoints/${name}`).default({ app, db }));

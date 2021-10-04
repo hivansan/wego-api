@@ -25,6 +25,7 @@ export const asset = object('Asset', {
   createdAt: toDate,
   updatedAt: toDate,
   tokenMetadata: nullable(string),
+  collection: nullable(Object),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {
