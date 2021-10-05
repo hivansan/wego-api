@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
+/**
+ * Example usage:
+ * `./node_modules/.bin/ts-node ./common/models/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ */
+
 import fs from 'fs';
 import path from 'path';
 
@@ -122,7 +127,7 @@ export const saveAssetsFromLinks = async (links: string[]): Promise<void> => {
     try {
       const results = await axios(url);
 
-      const assets = await results?.data?.assets;
+      const assets = results?.data?.assets;
       if (assets?.length) {
         const slug = (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1]
         const offset = (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1]
@@ -164,23 +169,14 @@ const getSplices = (links: string[]): string[][]=> {
   const len = Math.ceil(links.length/+bots);  
   return [...Array(+bots).keys()].map((c, i) => links.splice(0, len))
 }
+const sort = sortBy(prop('totalSupply') as any);
+const transformData = pipe(sort, map(Object), topSupply, toLinks, flatten, dropRepeats, getSplices)
 
 export const saveAssetsFromCollections = () =>
   QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}';`)
     // .then(sortWith(descend(prop('totalSupply'))))
     .then(map(pick(['slug', 'totalSupply'])))
-
-    // .then(pipe(sortBy(prop('totalSupply')), map(Object), topSupply, toLinks, flatten, dropRepeats, getSplices))
-
-    .then(sortBy(prop('totalSupply')))
-    .then(map(Object))
-    .then(topSupply)
-    .then(toLinks)
-    .then(flatten)
-    .then(dropRepeats)
-    .then(tap((x) => console.log(x.length)))
-    // .then(sendToBots)
-    .then(getSplices)
+    .then(transformData)
     .then(tap((x) => console.log(x)))
     .then(forEach(saveAssetsFromLinks))
     .catch((e) => {
