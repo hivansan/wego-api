@@ -15,7 +15,8 @@ import axios, { AxiosRequestConfig } from 'axios';
 
 import * as QuerySQL from '../../lib/query.mysql';
 import { URLSearchParams } from 'url';
-import { curry, fromPairs, map, pick, pipe, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach } from 'ramda';
+import { curry, fromPairs, map, pick, pipe, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has } from 'ramda';
+import { sleep } from '../../server/util';
 const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 const bail = (err) => {
@@ -124,32 +125,36 @@ export const saveAssetsFromCollection = async (slug?: string) => {
 
 export const saveAssetsFromLinks = async (links: string[]): Promise<void> => {
   for (const url of links) {
-    try {
-      const results = await axios(url);
+    await sleep(0.35);
+    axios(url)
+      // .then(({data}) => data)
+      .then(({ data }) => ({
+        assets: data.assets,
+        slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
+        offset: (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1],
+      }))
+      // .then(tap((x) => console.log(x)))
+      .then((body) => ({...body, filteredBySlug: links.filter(s => s.includes(`collection=${body.slug}`))}))
+      .then(tap(({assets, slug, offset}) => console.log(url, assets?.length, slug, offset)))
+      .then(({ assets, slug, offset, filteredBySlug }) => {
+        if (assets?.length) {
+          fs.writeFile(`./data/chunks/${slug}:${offset}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
+            if (err) console.log(`[write file err] ${err}`);
+          });
 
-      const assets = results?.data?.assets;
-      if (assets?.length) {
-        const slug = (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1]
-        const offset = (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1]
-
-        // console.log(`[${botNo}]`, url, results.data?.assets?.length, slug, offset);
-        console.log(url, results.data?.assets?.length, slug, offset);
-
-        fs.writeFile(`./data/chunks/${slug}:${offset}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
-          if (err) console.log(`[write file err] ${err}`);
-        });
-
-        if (assets.length < 50){
-          QuerySQL.run(`update Collection set updatedAt = '${moment().format("YYYY-MM-DD HH:mm:ss")}' where slug = '${slug}'`)
+          const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length -1;
+          if (isLastUrlOfCollection){
+            QuerySQL.run(`update Collection set updatedAt = '${moment().format("YYYY-MM-DD HH:mm:ss")}' where slug = '${slug}'`)
+          }
         }
-      }
+      })
+      .catch(e => {
+        console.log(`[err] ${e} ${url}`);
+        fs.appendFile('./data/url-504.txt', `${url}\n`, (err) => {
+          if (err) console.log(`[save 504 file error]`, err);
+        });
+      })
 
-    } catch (e) {
-      console.log(`[err] ${e} ${url}`);
-      fs.appendFile('./data/url-504.txt', url, (err) => {
-        if (err) console.log(`[save 504 file error]`, err);
-      });
-    }
   }
 }
 
@@ -160,24 +165,30 @@ const getLinks = (c: { totalSupply: number; slug: any }): string[] =>
 const topSupply = map((c) => ({ ...Object(c), totalSupply: Object(c).totalSupply > 10000 ? 10000 : Object(c).totalSupply }));
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
-const sendToBots = (links: string[]) => {
-  const chunkLength = Math.ceil(links.length / bots);
-  for (let i = 0; i < +bots; i++) saveAssetsFromLinks(links.splice(0, chunkLength), /* i */);
-};
-
 const getSplices = (links: string[]): string[][]=> {
-  const len = Math.ceil(links.length/+bots);  
+  const len = Math.ceil(links.length/+bots);
   return [...Array(+bots).keys()].map((c, i) => links.splice(0, len))
 }
+
+const saveChunkFiles = (links: string[][]) => {
+  for (const [index, value] of links.entries()) {
+    fs.writeFile(`./data/links-chunks/${index}.json`, JSON.stringify(value), (err) => {
+      if (err) console.log(`[write file err] ${err}`);
+    });
+  }
+  return links;
+}
+
 const sort = sortBy(prop('totalSupply') as any);
-const transformData = pipe(sort, map(Object), topSupply, toLinks, flatten, dropRepeats, getSplices)
+const transformData = pipe(sort, map(Object), topSupply, toLinks, flatten, dropRepeats, tap((x) => console.log(x)), getSplices)
 
 export const saveAssetsFromCollections = () =>
   QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}';`)
     // .then(sortWith(descend(prop('totalSupply'))))
     .then(map(pick(['slug', 'totalSupply'])))
     .then(transformData)
-    .then(tap((x) => console.log(x)))
+    .then(saveChunkFiles)
+    // .then(tap((x) => console.log(x)))
     .then(forEach(saveAssetsFromLinks))
     .catch((e) => {
       console.error('[save assets from collections]', e);
