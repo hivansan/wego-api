@@ -23,3 +23,4 @@ data/assets.json
 # Keep environment variables out of version control
 .env
 data/chunks/*
+data/links-chunks/*
