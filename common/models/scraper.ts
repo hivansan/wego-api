@@ -12,12 +12,16 @@ import path from 'path';
 import { Client } from '@elastic/elasticsearch';
 import moment from 'moment';
 import axios, { AxiosRequestConfig } from 'axios';
+import torAxios from 'tor-axios';
+
 
 import * as QuerySQL from '../../lib/query.mysql';
 import { URLSearchParams } from 'url';
-import { curry, fromPairs, map, pick, pipe, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has } from 'ramda';
+import { curry, fromPairs, map, pick, pipe, toString, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has, always, split } from 'ramda';
 import { sleep } from '../../server/util';
 const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
+
+const ports = [9050, 9052, 9053, 9054];
 
 const bail = (err) => {
   console.error(err);
@@ -27,6 +31,7 @@ const bail = (err) => {
 const slugName: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
 const bots: any = process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '');
+const errsFile: any = process.argv.find((s) => s.startsWith('--errsFile='))?.replace('--errsFile=', '') || './data/url-504.txt';
 
 const xForm = pipe(
   map(props(['trait_type', 'value'])),
@@ -109,8 +114,6 @@ export const saveAssetsFromCollection = async (slug?: string) => {
       }
     }
 
-    // console.log(JSON.stringify(assets.map(openseaAssetMapper)));
-    // writeFilePromisse(`./data/${slug}.json`, 'JSON.stringify(assets.map(openseaAssetMapper))');
     fs.writeFile(`./data/${slug}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
       if (err) console.log(`[write file err] ${err}`);
     });
@@ -123,11 +126,18 @@ export const saveAssetsFromCollection = async (slug?: string) => {
   }
 };
 
-export const saveAssetsFromLinks = async (links: string[]): Promise<void> => {
+export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<void> => {
+  const tor = torAxios.torSetup({
+    ip: 'localhost',
+    port: i !== undefined ? ports[i] : 9050,
+    controlPort: '9051',
+    controlPassword: 't00r',
+  });
+  
   for (const url of links) {
+    const prom = i !== undefined ? tor.get(url) : axios(url);
     await sleep(0.35);
-    axios(url)
-      // .then(({data}) => data)
+    prom
       .then(({ data }) => ({
         assets: data.assets,
         slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
@@ -135,7 +145,7 @@ export const saveAssetsFromLinks = async (links: string[]): Promise<void> => {
       }))
       // .then(tap((x) => console.log(x)))
       .then((body) => ({...body, filteredBySlug: links.filter(s => s.includes(`collection=${body.slug}`))}))
-      .then(tap(({assets, slug, offset}) => console.log(url, assets?.length, slug, offset)))
+      .then(tap(({assets, slug, offset}) => console.log(url, assets?.length, `-- ${i}`)))
       .then(({ assets, slug, offset, filteredBySlug }) => {
         if (assets?.length) {
           fs.writeFile(`./data/chunks/${slug}:${offset}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
@@ -143,14 +153,19 @@ export const saveAssetsFromLinks = async (links: string[]): Promise<void> => {
           });
 
           const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length -1;
-          if (isLastUrlOfCollection){
+          console.log(`[${slug}]`, isLastUrlOfCollection, filteredBySlug.length - 1);
+          
+          if (isLastUrlOfCollection || 1 || assets.length < 50){
             QuerySQL.run(`update Collection set updatedAt = '${moment().format("YYYY-MM-DD HH:mm:ss")}' where slug = '${slug}'`)
           }
+        } else {
+          QuerySQL.run(`update Collection set updatedAt = '${moment().format("YYYY-MM-DD HH:mm:ss")}' where slug = '${slug}'`)
         }
       })
       .catch(e => {
+        tor.torNewSession();
         console.log(`[err] ${e} ${url}`);
-        fs.appendFile('./data/url-504.txt', `${url}\n`, (err) => {
+        fs.appendFile(errsFile, `${url}\n`, (err) => {
           if (err) console.log(`[save 504 file error]`, err);
         });
       })
@@ -180,19 +195,49 @@ const saveChunkFiles = (links: string[][]) => {
 }
 
 const sort = sortBy(prop('totalSupply') as any);
-const transformData = pipe(sort, map(Object), topSupply, toLinks, flatten, dropRepeats, tap((x) => console.log(x)), getSplices)
+const transformData = pipe(
+  map(pick(['slug', 'totalSupply'])),
+  sort,
+  map(Object),
+  topSupply,
+  toLinks,
+  flatten,
+  dropRepeats,
+  tap((x) => console.log(x)),
+  getSplices
+);
+
+const distributeBots = (arrOfLinks: string[][]) => {
+  for (const [i, links] of arrOfLinks.entries()) saveAssetsFromLinks(links, i);
+};
 
 export const saveAssetsFromCollections = () =>
   QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}';`)
     // .then(sortWith(descend(prop('totalSupply'))))
-    .then(map(pick(['slug', 'totalSupply'])))
     .then(transformData)
-    .then(saveChunkFiles)
+    // .then(saveChunkFiles)
     // .then(tap((x) => console.log(x)))
-    .then(forEach(saveAssetsFromLinks))
+    // .then(forEach(saveAssetsFromLinks))
+    .then(distributeBots)
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
 
+const readFilePromise = (path) => 
+  new Promise((resolve, reject) => {
+    fs.readFile(path, 'utf8', (err, data) => {
+      if (err) resolve(err);
+      resolve(data);
+    })
+  });
+
+const fromFile = () => 
+  readFilePromise('./data/url-504.txt')
+    .then(toString)
+    .then(split('\\n'))
+    .then(getSplices)
+    .then(distributeBots)
+    .catch(e => console.log(`[err] ${e}`))
+  
 
 if (exec) eval(`${exec}()`);
