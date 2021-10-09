@@ -216,17 +216,15 @@ export async function assetsFromRemote(
     const queryParams = new URLSearchParams(params).toString();
     const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
 
+    console.log('[assets from remote url]', url);
+
     const { data } = await axios(url);
     const { assets } = data;
 
-    if (!assets?.length) {
-      return null;
-    }
-
+    // if (!assets?.length) return null;
     return assets;
   } catch (e) {
     console.log('err--', JSON.stringify(e));
     return null;
   }
 }
-
