@@ -1,0 +1,67 @@
+import axios from 'axios';
+import nftAddresses from '../data/nft-addresses';
+import qs from 'qs';
+
+const getItem = (html) => '0x' + html.substr(0, 40);
+
+const pages = 162;
+
+const getList = async (page) => {
+  console.log('page', `${page}/${pages}`);
+  let url = `https://etherscan.io/tokens-nft?ps=100`;
+  if (page) url += `&p=${page}`;
+  let res = await axios.get(url);
+  let html = res.data;
+
+  let strings = html.split('/token/0x');
+  strings.shift();
+  // return console.log(strings);
+  let items: string[] = [];
+  for (const str of strings) items.push(getItem(str));
+  // items = [...new Set(items)];
+  // console.log(items);
+  return items;
+};
+
+const getAllItems = async () => {
+  const arr = [...Array(pages).keys()];
+  let items: string[] = [];
+  for (const i of arr) {
+    items = [...items, ...(await getList(i + 1))];
+  }
+  items = [...new Set(items)];
+
+  console.log(JSON.stringify(items));
+  // console.log(items);
+};
+
+export const postItems = async (adresses, method) => {
+  const items = adresses ? adresses : nftAddresses;
+  for (const address of items) {
+    const data =
+      method === 'getTokenIdJSON'
+        ? qs.stringify({ address, tokenId: 1 })
+        : qs.stringify({ address });
+
+    try {
+      await sleep(0.2);
+
+      const res = axios('http://localhost:3000/api/Scrapers/' + method, {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        data,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+};
+
+function sleep(s) {
+  return new Promise((resolve) => setTimeout(resolve, s * 1000));
+}
+
+// getAllItems()

@@ -3,6 +3,20 @@ const axios = require('axios');
 const { arrayFetch } = require('../../lib/fetchNParse');
 
 module.exports = (Asset) => {
+  Asset.stats = stats.asset;
+
+  Asset.remoteMethod('stats', {
+    http: {
+      path: '/stats/:contractAddress/:tokenId',
+      verb: 'get',
+    },
+    accepts: [
+      { arg: 'contractAddress', type: 'string', required: true },
+      { arg: 'tokenId', type: 'string', required: true },
+    ],
+    returns: { type: 'object', root: true },
+  });
+
   Asset.remoteMethod('get', {
     http: {
       path: '/:contractAddress/:tokenId',
@@ -51,14 +65,14 @@ module.exports = (Asset) => {
         //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
         rariScore:
           openseaNft?.traits?.length &&
-          openseaNft.collection?.stats?.total_supply
+            openseaNft.collection?.stats?.total_supply
             ? openseaNft.traits.reduce(
-                (acc, t) =>
-                  acc +
-                  1 /
-                    (t.trait_count / openseaNft.collection.stats.total_supply),
-                0
-              )
+              (acc, t) =>
+                acc +
+                1 /
+                (t.trait_count / openseaNft.collection.stats.total_supply),
+              0
+            )
             : null,
       });
       return asset;

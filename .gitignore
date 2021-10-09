@@ -18,3 +18,9 @@ coverage
 node_modules
 npm-debug.log
 .vscode/*
+node_modules
+data/assets.json
+# Keep environment variables out of version control
+.env
+data/chunks/*
+data/links-chunks/*

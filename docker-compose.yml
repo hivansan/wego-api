@@ -1,15 +1,36 @@
-version: "3.7"
+version: '3.7'
 services:
   mysql:
-    image: "mariadb:10.6.4-focal"
+    image: 'mariadb:10.6.4-focal'
     ports:
-      - "3306:3306"
+      - '3306:3306'
     environment:
       MARIADB_ROOT_PASSWORD: toor
       MARIADB_USER: root
       MARIADB_DATABASE: wego
     volumes:
       - db-data:/var/lib/mysql
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: es
+    environment:
+      - node.name=es
+      - cluster.name=es-docker-cluster
+      - cluster.initial_master_nodes=es
+      - bootstrap.memory_lock=true
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - data01:/usr/share/elasticsearch/data
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+
+    ports:
+      - 9200:9200
 
 volumes:
   db-data:
+  data01:
+    driver: local
