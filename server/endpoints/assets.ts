@@ -26,7 +26,7 @@ const params = {
   getAssets: object('AssetsParams', {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
-    offset: nullable(pipe(toInt, Result.map(clamp(1, 10000))), 0),
+    offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
     sortBy: pipe(
       nullable(inList(['tokenId', 'sale_date', 'sale_count', 'sale_price', 'current_escrow_price' /* 'rarityScore', */] as const), null),
       Result.mapError(always(null))
