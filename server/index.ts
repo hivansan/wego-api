@@ -1,9 +1,7 @@
 import { app, start } from './init';
-const { Client } = require('@elastic/elasticsearch')
 import datasources from '../server/datasources';
+import { Client } from '@elastic/elasticsearch';
 const { es } = datasources;
-import dotenv from 'dotenv';
-dotenv.config();
 
 const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
