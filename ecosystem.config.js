@@ -4,7 +4,7 @@ module.exports = {
   apps: [
     {
       name: 'API',
-      script: 'server/server.js',
+      script: 'server/index.ts',
       instances: 0,
       exec_mode: 'cluster',
       autorestart: true,
