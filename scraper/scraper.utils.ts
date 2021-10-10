@@ -4,7 +4,9 @@ import fs from 'fs';
 import nftAddresses from '../data/nft-addresses';
 import qs from 'qs';
 import { Client } from '@elastic/elasticsearch';
-const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
+import datasources from '../server/datasources';
+const { es } = datasources;
+const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 
 const getItem = (html) => '0x' + html.substr(0, 40);
 

@@ -4,7 +4,7 @@ export default {
     port: 3306,
     url: '',
     database: 'wego',
-    password: 'toor123',
+    password: process.env.MYSQL_PASS || 'toor',
     name: 'mysqlDs',
     user: 'root',
     connector: 'mysql',
@@ -15,7 +15,7 @@ export default {
     version: 7,
     index: 'assets',
     configuration: {
-      node: 'http://localhost:9200',
+      node: process.env.ES_CLIENT || 'http://localhost:9200',
       requestTimeout: 30000,
       pingTimeout: 3000,
       _auth: {

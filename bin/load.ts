@@ -2,9 +2,10 @@
 
 import fs from 'fs';
 import path from 'path';
-
+import datasources from '../server/datasources';
+const { es } = datasources;
 import { Client } from '@elastic/elasticsearch';
-const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
+const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 
 /**
  * Example call:

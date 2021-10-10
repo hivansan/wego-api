@@ -1,12 +1,8 @@
 #!/usr/bin/env node
 
 import fs from 'graceful-fs';
-import { Client } from '@elastic/elasticsearch';
 import {} from 'ramda';
 import { load } from '../scraper/scraper.utils';
-
-
-// const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 /**
  * Example call:

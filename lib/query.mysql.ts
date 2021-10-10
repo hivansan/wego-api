@@ -2,7 +2,7 @@ import mysql from 'mysql';
 import { curry } from 'ramda';
 
 // import * as datasources from '../server/datasources.json';
-import datasources from '../server/datasources.production';
+import datasources from '../server/datasources';
 
 const { mysqlDs } = datasources;
 
