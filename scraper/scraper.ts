@@ -14,10 +14,10 @@ import moment from 'moment';
 import axios, { AxiosRequestConfig } from 'axios';
 import torAxios from 'tor-axios';
 
-import * as QuerySQL from '../../lib/query.mysql';
+import * as QuerySQL from '../lib/query.mysql';
 import { URLSearchParams } from 'url';
 import { curry, fromPairs, map, pick, pipe, toString, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has, always, split } from 'ramda';
-import { sleep } from '../../server/util';
+import { sleep } from '../server/util';
 const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 const ports = [9050, 9052, 9053, 9054];

@@ -1,4 +1,5 @@
 'use strict';
+/* this file was used to scrape and dump to mysql. not much used any more , but left to get some methods */
 
 import { prop } from "ramda";
 

@@ -3,14 +3,17 @@
 import fs from 'graceful-fs';
 import { Client } from '@elastic/elasticsearch';
 import {} from 'ramda';
-import { load } from '../utils/scrape.utils';
+import { load } from '../scraper/scraper.utils';
 
 
-const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
+// const client = new Client({ node: 'http://localhost:9200', requestTimeout: 1000 * 60 * 60 });
 
 /**
  * Example call:
  * ./node_modules/.bin/ts-node ./bin/load-chunks.ts --dir=./data/chunks --index=assets
+ * 
+ * #stage
+ * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load-chunks.ts --dir=/home/ubuntu/partials --index=assets
  */
 
 const bail = (err: any) => {
@@ -41,7 +44,7 @@ const dirFiles = fs.readdirSync(dirPath);
 
 const run = async () => {
   for (const file of dirFiles) {
-    content = JSON.parse(fs.readFileSync(`./data/chunks/${file}`).toString());
+    content = JSON.parse(fs.readFileSync(`${dirPath}/${file}`).toString());
     await load(content, index);
   }
 };
