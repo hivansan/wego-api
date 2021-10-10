@@ -115,13 +115,15 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             })
           : AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
             .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
-            .then(({ body }) => {
-              const docs = body.flatMap((doc) => [{ index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } }, doc]);
-              db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
+            .then(({ body }) => {            
+              if (body.length){
+                const docs = body.flatMap((doc: { asset_contract: { address: any; }; token_id: any; }) => [{ index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } }, doc]);
+                db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
+              }
               return { body };
             })
             .catch((e) => {
-              console.error('[Collection]', e);
+              console.error('[Assets]', e);
               return error(503, 'Service error');
             })
       ))
