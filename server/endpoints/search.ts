@@ -1,5 +1,5 @@
 import { clamp, pipe } from 'ramda';
-import { toResult } from './util';
+import { isExact, toResult } from './util';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
@@ -37,14 +37,16 @@ const queryError = Promise.resolve({ status: 400, body: { msg: 'Bad query' } });
 
 export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
+  const exactMatchFields = searchFields.map(s => s.replace(/\^\d+/, '').split('.'));
+
   app.get('/api/search', respond(req => (
-    searchQuery(req.query).map(({ q, page, limit }) => 
+    searchQuery(req.query).map(({ q, page, limit }) =>
       Query.search(db, '', searchFields, q || '', { limit, offset: limit * (page - 1) })
         // .then(body => {console.log('body', body.body.hits); return body; })
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
-            results: hits.map(toResult)
+            results: hits.map(pipe(toResult, isExact(exactMatchFields, q || '')))
           }
         })).catch(e => {
           console.error('[Bad query]', e);
