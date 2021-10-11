@@ -2,6 +2,7 @@
 'use strict';
 
 /**
+ * this saves the assets
  * Example usage:
  * `./node_modules/.bin/ts-node ./common/models/scraper.ts --exec=saveAssetsFromCollections --bots=6`
  */
@@ -19,6 +20,7 @@ import { URLSearchParams } from 'url';
 import { curry, fromPairs, map, pick, pipe, toString, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has, always, split } from 'ramda';
 import { sleep } from '../server/util';
 import datasources from '../server/datasources';
+import { load } from './scraper.utils';
 const { es } = datasources;
 
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
@@ -62,60 +64,61 @@ const openseaAssetMapper = (asset: any) => ({
 /**
  * maybe not used anymore
  */
-export const saveAssetsFromCollection = async (slug?: string) => {
-  try {
-    // const { Collection, Asset } = Scraper.app.models;
-    const collection = await QuerySQL.findOne(`select * from Collection where slug is not null and slug = '${slug}' and updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}' limit 1`);
+// export const saveAssetsFromCollection = async (slug?: string) => {
+//   try {
+//     // const { Collection, Asset } = Scraper.app.models;
+//     const collection = await QuerySQL.findOne(`select * from Collection where slug is not null and slug = '${slug}' and updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}' limit 1`);
 
-    const today = moment();
-    const updatedDate = moment(collection.updatedAt);
-    const shouldUpdate = !collection.updatedAt || today.diff(updatedDate, 'days') > 3;
-    // assetsCount != null &&
-    // collection.totalSupply &&
-    // assetsCount < collection.totalSupply;
+//     const today = moment();
+//     const updatedDate = moment(collection.updatedAt);
+//     const shouldUpdate = !collection.updatedAt || today.diff(updatedDate, 'days') > 3;
+//     // assetsCount != null &&
+//     // collection.totalSupply &&
+//     // assetsCount < collection.totalSupply;
 
-    console.log(`slug: ${slug} assetsCount: completed: ${!shouldUpdate}`);
-    if (!shouldUpdate) {
-      return;
-    }
+//     console.log(`slug: ${slug} assetsCount: completed: ${!shouldUpdate}`);
+//     if (!shouldUpdate) {
+//       return;
+//     }
 
-    let page = 0;
-    let assets: Array<any> = [];
-    const params: any = {
-      collection: slug,
-      offset: 0,
-      limit: 50,
-    };
+//     let page = 0;
+//     let assets: Array<any> = [];
+//     const params: any = {
+//       collection: slug,
+//       offset: 0,
+//       limit: 50,
+//     };
 
-    let queryParams: URLSearchParams, url: any;
-    let results = { data: { assets: [1] } };
-    while (results.data?.assets?.length && page < 201) {
-      params.offset = page * params.limit;
-      queryParams = new URLSearchParams(params); //.toString();
-      url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
-      console.log(`page: ${page} slug: ${slug} offset: ${params.offset} results?.data?.assets.length: ${results?.data?.assets.length}`);
-      console.log(`page: ${url}`);
-      results = await axios(url);
+//     let queryParams: URLSearchParams, url: any;
+//     let results = { data: { assets: [1] } };
+//     while (results.data?.assets?.length && page < 201) {
+//       params.offset = page * params.limit;
+//       queryParams = new URLSearchParams(params); //.toString();
+//       url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
+//       console.log(`page: ${page} slug: ${slug} offset: ${params.offset} results?.data?.assets.length: ${results?.data?.assets.length}`);
+//       console.log(`page: ${url}`);
+//       results = await axios(url);
 
-      if (results?.data?.assets?.length) {
-        console.log('results?.data?.assets?.length', results?.data?.assets?.length);
-        assets = [...assets, ...results?.data?.assets];
-        // scraperHelpers.saveAssets(results.data.assets);
-        page++;
-      }
-    }
+//       if (results?.data?.assets?.length) {
+//         console.log('results?.data?.assets?.length', results?.data?.assets?.length);
+//         assets = [...assets, ...results?.data?.assets];
+//         // scraperHelpers.saveAssets(results.data.assets);
+//         page++;
+//       }
+//     }
 
-    fs.writeFile(`./data/${slug}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
-      if (err) console.log(`[write file err] ${err}`);
-    });
-    QuerySQL.run(`update Collection set updatedAt = '${moment().format('YYYY-MM-DD HH:mm:ss')}' where slug = '${slug}'`);
+//     fs.writeFile(`./data/${slug}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
+//       if (err) console.log(`[write file err] ${err}`);
+//       load(JSON.stringify(assets.map(openseaAssetMapper)) as any, 'assets')
+//     });
+//     QuerySQL.run(`update Collection set updatedAt = '${moment().format('YYYY-MM-DD HH:mm:ss')}' where slug = '${slug}'`);
 
-    // return {}
-  } catch (error) {
-    // throw error;
-    return;
-  }
-};
+//     // return {}
+//   } catch (error) {
+//     // throw error;
+//     return;
+//   }
+// };
 
 export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<void> => {
   const tor = torAxios.torSetup({
@@ -135,12 +138,14 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
         offset: (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1],
       }))
       // .then(tap((x) => console.log(x)))
-      .then((body) => ({ ...body, filteredBySlug: links.filter((s) => s.includes(`collection=${body.slug}`)) }))
+      .then((body: { slug: any }) => ({ ...body, filteredBySlug: links.filter((s) => s.includes(`collection=${body.slug}`)) }))
       .then(tap(({ assets, slug, offset }) => console.log(url, assets?.length, `-- ${i}`)))
       .then(({ assets, slug, offset, filteredBySlug }) => {
         if (assets?.length) {
-          fs.writeFile(`./data/chunks/${slug}:${offset}.json`, JSON.stringify(assets.map(openseaAssetMapper)), (err) => {
+          const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
+          fs.writeFile(`./data/chunks/${slug}:${offset}.json`, content, (err) => {
             if (err) console.log(`[write file err] ${err}`);
+            load(content, 'assets')
           });
 
           const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length - 1;
@@ -173,7 +178,8 @@ const getSplices = (links: string[]): string[][] => {
   return [...Array(+bots).keys()].map((c, i) => links.splice(0, len));
 };
 
-const saveChunkFiles = (links: string[][]) => {
+/** this only saves the array of links sliced. optionally further to read from several instances */
+const saveLinkSlicedFile = (links: string[][]) => {
   for (const [index, value] of links.entries()) {
     fs.writeFile(`./data/links-chunks/${index}.json`, JSON.stringify(value), (err) => {
       if (err) console.log(`[write file err] ${err}`);
@@ -203,9 +209,7 @@ export const saveAssetsFromCollections = () =>
   QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}';`)
     // .then(sortWith(descend(prop('totalSupply'))))
     .then(transformData)
-    // .then(saveChunkFiles)
-    // .then(tap((x) => console.log(x)))
-    // .then(forEach(saveAssetsFromLinks))
+    // .then(saveLinkSlicedFile)
     .then(distributeBots)
     .catch((e) => {
       console.error('[save assets from collections]', e);

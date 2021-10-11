@@ -5,6 +5,7 @@ import nftAddresses from '../data/nft-addresses';
 import qs from 'qs';
 import { Client } from '@elastic/elasticsearch';
 import datasources from '../server/datasources';
+import { filter, flatten, map, pipe, prop } from 'ramda';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 
@@ -78,15 +79,32 @@ export const maxChop = (array: any[], step = 1_000) => {
   return array.splice(0, max);
 };
 
-const getDocId = (doc: { slug: any; contractAddress: any; tokenId: any; traitType: string; value: string }, index: string) => {
+const getDocId = (doc: any, index: string) => {
   if (index == 'collections') return doc.slug;
   if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
   if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
-  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toLowerCase().split(' ').join('-')}`;
+  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
 };
+
+/**
+ * @TODO use a decoder here for type trait
+ */
+const getTraits = pipe(
+  filter((x: any) => x.traits.length) as any,
+  map(prop('traits')),
+  flatten,
+  map((c: any) => ({traitType: c.trait_type, value: c.value, displayType: c.display_type, maxValue: c.max_value, traitCount: c.trait_count, order: c.order}))
+) as any;
+
+const loadTraitsFromAssets = (assets: any[]) => {
+  const content = getTraits(assets).map((x: any) => ({ ...x, slug: assets[0].slug}))
+  load(content, 'traits');
+}
 
 export const load = async (content: any[], index: string) => {
   let ix = 0;
+  if (index === 'assets') loadTraitsFromAssets(content);
+
   const body = content.flatMap((doc: any) => [
     {
       index: {
@@ -101,8 +119,8 @@ export const load = async (content: any[], index: string) => {
   while (body.length > 0) {
     const chop = maxChop(body);
     const result = await client.bulk({ refresh: true, body: chop });
-    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
-    console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
+    // console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
+    // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
     ix += chop.length;
   }
 };
