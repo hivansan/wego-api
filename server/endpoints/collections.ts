@@ -66,7 +66,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     // sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
     return Query.search(db, 'collections', searchFields, q || '', {
       limit,
-      page,
+      offset: (page - 1) * limit,
       sort: sort ? [{ [ sort ]: { order: sortOrder } }] : []
     })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
@@ -75,7 +75,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           results: hits.map(toResult)
         }
       }))
-      .catch((e) => {
+      .catch((e: { meta: { body: { error: any; }; }; }) => {
         console.error('Badness!', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
         return error(404, 'Not found');
       })
