@@ -19,6 +19,9 @@ const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
  * 
  * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/traits.json --index=traits`
+ * 
+ * stage:
+ * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load.ts --file=/home/ubuntu/api/current/data/initial-collections.json --index=collections
  */
 
 const bail = (err) => {
@@ -96,10 +99,15 @@ async function load() {
 
   while (body.length > 0) {
     const chop = maxChop(body);
-    const result = await client.bulk({ refresh: true, body: chop });
-    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
-    console.log(`${(ix/2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length/2} left.`);
-    ix += chop.length;
+    try {
+      const result = await client.bulk({ refresh: true, body: chop });
+      console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
+      console.log(`${(ix/2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length/2} left.`);
+    } catch (err) {
+      console.log(`[err client.bulk] ${err}`);
+    } finally {
+      ix += chop.length;
+    }
   }
 }
 load();

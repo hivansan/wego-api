@@ -132,6 +132,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   const { data } = await axios(url);
   const [asset] = data.assets;
 
+  console.log(`[collectionFromRemote url] `, url);
   const contractAddress = asset?.asset_contract?.address;
   if (!asset || !asset.token_id || !contractAddress) {
     return null;

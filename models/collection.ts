@@ -22,12 +22,12 @@ export type Collection = Decoded<typeof collection>;
 export const collection = object('Collection', {
   slug: string,
   name: string,
-  releaseDate: string, // Date?
-  released: boolean,
+  releaseDate: nullable(string), // Date?
+  released: nullable(boolean),
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
-  imgPortrait: url,
-  imgLarge: url,
-  imgMain: url,
+  imgPortrait: nullable(url),
+  imgLarge: nullable(url),
+  imgMain: nullable(url),
   twitter: nullable(string),
   discord: nullable(string),
   instagram: nullable(string),
