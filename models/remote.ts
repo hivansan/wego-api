@@ -34,8 +34,8 @@ export const openSea = object('OpenSeaNFT', {
   }),
   animation_original_url: nullable(string),
   description: nullable(string),
-  image_original_url: string,
-  image_preview_url: string,
+  image_original_url: nullable(string),
+  image_preview_url: nullable(string),
   token_metadata: string,
   traits: nullable(array(Result.ok), []),
   
