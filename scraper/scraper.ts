@@ -8,22 +8,15 @@
  */
 
 import fs from 'fs';
-import path from 'path';
-
-import { Client } from '@elastic/elasticsearch';
 import moment from 'moment';
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import torAxios from 'tor-axios';
 
 import * as QuerySQL from '../lib/query.mysql';
-import { URLSearchParams } from 'url';
-import { curry, fromPairs, map, pick, pipe, toString, prop, props, descend, sortBy, sortWith, tap, flatten, dropRepeats, forEachObjIndexed, forEach, ifElse, has, always, split } from 'ramda';
-import { sleep } from '../server/util';
-import datasources from '../server/datasources';
-import { load } from './scraper.utils';
-const { es } = datasources;
 
-const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
+import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split } from 'ramda';
+import { sleep } from '../server/util';
+import { load } from './scraper.utils';
 
 const ports = [9050, 9052, 9053, 9054];
 
@@ -32,7 +25,6 @@ const bail = (err) => {
   process.exit(1);
 };
 
-const slugName: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
 const bots: any = process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '');
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
