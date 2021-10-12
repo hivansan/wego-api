@@ -46,7 +46,7 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
-            results: hits.map(pipe(toResult, isExact(exactMatchFields, q || '')))
+            results: hits.map(pipe(toResult, isExact(exactMatchFields, (q || '').toLowerCase())))
           }
         })).catch(e => {
           console.error('[Bad query]', e);
