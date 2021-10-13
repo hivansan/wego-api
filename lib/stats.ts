@@ -47,7 +47,7 @@ export async function collection(contract: string) {
   const limit = 50;
 
   const iterator: AsyncGenerator<any, any, any> = Network.paginated(
-    result => !result || !(result as any)?.data?.assets?.length,
+    result => !result || !result.length || result.length < limit + 1,
     page => {
       const params = new URLSearchParams({
         asset_contract_address: contract,

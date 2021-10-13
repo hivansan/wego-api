@@ -59,7 +59,6 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         .then(([body, stats]: [any, any]) => {
           const count = body?.collection?.stats?.count || null;
           const mapped = body?.traits?.map(mapTraits(count)) || [];
-          console.log('STATS', stats);
 
           return (
             body === null
@@ -74,7 +73,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     avgTraitRarity: 0,
                     rarityScore: 0,
                     traits: []
-                  })
+                  }),
+                  ...pick([
+                    'statisticalRarityRank',
+                    'singleTraitRarityRank',
+                    'avgTraitRarityRank',
+                    'srarityScoreRank'
+                  ], stats || {})
                 })
               }
           )
