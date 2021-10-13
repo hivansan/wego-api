@@ -96,7 +96,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
     let assets: any[] = [];
 
     const iterator = Network.paginated(
-      result => !!(result as any).data?.assets?.length,
+      result => !result || !(result as any).data?.assets?.length,
       page => {
         const params = Object.assign(tokenId && page === 0 ? { token_ids: tokenId } : {}, {
           asset_contract_address: contractAddress,
