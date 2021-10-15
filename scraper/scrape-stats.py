@@ -6,17 +6,17 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 """
   example usage:
-  python -m opensea.scrapeStats --sortby seven_day_volume --driverpath /usr/bin/chromedriver
-  python -m opensea.scrapeStats --sortby seven_day_volume --new 1 --driverpath /usr/bin/chromedriver
+  python -m scrape-stats --sortby seven_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby seven_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
 
-  python -m opensea.scrapeStats --sortby one_day_volume --driverpath /usr/bin/chromedriver
-  python -m opensea.scrapeStats --sortby one_day_volume --new 1 --driverpath /usr/bin/chromedriver
+  python -m scrape-stats --sortby one_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby one_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
 
-  python -m opensea.scrapeStats --sortby thirty_day_volume --driverpath /usr/bin/chromedriver
-  python -m opensea.scrapeStats --sortby thirty_day_volume --new 1 --driverpath /usr/bin/chromedriver
+  python -m scrape-stats --sortby thirty_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby thirty_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
 
-  python -m opensea.scrapeStats --sortby total_volume --driverpath /usr/bin/chromedriver
-  python -m opensea.scrapeStats --sortby total_volume --new 1 --driverpath /usr/bin/chromedriver
+  python -m scrape-stats --sortby total_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby total_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
 """
 
 import sys
@@ -27,6 +27,8 @@ parser.add_argument(
 parser.add_argument('--new', help='new opensea query')
 parser.add_argument(
     '--driverpath', help='chrome driver path')
+parser.add_argument(
+    '--pathtosave', help='folder in which files are stored')
 args = parser.parse_args()
 
 
@@ -113,7 +115,7 @@ def main():
         fileName = args.sortby
         if args.new:
             fileName += '_new'
-        linksFile = open(f"data/slugs/{fileName}.json", 'a')
+        linksFile = open(f"{args.pathtosave}/{fileName}.json", 'a')
         linksFile.write(json.dumps(links))
         linksFile.close()
 
