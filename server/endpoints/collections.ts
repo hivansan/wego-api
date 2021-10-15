@@ -9,7 +9,7 @@ import * as Query from '../../lib/query';
 import { Options } from '../../lib/query';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always } from 'ramda';
+import { clamp, pipe, objOf, always, path, uniq, flatten } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
@@ -76,7 +76,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         }
       }))
       .catch((e: { meta: { body: { error: any; }; }; }) => {
-        console.error('Badness!', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
+        console.error('[/collections] Query failed', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
         return error(404, 'Not found');
       })
   }));
@@ -100,16 +100,16 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/collections/:slug/traits', respond(req => {
     const { slug } = params.getCollection(req.params).defaultTo({ slug: '' });
 
-    return Query.find(db, 'traits', { match: { slug } }, { limit: 100 })
+    return Query.find(db, 'assets', { match: { slug } }, {})
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
         body: {
           meta: { took, timedOut, total: total.value },
-          results: hits.map(toResult).map(r => r.value)
+          results: uniq(flatten(hits.map(pipe(toResult, path(['value', 'traits'])))))
         }
       }))
       .catch((e) => {
-        console.error('Badness!', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
-        return error(404, 'Not found');
+        console.error('[/traits] Query failed', e?.meta?.body?.error ? JSON.stringify(e?.meta?.body?.error) : e?.meta?.body?.error);
+        return error(503, 'Service error');
       })
   }));
 };
