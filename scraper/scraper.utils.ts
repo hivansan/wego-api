@@ -90,7 +90,7 @@ const getDocId = (doc: any, index: string) => {
  * @TODO use a decoder here for type trait
  */
 const getTraits = pipe(
-  filter((x: any) => x.traits.length) as any,
+  filter((x: any) => x.traits?.length) as any,
   map(prop('traits')),
   flatten,
   map((c: any) => ({traitType: c.trait_type, value: c.value, displayType: c.display_type, maxValue: c.max_value, traitCount: c.trait_count, order: c.order}))
@@ -103,9 +103,10 @@ const loadTraitsFromAssets = (assets: any[]) => {
 
 export const load = async (content: any[], index: string) => {
   let ix = 0;
+  if (!content.length) return;
   if (index === 'assets') loadTraitsFromAssets(content);
 
-  console.log(`loading ${content.length} ${index}...`);
+  console.log(`loading ${content.length} ${index}...`, typeof content);
   const body = content.flatMap((doc: any) => [
     {
       index: {

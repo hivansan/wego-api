@@ -20,7 +20,6 @@ import * as QuerySQL from '../lib/query.mysql';
 import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach } from 'ramda';
 import { sleep } from '../server/util';
 import { load, readPromise } from './scraper.utils';
-import { dir } from 'console';
 import * as Query from '../lib/query';
 import { Client } from '@elastic/elasticsearch';
 import { toResult } from '../server/endpoints/util';
@@ -127,6 +126,11 @@ const openseaAssetMapper = (asset: any) => ({
 //   }
 // };
 
+/**
+ * Save assets from distributed array of links (opensea)
+ * saves them to disk ./data/chunks/ (this should be parameter)
+ * and to db via laod()
+ */
 export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<void> => {
   const tor = torAxios.torSetup({
     ip: 'localhost',
@@ -136,9 +140,9 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
   });
 
   for (const url of links) {
-    const prom = i !== undefined ? tor.get(url) : axios(url);
+    const clientCall = i !== undefined ? tor.get(url) : axios(url);
     await sleep(0.35);
-    prom
+    clientCall
       .then(({ data }) => ({
         assets: data.assets,
         slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
@@ -152,17 +156,17 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
           const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
           fs.writeFile(`./data/chunks/${slug}:${offset}.json`, content, (err) => {
             if (err) console.log(`[write file err] ${err}`);
-            load(content, 'assets')
+            load(JSON.parse(content), 'assets');
           });
 
           const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length - 1;
           console.log(`[${slug}]`, isLastUrlOfCollection, filteredBySlug.length - 1);
 
           if (isLastUrlOfCollection || 1 || assets.length < 50) {
-            QuerySQL.run(`update Collection set updatedAt = '${moment().format('YYYY-MM-DD HH:mm:ss')}' where slug = '${slug}'`);
+            Query.updateByIndex(db, 'collections', slug, { doc: { updatedAt: new Date() } });
           }
         } else {
-          QuerySQL.run(`update Collection set updatedAt = '${moment().format('YYYY-MM-DD HH:mm:ss')}' where slug = '${slug}'`);
+          Query.updateByIndex(db, 'collections', slug, { doc: { updatedAt: new Date() } });
         }
       })
       .catch((e: any) => {
@@ -213,7 +217,12 @@ const distributeBots = (arrOfLinks: string[][]) => {
 };
 
 export const saveAssetsFromCollections = () =>
-  QuerySQL.find(`select * from Collection where updatedAt < '${moment().subtract(DAYS_WINDOW, 'days').format('YYYY-MM-DD HH:mm:ss')}';`)
+  Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
+    .then(
+      ({body: {took,timed_out: timedOut,hits: { total, hits },}, }) =>
+      ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+    )
+    .then((fromDB) => fromDB.body.results)
     // .then(sortWith(descend(prop('totalSupply'))))
     .then(transformData)
     // .then(saveLinkSlicedFile)
