@@ -15,14 +15,12 @@ import { toResult } from './util';
  * JS values into typed values.
  */
 const params = {
+
   getAsset: object('AssetParams', {
     contractAddress: string,
     tokenId: string,
-    /**
-     * @TODO (Nate) Figure out mapping structure from querystring to object
-     */
-    // traits: nullable(array(string)),
   }),
+
   getAssets: object('AssetsParams', {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
