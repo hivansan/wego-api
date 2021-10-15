@@ -129,3 +129,6 @@ export const count = curry((
 ));
 
 /** @TODO (Nate) Make upsert function */
+
+export const updateByIndex = (db: ElasticSearch.Client, index: string, id: string, body: any) : Promise<any> => 
+  db.update({ index, id, body })

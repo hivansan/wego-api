@@ -105,6 +105,7 @@ export const load = async (content: any[], index: string) => {
   let ix = 0;
   if (index === 'assets') loadTraitsFromAssets(content);
 
+  console.log(`loading ${content.length} ${index}...`);
   const body = content.flatMap((doc: any) => [
     {
       index: {
@@ -125,10 +126,10 @@ export const load = async (content: any[], index: string) => {
   }
 };
 
-const readPromise = (path: string, method: string) =>
+export const readPromise = (path: string, method: string) =>
   new Promise((resolve, reject) => {
     fs[method](path, 'utf8', (err: any, data: unknown) => {
-      if (err) reject(err);
+      if (err) reject(err);      
       resolve(data);
     });
   });

@@ -88,6 +88,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         .then(body => body === null ? error(404, 'Not found') : { body } as any)
         /**
          * @TODO save to local
+         * update only the fields from opensea, not custom ones from wego
          */
         .catch(e => {
           console.error('[Collection]', e);

@@ -4,22 +4,34 @@
 /**
  * this saves the assets
  * Example usage:
- * `./node_modules/.bin/ts-node ./common/models/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ *
+ * save collections from scraped opensea.io/rankings
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=./data/slugs`
  */
 
-import fs from 'fs';
+import fs, { readFile } from 'fs';
 import moment from 'moment';
 import axios from 'axios';
 import torAxios from 'tor-axios';
 
 import * as QuerySQL from '../lib/query.mysql';
 
-import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split } from 'ramda';
+import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach } from 'ramda';
 import { sleep } from '../server/util';
-import { load } from './scraper.utils';
+import { load, readPromise } from './scraper.utils';
+import { dir } from 'console';
+import * as Query from '../lib/query';
+import { Client } from '@elastic/elasticsearch';
+import { toResult } from '../server/endpoints/util';
+import datasources from '../server/datasources';
+import * as AssetLoader from '../lib/asset-loader';
+
+
+const { es } = datasources;
+const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
 const ports = [9050, 9052, 9053, 9054];
-
 const bail = (err) => {
   console.error(err);
   process.exit(1);
@@ -29,6 +41,9 @@ const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='
 const bots: any = process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '');
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
+
+const dirPath: any = process.argv.find((s) => s.startsWith('--dir='))?.replace('--dir=', '');
+
 
 const xForm = pipe(map(props(['trait_type', 'value'])), fromPairs as any);
 
@@ -150,7 +165,7 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
           QuerySQL.run(`update Collection set updatedAt = '${moment().format('YYYY-MM-DD HH:mm:ss')}' where slug = '${slug}'`);
         }
       })
-      .catch((e) => {
+      .catch((e: any) => {
         tor.torNewSession();
         console.log(`[err] ${e} ${url}`);
         fs.appendFile(errsToFile, `${url}\n`, (err) => {
@@ -222,5 +237,87 @@ const fromFile = () =>
     .then(getSplices)
     .then(distributeBots)
     .catch((e) => console.log(`[err] ${e}`));
+
+const readSlugsFile = (file: any) => {
+  readPromise(dirPath, 'readFile')
+}
+
+/**
+ * loads data from collections previously get by python script. these files contain the links to opensea
+ */
+const loadCollections = () => {
+  readPromise(dirPath, 'readdir')
+    // esto regrsea un array de promises. [0,1,2,3,4] esos hay que mappearlos con los files.
+    .then(async (fileNames: any) => {
+      const data = {};
+      fileNames = fileNames.map((t: string) => t.replace('.json', ''));
+      const files : any = await Promise.all(fileNames.map((f: string) => readPromise(`${dirPath}/${f}.json`, 'readFile')))
+      for (const [i, v] of fileNames.entries()) {
+        data[v] = JSON.parse(files[i].split('][').join(',')).map((c: string) => c.split('https://opensea.io/collection/')[1]).filter((c: string | any[]) => c.length);
+      }
+      return data;
+    })
+    .then((data) => {
+      const collections = {};
+      // 1. transform collection from scraped files into { key value } and get the tags
+      for (const [file, v] of Object.entries(data)) {
+        for (const slug of v as string[]) {
+          const tags = file.includes('new')
+            ? [file.replace('_new', ''), 'new']
+            : [file];
+          // console.log(slug);
+          collections[slug] = collections[slug]
+            ? [...new Set([...collections[slug], ...tags])]
+            : tags;
+        }
+      }
+
+      // console.log('collections', collections);
+
+      Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
+        .then(
+          ({body: {took,timed_out: timedOut,hits: { total, hits },}, }) =>
+          ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+        )
+        .then(async (fromDB) => {
+
+          const toUpdate: any = Object.keys(collections).map((key) => {
+            const result = fromDB.body.results.find((r) => r.slug === key);
+            return {
+              ...(result ? result : { addedAt: new Date() }),
+              tags: collections[key],
+              udpatedAt: new Date(),
+            };
+          });
+
+          // toUpdate.length = 1;
+          console.log('toUpdate', toUpdate.length);
+
+          // load(toUpdate, 'collections');
+          toUpdate.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true)); // undefined first
+          // toUpdate.sort((a,b) => !!b.addedAt ? a.addedAt > b.addedAt : true); // undefined last
+
+          for (const collection of toUpdate) {
+            await sleep(0.3);
+            AssetLoader.collectionFromRemote(collection.slug).then((body) => {
+              if (body !== null) {
+                console.log('body to update', body.slug);
+                Query.updateByIndex(db, 'collections', collection.slug, { doc: { ...body, updatedAt: new Date() } })
+                  .catch((e) => console.log(`[e updating collection]`));
+              }
+            });
+          }
+        });
+    })
+}
+
+/**
+ * @TODO
+ * sort newest collections first (by date added or without info, just slug)
+ * pull collection and save it
+ */
+const updateCollections = () => {
+
+}
 
 if (exec) eval(`${exec}()`);
