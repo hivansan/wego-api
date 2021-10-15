@@ -38,8 +38,8 @@ const queryError = Promise.resolve({ status: 400, body: { msg: 'Bad query' } });
 export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/search', respond(req => (
-    searchQuery(req.query).map(({ q, page, limit }) => 
-      Query.search(db, '', searchFields, q || '', { limit, offset: limit * (page - 1) })
+    searchQuery(req.query).map(({ q, page, limit }) =>
+      Query.search(db, '', searchFields, q || '', { limit, offset: Math.max(limit * (page - 1), 0) })
         // .then(body => {console.log('body', body.body.hits); return body; })
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {
