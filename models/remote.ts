@@ -71,7 +71,7 @@ export const openSea = object('OpenSeaNFT', {
 });
 
 export const rarible = object('RaribleNFT', {
-  owners: array(string)
+  owners: nullable(array(string))
 });
 
 export const openSeaCollection = object('OpenSeaCollection', {
