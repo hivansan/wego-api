@@ -1,16 +1,17 @@
 import json
 import time
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 """
   example usage:
-  python -m scrape-stats --sortby seven_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-  python -m scrape-stats --sortby seven_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-
   python -m scrape-stats --sortby one_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
   python -m scrape-stats --sortby one_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+
+  python -m scrape-stats --sortby seven_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby seven_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
 
   python -m scrape-stats --sortby thirty_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
   python -m scrape-stats --sortby thirty_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
@@ -56,18 +57,17 @@ def filterHrefs(href):
 
 
 def main():
-    DRIVER_PATH = args.driverpath  # '/usr/bin/chromedriver'
-    options = Options()
-    options.headless = True
-    options.add_argument("--window-size=1200,1200")
-
+    # DRIVER_PATH = args.driverpath # '/Users/ivanflores/Downloads/chromedriver'
     caps = DesiredCapabilities.CHROME
+    options = Options()
+    # options.headless = True
+    options.add_argument("--window-size=500,1200")
+    service = Service(args.driverpath)
 
     print('caps', caps)
     caps['goog:loggingPrefs'] = {'performance': 'ALL'}
 
-    driver = webdriver.Chrome(
-        executable_path=DRIVER_PATH, desired_capabilities=caps)
+    driver = webdriver.Chrome(service=service, desired_capabilities=caps, chrome_options=options)
 
     # url = 'https://opensea.io/rankings?chain=ethereum&sortBy=seven_day_volume'
     # url = 'https://opensea.io/rankings?chain=ethereum&sortBy=seven_day_volume&category=new'
@@ -82,6 +82,10 @@ def main():
 
     driver.get(url)
 
+    fileName = args.sortby
+    if args.new:
+        fileName += '_new'
+
     # soup = BeautifulSoup(driver.page_source, "html.parser") # not needed
 
     hasNextPage = True
@@ -92,42 +96,41 @@ def main():
 
         links += [elem.get_attribute('href') for elem in elems]
 
-        # print('links ------------', links)
-
         for scrollI in range(1, 5, 1):
-            driver.execute_script(
-                f'window.scrollTo(0, document.body.scrollHeight* ({scrollI}/4))')
-            time.sleep(1)
+            driver.execute_script(f'window.scrollTo(0, document.body.scrollHeight* ({scrollI}/4))')
+            time.sleep(2)
 
             elems = driver.find_elements_by_tag_name('a')
             elems = set(elems)
 
             links += [elem.get_attribute('href') for elem in elems]
-            print('links ------------', links)
 
-        # print('text ------------', text)
-        # print('text ------------', text2)
+            file = open(f"{args.pathtosave}/{fileName}.json", 'a')
+            file.write(json.dumps(links))
+            file.close()
 
         links = list(filter(filterHrefs, links))
 
         print('links ------------', links)
 
-        fileName = args.sortby
-        if args.new:
-            fileName += '_new'
-        linksFile = open(f"{args.pathtosave}/{fileName}.json", 'a')
-        linksFile.write(json.dumps(links))
-        linksFile.close()
+        file = open(f"{args.pathtosave}/{fileName}.json", 'a')
+        file.write(json.dumps(links))
+        file.close()
 
-        lastPage = driver.find_elements_by_class_name(
-            'Buttonreact__StyledButton-sc-glfma3-0')[1].get_attribute('disabled')
-        # print('lastPage', lastPage, type(lastPage), lastPage == True, lastPage is True, lastPage == 'true', lastPage is 'true')
+        buttons = driver.find_elements_by_class_name('Buttonreact__StyledButton-sc-glfma3-0')
+        lastPage = 'false';
+
+        if (len(buttons)):
+          lastPage = buttons[1].get_attribute('disabled')
+
         if (lastPage == 'true'):
-            break
+          break
 
-        driver.execute_script(
-            "document.getElementsByClassName('Buttonreact__StyledButton-sc-glfma3-0')[1].click()")
-        time.sleep(3)
+        if (len(buttons) == 0):
+          break
+
+        driver.execute_script("document.getElementsByClassName('Buttonreact__StyledButton-sc-glfma3-0')[1].click()")
+        time.sleep(4)
 
     driver.quit()
 
