@@ -13,7 +13,7 @@ export const find = curry((
   query: any,
   { limit, offset, sort }: Options
 ): Promise<any> => db.search({
-  index,
+  index: index ? index : ['assets', 'collections'],
   from: offset || 0,
   size: limit,
   // sort: sort || ([] as any[]),
