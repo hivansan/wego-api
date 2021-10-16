@@ -1,6 +1,6 @@
 wego scrape
 
-1. in PY run files
+1. python run for scrapping opensea/ranking stats with filtered data (collection tags)
 
 python -m opensea.scrapeStats --sortby seven_day_volume
 python -m opensea.scrapeStats --sortby seven_day_volume --new 1
@@ -14,11 +14,13 @@ python -m opensea.scrapeStats --sortby thirty_day_volume --new 1
 python -m opensea.scrapeStats --sortby total_volume
 python -m opensea.scrapeStats --sortby total_volume --new 1
 
-2. in API run Scraper.collectionTags
-curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' 'http://localhost:3000/api/Scrapers/collectionTags'
+2. get collection info from opensea. this puts the collections with the addedAt and updatedAt. 
+also this gets the data from the ones that has no info - just slug:
+/home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/scraper/scraper.ts --exec=loadCollections --dir=/home/ubuntu/scraper/data/slugs
 
-3. in API run Scraper.populateCollections
-curl -X POST --header 'Content-Type: application/json' --header 'Accept: application/json' 'http://localhost:3000/api/Scrapers/populateCollections'
+3. run download assets (this stores them in files):
+brew services tor restart
+./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=3
 
-4. run download assets:
+-- extra: this can be useful to load assets from directory
 /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load-chunks.ts --dir=/home/ubuntu/partials --index=assets
