@@ -106,12 +106,13 @@ export const update = curry(<Doc>(
   db: ElasticSearch.Client,
   index: string,
   idOrQuery: string | { [key: string]: any },
-  doc: Doc
+  doc: Doc,
+  docAsUpsert: boolean,
 ) => (
   typeof idOrQuery === 'string'
-    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc } })
-    : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } })
-));
+    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert : true } : {} ) } })
+    : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } }))
+);
 
 export type CountOptions = {
   q?: string,
@@ -127,8 +128,3 @@ export const count = curry((
 ): Promise<{ count: number }> => (
   db.count({ index, body: query, ...opts }).then(prop('body')) as Promise<{ count: number }>
 ));
-
-/** @TODO (Nate) Make upsert function */
-
-export const updateByIndex = (db: ElasticSearch.Client, index: string, id: string, body: any) : Promise<any> => 
-  db.update({ index, id, body })

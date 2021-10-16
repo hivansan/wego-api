@@ -8,6 +8,7 @@
  *
  * save collections from scraped opensea.io/rankings
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=./data/slugs`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=/Users/ivanflores/dev/projects/py/data/slugs`
  */
 
 import fs, { readFile } from 'fs';
@@ -163,10 +164,10 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
           console.log(`[${slug}]`, isLastUrlOfCollection, filteredBySlug.length - 1);
 
           if (isLastUrlOfCollection || 1 || assets.length < 50) {
-            Query.updateByIndex(db, 'collections', slug, { doc: { updatedAt: new Date() } });
+            Query.update(db, 'collections', slug, { updatedAt: new Date() }, false);
           }
         } else {
-          Query.updateByIndex(db, 'collections', slug, { doc: { updatedAt: new Date() } });
+          Query.update(db, 'collections', slug, { updatedAt: new Date() }, false);
         }
       })
       .catch((e: any) => {
@@ -212,7 +213,10 @@ const transformData = pipe(
   getSplices
 );
 
-const distributeBots = (arrOfLinks: string[][]) => {
+/**
+ * arrays from links and send them to download to tor or axios
+ */
+const distributeToHttpClients = (arrOfLinks: string[][]) => {
   for (const [i, links] of arrOfLinks.entries()) saveAssetsFromLinks(links, i);
 };
 
@@ -226,7 +230,7 @@ export const saveAssetsFromCollections = () =>
     // .then(sortWith(descend(prop('totalSupply'))))
     .then(transformData)
     // .then(saveLinkSlicedFile)
-    .then(distributeBots)
+    .then(distributeToHttpClients)
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
@@ -244,7 +248,7 @@ const fromFile = () =>
     .then(toString)
     .then(split('\\n'))
     .then(getSplices)
-    .then(distributeBots)
+    .then(distributeToHttpClients)
     .catch((e) => console.log(`[err] ${e}`));
 
 const readSlugsFile = (file: any) => {
@@ -262,8 +266,16 @@ const loadCollections = () => {
       fileNames = fileNames.map((t: string) => t.replace('.json', ''));
       const files : any = await Promise.all(fileNames.map((f: string) => readPromise(`${dirPath}/${f}.json`, 'readFile')))
       for (const [i, v] of fileNames.entries()) {
-        data[v] = JSON.parse(files[i].split('][').join(',')).map((c: string) => c.split('https://opensea.io/collection/')[1]).filter((c: string | any[]) => c.length);
+        data[v] = files[i]
+          .replace(/[\[\]']+/g,'')
+          .replace(/"/g, '')
+          .replace(/ /g, '')
+          .split(',')
+          .map((c: string) => c.split('https://opensea.io/collection/')[1])
+          .filter((c: string | any[]) => c && c.length);
       }
+      
+      
       return data;
     })
     .then((data) => {
@@ -293,14 +305,15 @@ const loadCollections = () => {
           const toUpdate: any = Object.keys(collections).map((key) => {
             const result = fromDB.body.results.find((r) => r.slug === key);
             return {
+              slug: key,
               ...(result ? result : { addedAt: new Date() }),
               tags: collections[key],
               udpatedAt: new Date(),
             };
           });
 
-          // toUpdate.length = 1;
-          console.log('toUpdate', toUpdate.length);
+          // toUpdate.length = 10;
+          // console.log('toUpdate', toUpdate);
 
           // load(toUpdate, 'collections');
           toUpdate.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true)); // undefined first
@@ -310,9 +323,9 @@ const loadCollections = () => {
             await sleep(0.3);
             AssetLoader.collectionFromRemote(collection.slug).then((body) => {
               if (body !== null) {
-                console.log('body to update', body.slug);
-                Query.updateByIndex(db, 'collections', collection.slug, { doc: { ...body, updatedAt: new Date() } })
-                  .catch((e) => console.log(`[e updating collection]`));
+                console.log('body to update', body);
+                Query.update(db, 'collections', collection.slug, { ...body, updatedAt: new Date() }, true)
+                  .catch((e) => console.log(`[e updating collection]`, e));
               }
             });
           }
