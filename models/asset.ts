@@ -12,6 +12,7 @@ export type Address = string;
 export type Asset = Decoded<typeof asset>;
 export const asset = object('Asset', {
   name: nullable(string),
+  slug: string,
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   tokenId: string,
   owners: array(string),

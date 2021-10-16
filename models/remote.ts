@@ -8,6 +8,7 @@ export const openSea = object('OpenSeaNFT', {
   name: nullable(string),
   // contractAddress: string,// match<Address>(/^0x[a-f0-9]{40}$/),
   collection: object('OpenSeaCollection', {
+    slug: string,
     stats: object('Stats', {
       total_supply: number,
       one_day_volume: number,
