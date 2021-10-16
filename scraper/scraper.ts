@@ -18,7 +18,7 @@ import torAxios from 'tor-axios';
 
 import * as QuerySQL from '../lib/query.mysql';
 
-import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach } from 'ramda';
+import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter } from 'ramda';
 import { sleep } from '../server/util';
 import { load, readPromise } from './scraper.utils';
 import * as Query from '../lib/query';
@@ -206,6 +206,7 @@ const transformData = pipe(
   sort,
   map(Object),
   topSupply,
+  filter((c: any) => c.totalSupply),
   toLinks,
   flatten,
   dropRepeats,
