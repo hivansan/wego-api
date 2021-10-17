@@ -5,10 +5,11 @@
  * this saves the assets
  * Example usage:
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
  *
  * save collections from scraped opensea.io/rankings
- * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=./data/slugs`
- * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=/Users/ivanflores/dev/projects/py/data/slugs`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=./data/slugs --errsToFile=./data/errors-to.txt`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=`
  */
 
 import fs, { readFile } from 'fs';
@@ -161,13 +162,15 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
           });
 
           const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length - 1;
-          console.log(`[${slug}]`, isLastUrlOfCollection, filteredBySlug.length - 1);
+          console.log(`[${slug}] isLastUrlOfCollection: ${isLastUrlOfCollection} length: ${filteredBySlug.length - 1}`);
 
           if (isLastUrlOfCollection || 1 || assets.length < 50) {
-            Query.update(db, 'collections', slug, { updatedAt: new Date() }, false);
+            Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
+            .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
           }
         } else {
-          Query.update(db, 'collections', slug, { updatedAt: new Date() }, false);
+          Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
+          .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
         }
       })
       .catch((e: any) => {
@@ -200,10 +203,11 @@ const saveLinkSlicedFile = (links: string[][]) => {
   return links;
 };
 
-const sort = sortBy(prop('totalSupply') as any);
+const sortByAddedAt = sortBy(prop('addedAt') as any);
+// const sortByAddedAt = (x: any) => x.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true));
 const transformData = pipe(
-  map(pick(['slug', 'totalSupply'])),
-  sort,
+  map(pick(['slug', 'totalSupply', 'addedAt'])),
+  sortByAddedAt,
   map(Object),
   topSupply,
   filter((c: any) => c.totalSupply),
@@ -261,7 +265,6 @@ const readSlugsFile = (file: any) => {
  */
 const loadCollections = () => {
   readPromise(dirPath, 'readdir')
-    // esto regrsea un array de promises. [0,1,2,3,4] esos hay que mappearlos con los files.
     .then(async (fileNames: any) => {
       const data = {};
       fileNames = fileNames.map((t: string) => t.replace('.json', ''));
@@ -275,8 +278,6 @@ const loadCollections = () => {
           .map((c: string) => c.split('https://opensea.io/collection/')[1])
           .filter((c: string | any[]) => c && c.length);
       }
-      
-      
       return data;
     })
     .then((data) => {
@@ -294,29 +295,23 @@ const loadCollections = () => {
         }
       }
 
-      // console.log('collections', collections);
-
       Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
         .then(
           ({body: {took,timed_out: timedOut,hits: { total, hits },}, }) =>
           ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
         )
         .then(async (fromDB) => {
-
-          const toUpdate: any = Object.keys(collections).map((key) => {
-            const result = fromDB.body.results.find((r) => r.slug === key);
+          const toUpdate: any = Object.keys(collections).map((slug) => {
+            const result = fromDB.body.results.find((r) => r.slug === slug);
             return {
-              slug: key,
-              ...(result ? result : { addedAt: new Date() }),
-              tags: collections[key],
-              udpatedAt: new Date(),
+              slug,
+              ...(result ? result : {}),
+              tags: collections[slug],
+              updatedAt: new Date(),
+              addedAt: result?.addedAt ? result.addedAt : +new Date()
             };
           });
 
-          // toUpdate.length = 10;
-          // console.log('toUpdate', toUpdate);
-
-          // load(toUpdate, 'collections');
           toUpdate.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true)); // undefined first
           // toUpdate.sort((a,b) => !!b.addedAt ? a.addedAt > b.addedAt : true); // undefined last
 
@@ -325,22 +320,13 @@ const loadCollections = () => {
             AssetLoader.collectionFromRemote(collection.slug).then((body) => {
               if (body !== null) {
                 console.log('body to update', body);
-                Query.update(db, 'collections', collection.slug, { ...body, updatedAt: new Date() }, true)
+                Query.update(db, 'collections', collection.slug, { ...collection, ...body }, true)
                   .catch((e) => console.log(`[e updating collection]`, e));
               }
             });
           }
         });
     })
-}
-
-/**
- * @TODO
- * sort newest collections first (by date added or without info, just slug)
- * pull collection and save it
- */
-const updateCollections = () => {
-
 }
 
 if (exec) eval(`${exec}()`);
