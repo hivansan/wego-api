@@ -319,7 +319,7 @@ const loadCollections = () => {
             await sleep(0.3);
             AssetLoader.collectionFromRemote(collection.slug).then((body) => {
               if (body !== null) {
-                console.log('body to update', body);
+                console.log('body to update', { ...collection, ...body });
                 Query.update(db, 'collections', collection.slug, { ...collection, ...body }, true)
                   .catch((e) => console.log(`[e updating collection]`, e));
               }
