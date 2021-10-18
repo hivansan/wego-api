@@ -1,4 +1,4 @@
-import { always, anyPass, cond, converge, curry, evolve, identity, is, map, mergeRight, pipe, reduce, trim } from 'ramda';
+import { always, anyPass, cond, converge, curry, equals, evolve, identity, is, map, mergeRight, pathSatisfies, pipe, reduce, toLower, trim } from 'ramda';
 
 export const toString = s => s + "";
 
@@ -13,13 +13,33 @@ export const truncate = curry((length: number, suffix: string, val: string) => (
  */
 export const toResult = pipe(
   ({ _score: score, _source: value, _index }) => ({
-    meta: { score, index: _index },
+    meta: {
+      score,
+      index: _index,
+    },
     value
   }),
   evolve({
     value: { description: pipe(toString, truncate(500, '...'), trim) }
   })
 );
+
+/**
+ * Calculates an `isExact` value based on a case-insensitive match. Assumes `q` is lowercase.
+ *
+ * @TODO THIS DOES NOT WORK FOR TRAIT FIELDS (YET)
+ */
+export const isExact = curry(((fields: string[][], q: string, { meta, ...props }: any) => ({
+  meta: {
+    ...meta,
+    isExact: !!(
+      fields.length &&
+      q &&
+      fields.some(field => pathSatisfies(pipe(toString, toLower, equals(q)), field, props.value))
+    )
+  },
+  ...props
+})));
 
 export const mapObject = curry((mapper, object) => {
   const keyMapper = (key) => ({
