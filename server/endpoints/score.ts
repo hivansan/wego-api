@@ -54,7 +54,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
       return Promise.all([
         AssetLoader.assetFromRemote(contractAddress, tokenId),
-        Stats.collection(contractAddress).then(find(propEq('id', tokenId)))
+        Stats.collection(({ count: 1 } as any), []).then(find(propEq('id', tokenId)))
       ])
         .then(([body, stats]: [any, any]) => {
           const count = body?.collection?.stats?.count || null;
