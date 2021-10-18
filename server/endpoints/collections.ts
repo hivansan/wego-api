@@ -84,16 +84,21 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/collections/:slug', respond(req => {
 
     return params.getCollection(req.params).map(({ slug }) => (
-      AssetLoader.collectionFromRemote(slug)
-        .then(body => body === null ? error(404, 'Not found') : { body } as any)
-        /**
-         * @TODO save to local
-         * update only the fields from opensea, not custom ones from wego
-         */
-        .catch(e => {
-          console.error('[Collection]', e);
-          return error(503, 'Service error');
-        })
+      Query.findOne(db, 'collections', { term: { _id: slug } })
+      .then(body => body === null 
+        ? AssetLoader.collectionFromRemote(slug)
+          .then(body => body === null ? error(404, 'Not found') : { body } as any)
+          .then(({ body }) => {
+            console.log('body', body)
+            Query.update(db, 'collections', slug, { ...body, updatedAt: new Date(), addedAt: +new Date() }, true)
+              .catch((e) => console.log(`[e updating collection]`, e))
+            return { body };
+          })
+          .catch(e => {
+            console.error('[Collection]', e);
+            return error(503, 'Service error');
+          }) 
+        : { body: body._source } as any)
     )).defaultTo(error(400, 'Bad request'))
   }));
 
