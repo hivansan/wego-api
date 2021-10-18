@@ -5,9 +5,10 @@ import Result from '@ailabs/ts-utils/dist/result';
 export type Address = string;
 
 export const openSea = object('OpenSeaNFT', {
-  name: string,
+  name: nullable(string),
   // contractAddress: string,// match<Address>(/^0x[a-f0-9]{40}$/),
   collection: object('OpenSeaCollection', {
+    slug: string,
     stats: object('Stats', {
       total_supply: number,
       one_day_volume: number,
@@ -34,8 +35,8 @@ export const openSea = object('OpenSeaNFT', {
   }),
   animation_original_url: nullable(string),
   description: nullable(string),
-  image_original_url: string,
-  image_preview_url: string,
+  image_original_url: nullable(string),
+  image_preview_url: nullable(string),
   token_metadata: string,
   traits: nullable(array(Result.ok), []),
   
@@ -70,7 +71,7 @@ export const openSea = object('OpenSeaNFT', {
 });
 
 export const rarible = object('RaribleNFT', {
-  owners: array(string)
+  owners: nullable(array(string))
 });
 
 export const openSeaCollection = object('OpenSeaCollection', {
@@ -78,9 +79,9 @@ export const openSeaCollection = object('OpenSeaCollection', {
     slug: string,
     name: string,
     created_date: string,
-    banner_image_url: string,
-    image_url: string,
-    large_image_url: string,
+    banner_image_url: nullable(string),
+    image_url: nullable(string),
+    large_image_url: nullable(string),
     twitter_username: nullable(string),
     discord_url: nullable(string),
     instagram_username: nullable(string),

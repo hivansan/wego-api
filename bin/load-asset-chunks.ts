@@ -6,10 +6,10 @@ import { load } from '../scraper/scraper.utils';
 
 /**
  * Example call:
- * ./node_modules/.bin/ts-node ./bin/load-chunks.ts --dir=./data/chunks --index=assets
- * 
+ * ./node_modules/.bin/ts-node ./bin/load-asset-chunks.ts --dir=./data/chunks --index=assets
+ *
  * #stage
- * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load-chunks.ts --dir=/home/ubuntu/partials --index=assets
+ * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load-asset-chunks.ts --dir=/home/ubuntu/partials --index=assets
  */
 
 const bail = (err: any) => {
@@ -36,7 +36,7 @@ let index: any = process.argv.find((s) => s.startsWith('--index='))?.replace('--
 
 let content: any = null;
 
-const dirFiles = fs.readdirSync(dirPath); 
+const dirFiles = fs.readdirSync(dirPath);
 
 const run = async () => {
   for (const file of dirFiles) {

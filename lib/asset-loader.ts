@@ -61,6 +61,7 @@ export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.A
   const asset: Result<any, Asset.Asset> = Remote.openSea(openseaNft)
     .chain(openSea => Remote.rarible(rariNft).map(rari => Asset.init({
     name: openSea.name,
+    slug: openSea.collection.slug,
     tokenId,
     contractAddress,
     owners: rari.owners,
@@ -96,7 +97,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
     let assets: any[] = [];
 
     const iterator = Network.paginated(
-      result => !!(result as any).data?.assets?.length,
+      result => !result || !(result as any).data?.assets?.length,
       page => {
         const params = Object.assign(tokenId && page === 0 ? { token_ids: tokenId } : {}, {
           asset_contract_address: contractAddress,
@@ -132,6 +133,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   const { data } = await axios(url);
   const [asset] = data.assets;
 
+  console.log(`[collectionFromRemote url] `, url);
   const contractAddress = asset?.asset_contract?.address;
   if (!asset || !asset.token_id || !contractAddress) {
     return null;

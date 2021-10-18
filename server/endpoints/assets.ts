@@ -5,24 +5,23 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
-import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always, identity } from 'ramda';
+import { match, toInt } from '../../models/util';
+import { clamp, pipe, always, identity, tap } from 'ramda';
 import * as Query from '../../lib/query';
 import { toResult } from './util';
+import { Asset } from '../../models/asset';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
  * JS values into typed values.
  */
 const params = {
+
   getAsset: object('AssetParams', {
     contractAddress: string,
     tokenId: string,
-    /**
-     * @TODO (Nate) Figure out mapping structure from querystring to object
-     */
-    // traits: nullable(array(string)),
   }),
+
   getAssets: object('AssetsParams', {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
@@ -50,15 +49,9 @@ const params = {
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
-  app.get('/api/assets/test', respond(req => {
-    return AssetLoader.fromDb(db, 'citadel-of-the-machines', undefined, { Class: 'Director', Speed: [54, 59, 58, 40] }, undefined)
-      .then(body => body === null ? error(404, 'Not found') : body as any)
-      .then(body => ({ body }))
-      .catch(e => {
-        console.error('[Get Asset]', e);
-        return error(503, e.message + ': ' + JSON.stringify(e.meta));
-      })
-  }));
+  const index = tap((asset: Asset) => (
+    Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress}:${asset.tokenId}`)
+  ));
 
   /**
    * this should always look first directly into Opensea and upsert it to our db.
@@ -66,12 +59,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
     params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
       AssetLoader.assetFromRemote(contractAddress, tokenId)
-        .then(body => body === null ? error(404, 'Not found') : body as any)
-        .then((body) => {
-          Query.createWithIndex(db, 'assets', body, `${body.contractAddress}:${body.tokenId}`)
-          return body;
-        })
-        .then(body => ({ body }))
+        .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
         .catch(e => {
           console.error('[Get Asset]', e);
           return error(503, 'Service error');
@@ -115,8 +103,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             })
           : AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
             .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
-            .then(({ body }) => {            
-              if (body.length){
+            .then(({ body }) => {
+              if (body.length) {
                 const docs = body.flatMap((doc: { asset_contract: { address: any; }; token_id: any; }) => [{ index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } }, doc]);
                 db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
               }

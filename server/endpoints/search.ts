@@ -2,7 +2,7 @@ import { clamp, pipe } from 'ramda';
 import { isExact, toResult } from './util';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
-import { nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
+import { inList, nullable, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { toInt } from '../../models/util';
 import Result from '@ailabs/ts-utils/dist/result';
 import { respond } from '../util';
@@ -27,6 +27,7 @@ const searchFields = [
 const searchQuery = object('Search', {
   q: nullable(string),
   page: nullable(toInt, 1),
+  tab: nullable(inList(['collections', 'assets']), ''),
   /**
    * Default to 10 results, limit max result size to 50.
    */
@@ -40,8 +41,8 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
   const exactMatchFields = searchFields.map(s => s.replace(/\^\d+/, '').split('.'));
 
   app.get('/api/search', respond(req => (
-    searchQuery(req.query).map(({ q, page, limit }) =>
-      Query.search(db, '', searchFields, q || '', { limit, offset: limit * (page - 1) })
+    searchQuery(req.query).map(({ q, page, limit, tab: index }) =>
+      Query.search(db, index, searchFields, q || '', { limit, offset: Math.max(limit * (page - 1), 0) })
         // .then(body => {console.log('body', body.body.hits); return body; })
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
           body: {

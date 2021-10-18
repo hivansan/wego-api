@@ -11,19 +11,20 @@ export type Address = string;
 
 export type Asset = Decoded<typeof asset>;
 export const asset = object('Asset', {
-  name: string,
+  name: nullable(string),
+  slug: string,
   contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   tokenId: string,
-  owners: array(string),
+  owners: nullable(array(string)),
   owner: nullable(Object),
   description: nullable(string),
   animationUrl: nullable(string),
-  imageBig: string,
-  imageSmall: string,
+  imageBig: nullable(string),
+  imageSmall: nullable(string),
   traits: array(trait),
-  rariScore: number,
-  createdAt: toDate,
-  updatedAt: toDate,
+  rariScore: nullable(number),
+  createdAt: nullable(toDate),
+  updatedAt: nullable(toDate),
   tokenMetadata: nullable(string),
   collection: nullable(Object),
 });

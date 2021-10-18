@@ -5,6 +5,7 @@ import nftAddresses from '../data/nft-addresses';
 import qs from 'qs';
 import { Client } from '@elastic/elasticsearch';
 import datasources from '../server/datasources';
+import { filter, flatten, map, pipe, prop } from 'ramda';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 
@@ -78,15 +79,18 @@ export const maxChop = (array: any[], step = 1_000) => {
   return array.splice(0, max);
 };
 
-const getDocId = (doc: { slug: any; contractAddress: any; tokenId: any; traitType: string; value: string }, index: string) => {
+const getDocId = (doc: any, index: string) => {
   if (index == 'collections') return doc.slug;
   if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
   if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
-  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toLowerCase().split(' ').join('-')}`;
+  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
 };
 
 export const load = async (content: any[], index: string) => {
   let ix = 0;
+  if (!content.length) return;
+
+  console.log(`loading ${content.length} ${index}...`, typeof content);
   const body = content.flatMap((doc: any) => [
     {
       index: {
@@ -101,13 +105,13 @@ export const load = async (content: any[], index: string) => {
   while (body.length > 0) {
     const chop = maxChop(body);
     const result = await client.bulk({ refresh: true, body: chop });
-    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
-    console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
+    // console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
+    // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
     ix += chop.length;
   }
 };
 
-const readPromise = (path: string, method: string) =>
+export const readPromise = (path: string, method: string) =>
   new Promise((resolve, reject) => {
     fs[method](path, 'utf8', (err: any, data: unknown) => {
       if (err) reject(err);
