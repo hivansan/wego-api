@@ -152,25 +152,22 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
       }))
       // .then(tap((x) => console.log(x)))
       .then((body: { slug: any }) => ({ ...body, filteredBySlug: links.filter((s) => s.includes(`collection=${body.slug}`)) }))
-      .then(tap(({ assets, slug, offset }) => console.log(url, assets?.length, `-- ${i}`)))
-      .then(({ assets, slug, offset, filteredBySlug }) => {
+      .then(tap(({ assets, slug, offset }: any) => console.log(url, assets?.length, `-- ${i}`)))
+      .then(({ assets, slug, offset, filteredBySlug }: any) => {
         if (assets?.length) {
           const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
-          fs.writeFile(`./data/chunks/${slug}:${offset}.json`, content, (err) => {
-            if (err) console.log(`[write file err] ${err}`);
-            load(JSON.parse(content), 'assets');
-          });
+          load(JSON.parse(content), 'assets');
 
           const isLastUrlOfCollection = links.indexOf(url) == filteredBySlug.length - 1;
           console.log(`[${slug}] isLastUrlOfCollection: ${isLastUrlOfCollection} length: ${filteredBySlug.length - 1}`);
 
           if (isLastUrlOfCollection || 1 || assets.length < 50) {
             Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
-            .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
+              .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
           }
         } else {
           Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
-          .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
+            .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
         }
       })
       .catch((e: any) => {
@@ -206,7 +203,10 @@ const saveLinkSlicedFile = (links: string[][]) => {
 const sortByAddedAt = sortBy(prop('addedAt') as any);
 // const sortByAddedAt = (x: any) => x.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true));
 const transformData = pipe(
-  map(pick(['slug', 'totalSupply', 'addedAt'])),
+  map(pipe<any, any, any>(
+    (({ stats, ...fields }) => mergeRight(fields, stats)),
+    pick(['slug', 'totalSupply', 'addedAt'])
+  )),
   sortByAddedAt,
   map(Object),
   topSupply,
@@ -214,7 +214,6 @@ const transformData = pipe(
   toLinks,
   flatten,
   dropRepeats,
-  tap((x) => console.log(x)),
   getSplices
 );
 
