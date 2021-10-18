@@ -71,7 +71,7 @@ export const collectionStats = object('Collection', {
   numReports: number,
   marketCap: number,
   floorPrice: number,
-  
+
   /**
    * What's the difference between this and total volume?
    * R: this is the same

@@ -86,25 +86,9 @@ const getDocId = (doc: any, index: string) => {
   if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
 };
 
-/**
- * @TODO use a decoder here for type trait
- */
-const getTraits = pipe(
-  filter((x: any) => x.traits?.length) as any,
-  map(prop('traits')),
-  flatten,
-  map((c: any) => ({traitType: c.trait_type, value: c.value, displayType: c.display_type, maxValue: c.max_value, traitCount: c.trait_count, order: c.order}))
-) as any;
-
-const loadTraitsFromAssets = (assets: any[]) => {
-  const content = getTraits(assets).map((x: any) => ({ ...x, slug: assets[0].slug}))
-  load(content, 'traits');
-}
-
 export const load = async (content: any[], index: string) => {
   let ix = 0;
   if (!content.length) return;
-  if (index === 'assets') loadTraitsFromAssets(content);
 
   console.log(`loading ${content.length} ${index}...`, typeof content);
   const body = content.flatMap((doc: any) => [
@@ -130,7 +114,7 @@ export const load = async (content: any[], index: string) => {
 export const readPromise = (path: string, method: string) =>
   new Promise((resolve, reject) => {
     fs[method](path, 'utf8', (err: any, data: unknown) => {
-      if (err) reject(err);      
+      if (err) reject(err);
       resolve(data);
     });
   });
