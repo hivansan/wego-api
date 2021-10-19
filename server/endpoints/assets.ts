@@ -34,14 +34,17 @@ const params = {
     q: nullable(string, null),
     traits: nullable<{ [key: string]: string | number | (string | number)[] }>(pipe(
       string,
-      parse(pipe<any, any, any>(
+      parse(pipe<any, any, any, any, any>(
         Result.attempt(JSON.parse),
         parse(dict(oneOf<string | number | (string | number)[]>([
           string,
           number,
           array(string),
           array(number)
-        ])))
+        ]))),
+        /** These two are sort of a lame hack to handle failures gracefully */
+        Result.defaultTo({}),
+        Result.ok
       ))
     ), {}),
   }),
