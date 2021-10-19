@@ -42,6 +42,7 @@ const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='
 const bots: any = process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '');
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
+const collectionFilter: string = process.argv.find((s) => s.startsWith('--collectionFilter='))?.replace('--collectionFilter=', '') || '';
 
 const dirPath: any = process.argv.find((s) => s.startsWith('--dir='))?.replace('--dir=', '');
 
@@ -142,7 +143,7 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
   });
 
   for (const url of links) {
-    const clientCall = i !== undefined ? tor.get(url) : axios(url);
+    const clientCall = !!bots ? tor.get(url) : axios(url);
     await sleep(0.35);
     clientCall
       .then(({ data }) => ({
@@ -210,7 +211,7 @@ const transformData = pipe(
   sortByAddedAt,
   map(Object),
   topSupply,
-  filter((c: any) => c.totalSupply),
+  filter((c: any) => collectionFilter.length ? c.totalSupply && c.slug === collectionFilter: c.totalSupply),
   toLinks,
   flatten,
   dropRepeats,
