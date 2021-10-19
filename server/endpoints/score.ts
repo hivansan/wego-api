@@ -7,6 +7,9 @@ import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Stats from '../../lib/stats';
 
+import * as Query from '../../lib/query';
+import { toResult } from './util';
+
 type Stats = {
   statisticalRarity: number;
   singleTraitRarity: number;
@@ -52,37 +55,37 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get(
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-      return Promise.all([
-        AssetLoader.assetFromRemote(contractAddress, tokenId),
-        Stats.collection(({ count: 1 } as any), []).then(find(propEq('id', tokenId)))
-      ])
-        .then(([body, stats]: [any, any]) => {
+      
+      return AssetLoader.assetFromRemote(contractAddress, tokenId)
+        .then((body: any) => {
           const count = body?.collection?.stats?.count || null;
+          console.log('body', body)
           const mapped = body?.traits?.map(mapTraits(count)) || [];
-
-          return (
-            body === null
-              ? error(404, 'Not found') as any
-              : {
-                body: mergeRight(body, {
-                  count,
-                  traits: mapped,
-                  ...mapped.reduce(traitReducer, {
-                    statisticalRarity: 1,
-                    singleTraitRarity: 1,
-                    avgTraitRarity: 0,
-                    rarityScore: 0,
-                    traits: []
-                  }),
-                  ...pick([
-                    'statisticalRarityRank',
-                    'singleTraitRarityRank',
-                    'avgTraitRarityRank',
-                    'srarityScoreRank'
-                  ], stats || {})
+          return body === null 
+            ? error(404, 'Not found') as any 
+            : Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
+                .then(
+                  ({body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
+                  ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+                )
+                .then(({ body: assets }) => {
+                  return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                    .then(find(propEq('id', tokenId)))
+                    .then((stats) => ({
+                      body: mergeRight(body, {
+                        count,
+                        traits: mapped,
+                        ...mapped.reduce(traitReducer, {
+                          statisticalRarity: 1,
+                          singleTraitRarity: 1,
+                          avgTraitRarity: 0,
+                          rarityScore: 0,
+                          traits: [],
+                        }),
+                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'srarityScoreRank'], stats || {}),
+                      }),
+                    }));
                 })
-              }
-          )
         })
         .catch((e) => {
           console.error('[Get Asset]', e);
