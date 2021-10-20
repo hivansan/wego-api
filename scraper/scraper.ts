@@ -5,6 +5,11 @@
  * this saves the assets
  * Example usage:
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ * 
+ * for just a collection
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --collectionFilter=nfh --bots=1`
+ * 
+ * from a file
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
  *
  * save collections from scraped opensea.io/rankings
@@ -277,6 +282,7 @@ const loadCollections = () => {
           .replace(/[\[\]']+/g, '')
           .replace(/"/g, '')
           .replace(/ /g, '')
+          .replace(/(?:\r\n|\r|\n)/g, '')
           .split(',')
           .map((c: string) => c.split('https://opensea.io/collection/')[1])
           .filter((c: string | any[]) => c && c.length);

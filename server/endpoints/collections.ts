@@ -89,7 +89,6 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         ? AssetLoader.collectionFromRemote(slug)
           .then(body => body === null ? error(404, 'Not found') : { body } as any)
           .then(({ body }) => {
-            console.log('body', body)
             Query.update(db, 'collections', slug, { ...body, updatedAt: new Date(), addedAt: +new Date() }, true)
               .catch((e) => console.log(`[e updating collection]`, e))
             return { body };
