@@ -4,7 +4,7 @@ import * as ElasticSearch from '@elastic/elasticsearch';
 export type Options = {
   limit?: number,
   offset?: number,
-  sort?: { [key: string]: { order: 'asc' | 'desc' } }[]
+  sort?: { [key: string]: { order: 'asc' | 'desc', unmapped_type?: string } }[] | string[]
 };
 
 export const find = curry((

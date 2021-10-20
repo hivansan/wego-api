@@ -10,6 +10,8 @@ import { clamp, pipe, always, identity, tap } from 'ramda';
 import * as Query from '../../lib/query';
 import { toResult } from './util';
 import { Asset } from '../../models/asset';
+import { openseaAssetMapper } from '../../scraper/scraper';
+import { load } from '../../scraper/scraper.utils';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -86,41 +88,44 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req => {
     return params
       .getAssets(req.query)
-      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => (
-        Object.keys(traits).length
-          ? AssetLoader.fromDb(db, slug, undefined, traits, offset)
-            // .then(body => {
-            //   console.log(body);
-            //   return body;
-            // })
-            .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
-            .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
+        /* let count: number;
+        if (slug) {
+          Query.findOne(db, 'collections', { term: { _id: slug } }).then((body) => (count = body?._source?.stats?.count));
+        } */
+        /* return AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, null)
+        .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
+        .then(({ body }) => {
+          if (body.length) {
+            load(body.map(openseaAssetMapper), 'assets')
+            // db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
+          }
+          return { body: { meta: {}, results: body.map(openseaAssetMapper)} };
+        })
+        .catch((e) => {
+          console.error('[Assets]', e);
+          return error(503, 'Service error');
+        }) */
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
+          .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
+          .then(({ body: {took, timed_out: timedOut, hits: { total, hits } ,} ,}) => ({
               body: {
                 meta: { took, timedOut, total: total.value },
-                results: hits.map(toResult).map(r => r.value)
-              }
-            }))
-            .catch((e) => {
-              console.error('[Get Assets]', e);
-              return error(503, e.message + ': ' + JSON.stringify(e.meta));
+                results: hits.map(toResult).map((r) => r.value),
+              },
             })
-          : AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, q)
-            .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
-            .then(({ body }) => {
-              if (body.length) {
-                const docs = body.flatMap((doc: { asset_contract: { address: any; }; token_id: any; }) => [{ index: { _index: 'assets', _type: '_doc', _id: `${doc.asset_contract.address}:${doc.token_id}` } }, doc]);
-                db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
-              }
-              return { body };
-            })
-            .catch((e) => {
-              console.error('[Assets]', e);
-              return error(503, 'Service error');
-            })
-      ))
-      .fold(
-        err => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }),
-        identity
-      )
+          )
+          .then(({ body }) => {
+            /* console.log(body, count);
+            const shouldUpdate = count <= 10000 && body.results.length < count;
+            console.log('shouldUpdate', shouldUpdate); */
+            return { body };
+          })
+          .catch((e) => {
+            console.error('[Get Assets]', e);
+            return error(503, e.message + ': ' + JSON.stringify(e.meta));
+          });
+      })
+      .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity);
   }));
 };

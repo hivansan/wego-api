@@ -12,10 +12,10 @@ import { URLSearchParams } from 'url';
 
 export async function fromDb(
   db: ElasticSearch.Client,
+  { offset, limit, sort }: Query.Options,
   slug?: string,
   tokenId?: string,
   traits?: { [key: string]: string | number | (string | number)[] },
-  offset?: number,
 ) {
 
   const q = {
@@ -49,7 +49,7 @@ export async function fromDb(
   };
 
   // console.log('Query', util.inspect(q, false, null, true));
-  return Query.find(db, 'assets', q, { offset });
+  return Query.find(db, 'assets', q, { offset, sort, limit });
 }
 
 export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.Asset | null> {
