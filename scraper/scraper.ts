@@ -19,7 +19,7 @@ import torAxios from 'tor-axios';
 
 import * as QuerySQL from '../lib/query.mysql';
 
-import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight } from 'ramda';
+import { fromPairs, map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path } from 'ramda';
 import { sleep } from '../server/util';
 import { load, readPromise } from './scraper.utils';
 import * as Query from '../lib/query';
@@ -47,8 +47,6 @@ const collectionFilter: string = process.argv.find((s) => s.startsWith('--collec
 const dirPath: any = process.argv.find((s) => s.startsWith('--dir='))?.replace('--dir=', '');
 
 
-const xForm = pipe(map(props(['trait_type', 'value'])), fromPairs as any);
-
 const DAYS_WINDOW = 5;
 
 export const openseaAssetMapper = (asset: any) => ({
@@ -63,7 +61,6 @@ export const openseaAssetMapper = (asset: any) => ({
   imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
   animationUrl: asset.animation_url,
   traits: asset.traits,
-  traitMap: xForm(asset.traits),
   //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
   rariScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc, t) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
   tokenMetadata: asset.token_metadata,
@@ -217,7 +214,7 @@ const transformData = pipe(
   sortByAddedAt,
   map(Object),
   topSupply,
-  filter((c: any) => collectionFilter.length ? c.totalSupply && c.slug === collectionFilter: c.totalSupply),
+  filter((c: any) => collectionFilter.length ? c.totalSupply && c.slug === collectionFilter : c.totalSupply),
   toLinks,
   flatten,
   dropRepeats,
@@ -232,16 +229,16 @@ const distributeToHttpClients = (arrOfLinks: string[][]) => {
 };
 
 export const saveAssetsFromCollections = () =>
-  Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
+  Query.find(db, 'collections', { match_all: {} }, { limit: 10000 })
     .then(
-      ({body: {took,timed_out: timedOut,hits: { total, hits },}, }) =>
-      ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+      ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
+        ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
     )
-    .then((fromDB) => fromDB.body.results)
+    .then(path(['body', 'results']))
     // .then(sortWith(descend(prop('totalSupply'))))
-    .then(transformData)
+    .then(transformData as any)
     // .then(saveLinkSlicedFile)
-    .then(distributeToHttpClients)
+    .then(distributeToHttpClients as any)
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
@@ -274,10 +271,10 @@ const loadCollections = () => {
     .then(async (fileNames: any) => {
       const data = {};
       fileNames = fileNames.map((t: string) => t.replace('.json', ''));
-      const files : any = await Promise.all(fileNames.map((f: string) => readPromise(`${dirPath}/${f}.json`, 'readFile')))
+      const files: any = await Promise.all(fileNames.map((f: string) => readPromise(`${dirPath}/${f}.json`, 'readFile')))
       for (const [i, v] of fileNames.entries()) {
         data[v] = files[i]
-          .replace(/[\[\]']+/g,'')
+          .replace(/[\[\]']+/g, '')
           .replace(/"/g, '')
           .replace(/ /g, '')
           .split(',')
@@ -303,8 +300,8 @@ const loadCollections = () => {
 
       Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
         .then(
-          ({body: {took,timed_out: timedOut,hits: { total, hits },}, }) =>
-          ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+          ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
+            ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
         )
         .then(async (fromDB) => {
           const toUpdate: any = Object.keys(collections).map((slug) => {

@@ -67,7 +67,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return Query.search(db, 'collections', searchFields, q || '', {
       limit,
       offset: Math.max((page - 1) * limit, 0),
-      sort: sort ? [{ [sort]: { order: sortOrder } }] : []
+      sort: sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : []
     })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
         body: {
@@ -105,7 +105,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/collections/:slug/traits', respond(req => {
     const { slug } = params.getCollection(req.params).defaultTo({ slug: '' });
 
-    return Query.find(db, 'assets', { match: { slug } }, {})
+    return Query.find(db, 'assets', { match: { slug } }, { limit: 10000 })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
         body: {
           meta: { took, timedOut, total: total.value },

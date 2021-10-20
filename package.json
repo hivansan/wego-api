@@ -7,7 +7,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "start": "nodemon server/index.ts --ignore data --ignore slugs",
+    "start": "NODE_PORT=3001 nodemon server/index.ts --ignore data --ignore slugs",
     "posttest": "npm run lint"
   },
   "dependencies": {
