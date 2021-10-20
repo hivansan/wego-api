@@ -51,7 +51,7 @@ const xForm = pipe(map(props(['trait_type', 'value'])), fromPairs as any);
 
 const DAYS_WINDOW = 5;
 
-const openseaAssetMapper = (asset: any) => ({
+export const openseaAssetMapper = (asset: any) => ({
   tokenId: asset.token_id,
   contractAddress: asset.asset_contract.address,
   slug: asset.collection.slug,
@@ -68,6 +68,12 @@ const openseaAssetMapper = (asset: any) => ({
   rariScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc, t) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
   tokenMetadata: asset.token_metadata,
   updatedAt: new Date(),
+  creator: asset.creator,
+  topBid: asset.top_bid,
+  lastSale: asset.last_sale,
+  sellOrders: asset.sell_orders,
+  numSales: asset.num_sales,
+  _lastSalePrice: +asset.last_sale?.payment_token?.usd_price || null,
 });
 
 /**

@@ -85,7 +85,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
     return params.getCollection(req.params).map(({ slug }) => (
       Query.findOne(db, 'collections', { term: { _id: slug } })
-      .then(body => body === null 
+      .then(body => body === null
         ? AssetLoader.collectionFromRemote(slug)
           .then(body => body === null ? error(404, 'Not found') : { body } as any)
           .then(({ body }) => {
@@ -97,7 +97,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .catch(e => {
             console.error('[Collection]', e);
             return error(503, 'Service error');
-          }) 
+          })
         : { body: body._source } as any)
     )).defaultTo(error(400, 'Bad request'))
   }));
