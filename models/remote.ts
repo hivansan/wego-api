@@ -4,7 +4,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 export type Address = string;
 
-export const openSea = object('OpenSeaNFT', {
+export const openSeaAsset = object('OpenSeaNFT', {
   name: nullable(string),
   // contractAddress: string,// match<Address>(/^0x[a-f0-9]{40}$/),
   collection: object('OpenSeaCollection', {
