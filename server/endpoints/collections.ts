@@ -116,4 +116,38 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         return error(503, 'Service error');
       })
   }));
+
+  /**
+   * Admin management URLs
+   */
+
+  app.post('/api/collections/:slug/hide', respond(req => (
+    db.update({
+      index: 'collections',
+      id: req.params.slug,
+      body: {
+        doc: { hidden: true }
+      }
+    }) as any
+  )));
+
+  app.post('/api/collections/:slug/unfeature', respond(req => (
+    db.update({
+      index: 'collections',
+      id: req.params.slug,
+      body: {
+        doc: { stats: { featuredCollection: false } }
+      }
+    }) as any
+  )));
+
+  app.post('/api/collections/:slug/feature', respond(req => (
+    db.update({
+      index: 'collections',
+      id: req.params.slug,
+      body: {
+        doc: { stats: { featuredCollection: true } }
+      }
+    }) as any
+  )));
 };
