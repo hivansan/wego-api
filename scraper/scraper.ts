@@ -4,7 +4,7 @@
 /**
  * this saves the assets
  * Example usage:
- * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=6`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --bots=4 --errsToFile=./data/errors-to-assets.txt`
  * 
  * for just a collection
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=saveAssetsFromCollections --collectionFilter=nfh --bots=1`
@@ -14,7 +14,7 @@
  *
  * save collections from scraped opensea.io/rankings
  * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=./data/slugs --errsToFile=./data/errors-to.txt`
- * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=`
+ * `./node_modules/.bin/ts-node ./scraper/scraper.ts --exec=loadCollections --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=./data/errors-to.txt`
  */
 
 import fs, { readFile } from 'fs';

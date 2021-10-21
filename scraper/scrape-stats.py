@@ -8,28 +8,28 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 """
   example usage:
   python -m scrape-stats --sortby one_day_volume             --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
-  python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
   python -m scrape-stats --sortby seven_day_volume           --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
-  python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
   python -m scrape-stats --sortby thirty_day_volume          --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
-  python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
   python -m scrape-stats --sortby total_volume               --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
-  python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
   
   python -m scrape-stats --sortby one_day_volume             --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
-  python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
 
   python -m scrape-stats --sortby seven_day_volume           --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
-  python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
 
   python -m scrape-stats --sortby thirty_day_volume          --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
-  python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
 
   python -m scrape-stats --sortby total_volume               --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
-  python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
 """
 
 import sys
