@@ -9,7 +9,7 @@ import * as Query from '../../lib/query';
 import { Options } from '../../lib/query';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always, path, uniq, flatten } from 'ramda';
+import { clamp, pipe, objOf, always, path, uniq, flatten, tap } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
@@ -44,7 +44,9 @@ const searchQuery = object('Search', {
 });
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-
+  const index = tap((collection: any) => (
+    Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
+  ));
 
   app.get('/api/collections', respond(req => {
     const searchFields = [
@@ -87,12 +89,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       Query.findOne(db, 'collections', { term: { _id: slug } })
       .then(body => body === null
         ? AssetLoader.collectionFromRemote(slug)
-          .then(body => body === null ? error(404, 'Not found') : { body } as any)
-          .then(({ body }) => {
-            Query.update(db, 'collections', slug, { ...body, updatedAt: new Date(), addedAt: +new Date() }, true)
-              .catch((e) => console.log(`[e updating collection]`, e))
-            return { body };
-          })
+          .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
           .catch(e => {
             console.error('[Collection]', e);
             return error(503, 'Service error');
