@@ -44,7 +44,7 @@ const bail = (err) => {
 };
 
 const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
-const bots: any = process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '');
+const bots: number = +(process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '') as any);
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
 const collectionFilter: string = process.argv.find((s) => s.startsWith('--collectionFilter='))?.replace('--collectionFilter=', '') || '';
@@ -56,7 +56,7 @@ const DAYS_WINDOW = 5;
 
 export const openseaAssetMapper = (asset: any) => ({
   tokenId: asset.token_id,
-  contractAddress: asset.asset_contract.address,
+  contractAddress: asset.asset_contract.address.toLowerCase(),
   slug: asset.collection.slug,
   name: asset.name,
   owners: asset.owners,
@@ -137,6 +137,8 @@ export const openseaAssetMapper = (asset: any) => ({
 //   }
 // };
 
+const dum = (data) : any => new Promise((resolve, reject) => { resolve(data) });
+
 /**
  * Save assets from distributed array of links (opensea)
  * saves them to disk ./data/chunks/ (this should be parameter)
@@ -152,8 +154,13 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
 
   for (const url of links) {
     const clientCall = !!bots ? tor.get(url) : axios(url);
+    console.log(!!bots, bots, url);
     await sleep(0.35);
-    clientCall
+    try {
+      
+    
+    const data = await clientCall;
+    dum(data)
       .then(({ data }) => ({
         assets: data.assets,
         slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
@@ -172,20 +179,28 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
 
           if (isLastUrlOfCollection || 1 || assets.length < 50) {
             Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
-              .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
+              .catch(e => console.log(`[err update collection] url: ${url} ${e}`));
           }
         } else {
           Query.update(db, 'collections', slug, { updatedAt: new Date() }, true)
-            .catch(e => console.log(`[err bulk update] url: ${url} ${e}`));
+            .catch(e => console.log(`[err update collection] url: ${url} ${e}`));
         }
       })
-      .catch((e: any) => {
-        tor.torNewSession();
-        console.log(`[err] ${e} ${url}`);
-        fs.appendFile(errsToFile, `${url}\n`, (err) => {
-          if (err) console.log(`[save 504 file error]`, err);
-        });
+      // .catch((e: any) => {
+        // tor.torNewSession();
+        // console.log(`[err] ${e} ${url}`);
+        // fs.appendFile(errsToFile, `${url}\n`, (err) => {
+        //   if (err) console.log(`[write 504 file error]`, err);
+        // });
+      // });
+
+    } catch (e) {
+      await tor.torNewSession();
+      console.log(`[err] ${e} ${url}`);
+      fs.appendFile(errsToFile, `${url}\n`, (err) => {
+        if (err) console.log(`[write 504 file error]`, err);
       });
+    }
   }
 };
 
@@ -211,15 +226,18 @@ const saveLinkSlicedFile = (links: string[][]) => {
 
 const sortByAddedAt = sortBy(prop('addedAt') as any);
 // const sortByAddedAt = (x: any) => x.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true));
-const transformData = pipe(
+const today = moment();
+const transformData = pipe<any, any, any, any, any, any, any, any, any, any, any>(
   map(pipe<any, any, any>(
     (({ stats, ...fields }) => mergeRight(fields, stats)),
-    pick(['slug', 'totalSupply', 'addedAt'])
+    pick(['slug', 'totalSupply', 'addedAt', 'updatedAt'])
   )),
   sortByAddedAt,
   map(Object),
   topSupply,
   filter((c: any) => collectionFilter.length ? c.totalSupply && c.slug === collectionFilter : c.totalSupply),
+  filter((c: any) => today.diff(c.updatedDate, 'minutes') < 20),
+  // tap((x) => console.log('x?.length', x)),
   toLinks,
   flatten,
   dropRepeats,
