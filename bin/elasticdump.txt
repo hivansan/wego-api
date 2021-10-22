@@ -1,0 +1,14 @@
+ssh -N wego-api -L 9201:vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443
+
+# collection file
+./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=./data/collections.json --type=data --overwrite=true
+
+NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=http://localhost:9201/collections --type=analyzer
+NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=http://localhost:9201/collections --type=mapping
+NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=https://localhost:9201/collections --type=data --limit=3000
+
+NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=https://localhost:9201/assets --type=data --limit=5000
+
+# asset file
+./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000
+./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000 | gzip > ./data/assets.json.gz

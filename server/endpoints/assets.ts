@@ -55,36 +55,31 @@ const params = {
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   const index = tap((asset: Asset) => (
-    Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress}:${asset.tokenId}`)
+    Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
   ));
 
   /**
    * this should always look first directly into Opensea and upsert it to our db.
    */
   app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
-    params.getAsset(req.params).map(({ contractAddress, tokenId }) => (
-      AssetLoader.assetFromRemote(contractAddress, tokenId)
-        .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
+    params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
+
+      return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
+        .then(body => body === null
+          ? AssetLoader.assetFromRemote(contractAddress, tokenId)
+             .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
+             .catch(e => {
+               console.error('[Get Asset]', e);
+               return error(503, 'Service error');
+             })
+          : { body: body._source } as any)
         .catch(e => {
           console.error('[Get Asset]', e);
           return error(503, 'Service error');
         })
-      // AssetLoader.fromDb(db, contractAddress, tokenId, {} /** @TODO traits */)
-
-      /**
-       * @TODO Call AssetLoader.assetFromRemote() if it is null.
-       */
-      //   .then(body => ({ body }))
-      //   .catch(e => {
-      //     console.error('[Get Asset]', e);
-      //     return error(503, 'Service error');
-      //   })
-    )).defaultTo(error(400, 'Bad request'))
+    }).defaultTo(error(400, 'Bad request'))
   ));
 
-  /**
-   * this should only be used in the collection details for infinite scroll of the assets - not for a search
-   */
   app.get('/api/assets', respond(req => {
     return params
       .getAssets(req.query)

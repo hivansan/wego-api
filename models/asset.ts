@@ -11,22 +11,22 @@ export type Address = string;
 
 export type Asset = Decoded<typeof asset>;
 export const asset = object('Asset', {
-  name: nullable(string),
-  slug: string,
-  contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
-  tokenId: string,
-  owners: nullable(array(string)),
-  owner: nullable(Object),
-  description: nullable(string),
-  animationUrl: nullable(string),
-  imageBig: nullable(string),
-  imageSmall: nullable(string),
-  traits: array(trait),
-  rariScore: nullable(number),
-  createdAt: nullable(toDate),
-  updatedAt: nullable(toDate),
-  tokenMetadata: nullable(string),
-  collection: nullable(Object),
+  name            : nullable(string),
+  slug            : string,
+  contractAddress : match<Address>(/^0x[a-f0-9]{40}$/),
+  tokenId         : string,
+  owners          : nullable(array(string)),
+  owner           : nullable(Object),
+  description     : nullable(string),
+  animationUrl    : nullable(string),
+  imageBig        : nullable(string),
+  imageSmall      : nullable(string),
+  traits          : array(trait),
+  rarityScore     : nullable(number),
+  createdAt       : nullable(toDate),
+  updatedAt       : nullable(toDate),
+  tokenMetadata   : nullable(string),
+  collection      : nullable(Object),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {

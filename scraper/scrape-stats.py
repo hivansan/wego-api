@@ -7,29 +7,39 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 """
   example usage:
-  python -m scrape-stats --sortby one_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-  python -m scrape-stats --sortby one_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby one_day_volume             --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
-  python -m scrape-stats --sortby seven_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-  python -m scrape-stats --sortby seven_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby seven_day_volume           --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
-  python -m scrape-stats --sortby thirty_day_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-  python -m scrape-stats --sortby thirty_day_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby thirty_day_volume          --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
 
-  python -m scrape-stats --sortby total_volume --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
-  python -m scrape-stats --sortby total_volume --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs
+  python -m scrape-stats --sortby total_volume               --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  # python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category trading-cards
+  
+  python -m scrape-stats --sortby one_day_volume             --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby one_day_volume     --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+
+  python -m scrape-stats --sortby seven_day_volume           --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby seven_day_volume   --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+
+  python -m scrape-stats --sortby thirty_day_volume          --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby thirty_day_volume  --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+
+  python -m scrape-stats --sortby total_volume               --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
+  # python -m scrape-stats --sortby total_volume       --new 1 --driverpath /usr/bin/chromedriver --pathtosave /home/ubuntu/scraper/data/slugs --category collectibles
 """
 
 import sys
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    '--sortby', help='sortby opensea query  ---- thirty_day_volume seven_day_volume one_day_volume total_volume')
+parser.add_argument('--sortby', help='sortby opensea query  ---- thirty_day_volume seven_day_volume one_day_volume total_volume')
 parser.add_argument('--new', help='new opensea query')
-parser.add_argument(
-    '--driverpath', help='chrome driver path')
-parser.add_argument(
-    '--pathtosave', help='folder in which files are stored')
+parser.add_argument('--driverpath', help='chrome driver path')
+parser.add_argument('--pathtosave', help='folder in which files are stored')
+parser.add_argument('--category', help='category trading-cards | collectibles')
 args = parser.parse_args()
 
 
@@ -74,7 +84,7 @@ def main():
     # url = 'https://opensea.io/rankings?chain=ethereum&sortBy=one_day_volume'
     # url = 'https://opensea.io/rankings?sortBy=total_volume&chain=ethereum'  # ethereum all time
     # ethereum all time
-    url = f'https://opensea.io/rankings?sortBy={args.sortby}&chain=ethereum'
+    url = f'https://opensea.io/rankings?sortBy={args.sortby}&chain=ethereum&category={args.category}'
     if args.new:
         url += '&category=new'
 

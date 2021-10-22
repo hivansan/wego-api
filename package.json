@@ -7,7 +7,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "start": "NODE_PORT=3001 nodemon server/index.ts --ignore data --ignore slugs",
+    "start": "NODE_PORT=3000 nodemon server/index.ts --ignore data --ignore slugs",
     "posttest": "npm run lint"
   },
   "dependencies": {
@@ -20,6 +20,8 @@
     "body-parser": "1.19.0",
     "compression": "1.0.3",
     "cors": "2.8.5",
+    "dotenv": "^10.0.0",
+    "elasticdump": "^6.75.0",
     "ethereumjs-tx": "2.1.2",
     "express-session": "^1.17.2",
     "helmet": "3.10.0",
