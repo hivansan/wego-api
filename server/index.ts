@@ -3,9 +3,10 @@ import datasources from '../server/datasources';
 import { Client } from '@elastic/elasticsearch';
 import { respond } from './util';
 import * as Auth from './auth';
+import path from 'path';
 const { es } = datasources;
 
-const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
+const db = new Client({ node: es.configuration.node });
 
 Auth.init(app, {
   callbackURL: `${HOST}/auth/google/callback`
@@ -31,8 +32,8 @@ app.get('/api/*', respond(() => ({
 })));
 
 /**
- * Maybe do a real 404 page sometime
+ * Serve the index page, React will handle it.
  */
-app.get('*', (_, res) => res.redirect('/'));
+app.get('*', (_, res) => res.sendFile(path.resolve(__dirname + '/../public/index.html')));
 
 start();
