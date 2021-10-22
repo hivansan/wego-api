@@ -55,36 +55,41 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get(
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-      
+
       return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
         .then((body) => (body === null ? error(404, 'Not found') : ({ body: body._source } as any)))
-        .then(({ body }) => {
-          const count = body?.collection?.stats?.count || null;
-          const mapped = body?.traits?.map(mapTraits(count)) || [];
-          return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
-            .then(
-              ({body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
-              ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+        .then(({ body }) =>
+          Query.findOne(db, 'collections', { term: { _id: body.slug } })
+            .then((body) => body === null ? error(404, 'Not found') : ({ collection: body._source } as any))
+            .then(({ collection }) => {
+              body.collection = collection;
+              const count = body.collection?.stats?.count || null;
+              const mapped = body.traits?.map(mapTraits(count)) || [];
+              return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
+                .then(
+                  ({body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
+                  ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+                )
+                .then(({ body: assets }) =>
+                  Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                    .then(find(propEq('id', tokenId)))
+                    .then((stats) => ({
+                      body: mergeRight(body, {
+                        count,
+                        traits: mapped,
+                        ...mapped.reduce(traitReducer, {
+                          statisticalRarity: 1,
+                          singleTraitRarity: 1,
+                          avgTraitRarity: 0,
+                          rarityScore: 0,
+                          traits: [],
+                        }),
+                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+                      }),
+                    }))
+                )
+              })
             )
-            .then(({ body: assets }) => {
-              return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
-                .then(find(propEq('id', tokenId)))
-                .then((stats) => ({
-                  body: mergeRight(body, {
-                    count,
-                    traits: mapped,
-                    ...mapped.reduce(traitReducer, {
-                      statisticalRarity: 1,
-                      singleTraitRarity: 1,
-                      avgTraitRarity: 0,
-                      rarityScore: 0,
-                      traits: [],
-                    }),
-                    ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'srarityScoreRank'], stats || {}),
-                  }),
-                }));
-            })
-          })
         .catch((e) => {
           console.error('[/score error]', e);
           return error(503, 'Service error');

@@ -75,7 +75,7 @@ export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.A
           animationUrl : openSea.animation_original_url,
           //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
           tokenMetadata : openSea.token_metadata,
-          rariScore     : !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
+          rarityScore   : !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits        : openSea.traits,
           collection : { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress}), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })},
         })

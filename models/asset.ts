@@ -22,7 +22,7 @@ export const asset = object('Asset', {
   imageBig        : nullable(string),
   imageSmall      : nullable(string),
   traits          : array(trait),
-  rariScore       : nullable(number),
+  rarityScore     : nullable(number),
   createdAt       : nullable(toDate),
   updatedAt       : nullable(toDate),
   tokenMetadata   : nullable(string),

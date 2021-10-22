@@ -53,7 +53,7 @@ export async function collection(collection: CollectionStats, assets: Asset[]) {
 
   collectionStats
     .sort((a, b) => b.rarityScore - a.rarityScore)
-    .forEach((nft, ix) => (nft.srarityScoreRank = ix + 1));
+    .forEach((nft, ix) => (nft.rarityScoreRank = ix + 1));
 
   return collectionStats;
 }

@@ -66,8 +66,7 @@ export const openseaAssetMapper = (asset: any) => ({
   imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
   animationUrl: asset.animation_url,
   traits: asset.traits,
-  //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
-  rariScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc, t) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
+  rarityScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc, t) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
   tokenMetadata: asset.token_metadata,
   updatedAt: new Date(),
   creator: asset.creator,
