@@ -67,8 +67,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               const mapped = body.traits?.map(mapTraits(count)) || [];
               return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
                 .then(
-                  ({body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
-                  ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r) => r.value), }, })
+                  ({ body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
+                    ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map(prop('value')), }, })
                 )
                 .then(({ body: assets }) =>
                   Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
@@ -88,8 +88,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                       }),
                     }))
                 )
-              })
-            )
+            })
+        )
         .catch((e) => {
           console.error('[/score error]', e);
           return error(503, 'Service error');

@@ -3,7 +3,7 @@ import { CollectionStats } from "../models/collection";
 import { Asset } from "../models/asset";
 
 export const statsByTraits = curry((traits, count) => {
-  let scores = traits.reduce((acc, t) => {
+  let scores = traits.reduce((acc: any, t: any) => {
     const norm = t.trait_count / count;
 
     return {

@@ -29,20 +29,20 @@ export async function fromDb(
         ...Object.entries(traits || {}).map(([type, value]) => {
           return Array.isArray(value)
             ? {
-                bool: {
-                  must: [{ match: { 'traits.trait_type': type } }],
-                  should: value.map((val) => ({ match: { 'traits.value': val } })),
-                  minimum_should_match: 1,
-                },
-              }
+              bool: {
+                must: [{ match: { 'traits.trait_type': type } }],
+                should: value.map((val) => ({ match: { 'traits.value': val } })),
+                minimum_should_match: 1,
+              },
+            }
             : {
-                bool: {
-                  must: [
-                    { match: { 'traits.trait_type': type } },
-                    { match: { 'traits.value': value } }
-                  ],
-                },
-              };
+              bool: {
+                must: [
+                  { match: { 'traits.trait_type': type } },
+                  { match: { 'traits.value': value } }
+                ],
+              },
+            };
         }),
       ],
     },
@@ -52,7 +52,7 @@ export async function fromDb(
   return Query.find(db, 'assets', q, { offset, sort, limit });
 }
 
-export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.Asset | null> {
+export async function assetFromRemote(contractAddress: string, tokenId: string): Promise<Asset.Asset | null> {
   const [rariNft, openseaNft] = await Network.arrayFetch([
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
@@ -63,23 +63,24 @@ export async function assetFromRemote(contractAddress, tokenId): Promise<Asset.A
       console.log('opensea', openSea)
       return Remote.rarible(rariNft).map((rari) =>
         Asset.init({
-          name : openSea.name,
-          slug : openSea.collection.slug,
+          name: openSea.name,
+          slug: openSea.collection.slug,
           tokenId,
           contractAddress,
-          owners       : rari.owners,
-          owner        : null,
-          description  : openSea.description,              //  rariMeta.description
-          imageBig     : openSea.image_original_url,       // rariMeta.image.url.BIG,
-          imageSmall   : openSea.image_preview_url,        // rariMeta.image.url.PREVIEW,
-          animationUrl : openSea.animation_original_url,
+          owners: rari.owners,
+          owner: null,
+          description: openSea.description,              //  rariMeta.description
+          imageBig: openSea.image_original_url,       // rariMeta.image.url.BIG,
+          imageSmall: openSea.image_preview_url,        // rariMeta.image.url.PREVIEW,
+          animationUrl: openSea.animation_original_url,
           //rariscore: https://raritytools.medium.com/ranking-rarity-understanding-rarity-calculation-methods-86ceaeb9b98c
-          tokenMetadata : openSea.token_metadata,
-          rarityScore   : !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
-          traits        : openSea.traits,
-          collection : { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress}), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })},
+          tokenMetadata: openSea.token_metadata,
+          rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
+          traits: openSea.traits,
+          collection: { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug }) },
         })
-      )}
+      )
+    }
     );
 
   return asset.defaultTo(null as any);
@@ -119,15 +120,15 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
   const params: any = {
-    collection : slug,
-    offset     : 0,
-    limit      : 1,
+    collection: slug,
+    offset: 0,
+    limit: 1,
   };
   const queryParams = new URLSearchParams(params).toString();
-  const url         = `https://api.opensea.io/api/v1/assets?${queryParams}`;
+  const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
 
   const { data } = await axios(url);
-  const [asset]  = data.assets;
+  const [asset] = data.assets;
 
   console.log(`[collectionFromRemote url] `, url);
   const contractAddress = asset?.asset_contract?.address;
@@ -151,49 +152,49 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   }
 }
 
-const remoteCollectionMapper = ({ collection, contractAddress }) : Collection.Collection => ({
+const remoteCollectionMapper = ({ collection, contractAddress }: any): Collection.Collection => ({
   contractAddress,
-  slug        : collection.slug,
-  name        : collection.name,
-  releaseDate : collection.created_date,
-  released    : true,
-  imgPortrait : collection.banner_image_url,
-  imgMain     : collection.image_url,
-  imgLarge    : collection.large_image_url,
-  twitter     : collection.twitter_username,
-  discord     : collection.discord_url,
-  instagram   : collection.instagram_username,
-  telegram    : collection.telegram_url,
-  website     : collection.external_url,
+  slug: collection.slug,
+  name: collection.name,
+  releaseDate: collection.created_date,
+  released: true,
+  imgPortrait: collection.banner_image_url,
+  imgMain: collection.image_url,
+  imgLarge: collection.large_image_url,
+  twitter: collection.twitter_username,
+  discord: collection.discord_url,
+  instagram: collection.instagram_username,
+  telegram: collection.telegram_url,
+  website: collection.external_url,
 });
 
-const remoteCollectionStatsMapper = ({ stats, contractAddress, slug }): Collection.CollectionStats => ({
+const remoteCollectionStatsMapper = ({ stats, contractAddress, slug }: any): Collection.CollectionStats => ({
   contractAddress,
   slug,
-  wegoScore             : 0,
-  featuredCollection    : false,
-  featuredScore         : 0,
-  oneDayVolume          : stats.one_day_volume,
-  oneDayChange          : stats.one_day_change,
-  oneDaySales           : stats.one_day_sales,
-  oneDayAveragePrice    : stats.one_day_average_price,
-  sevenDayVolume        : stats.seven_day_volume,
-  sevenDayChange        : stats.seven_day_change,
-  sevenDaySales         : stats.seven_day_sales,
-  sevenDayAveragePrice  : stats.seven_day_average_price,
-  thirtyDayVolume       : stats.thirty_day_volume,
-  thirtyDayChange       : stats.thirty_day_change,
-  thirtyDaySales        : stats.thirty_day_sales,
-  thirtyDayAveragePrice : stats.thirty_day_average_price,
-  totalVolume           : stats.total_volume,
-  totalSales            : stats.total_sales,
-  totalSupply           : stats.total_supply,
-  count                 : stats.count,
-  numOwners             : stats.num_owners,
-  averagePrice          : stats.average_price,
-  numReports            : stats.num_reports,
-  marketCap             : stats.market_cap,
-  floorPrice            : stats.floor_price,
+  wegoScore: 0,
+  featuredCollection: false,
+  featuredScore: 0,
+  oneDayVolume: stats.one_day_volume,
+  oneDayChange: stats.one_day_change,
+  oneDaySales: stats.one_day_sales,
+  oneDayAveragePrice: stats.one_day_average_price,
+  sevenDayVolume: stats.seven_day_volume,
+  sevenDayChange: stats.seven_day_change,
+  sevenDaySales: stats.seven_day_sales,
+  sevenDayAveragePrice: stats.seven_day_average_price,
+  thirtyDayVolume: stats.thirty_day_volume,
+  thirtyDayChange: stats.thirty_day_change,
+  thirtyDaySales: stats.thirty_day_sales,
+  thirtyDayAveragePrice: stats.thirty_day_average_price,
+  totalVolume: stats.total_volume,
+  totalSales: stats.total_sales,
+  totalSupply: stats.total_supply,
+  count: stats.count,
+  numOwners: stats.num_owners,
+  averagePrice: stats.average_price,
+  numReports: stats.num_reports,
+  marketCap: stats.market_cap,
+  floorPrice: stats.floor_price,
 });
 
 export async function assetsFromRemote(

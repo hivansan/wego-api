@@ -44,13 +44,13 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
     searchQuery(req.query).map(({ q, page, limit, tab: index }) =>
       Query.search(db, index, searchFields, q || '', { limit, offset: Math.max(limit * (page - 1), 0) })
         // .then(body => {console.log('body', body.body.hits); return body; })
-        .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+        .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
             results: hits.map(pipe(toResult, isExact(exactMatchFields, (q || '').toLowerCase())))
           }
         }))
-        .catch(e => {
+        .catch((e: unknown) => {
           console.error('[Bad query]', e);
           return queryError;
         })
