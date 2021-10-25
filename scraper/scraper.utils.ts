@@ -1,5 +1,4 @@
 import axios from 'axios';
-import fs from 'fs';
 
 import nftAddresses from '../data/nft-addresses';
 import qs from 'qs';
@@ -8,12 +7,13 @@ import datasources from '../server/datasources';
 import { filter, flatten, map, pipe, prop } from 'ramda';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
+const fs: any = require('fs')
 
-const getItem = (html) => '0x' + html.substr(0, 40);
+const getItem = (html: string) => '0x' + html.substr(0, 40);
 
 const pages = 162;
 
-const getList = async (page) => {
+const getList = async (page: number) => {
   console.log('page', `${page}/${pages}`);
   let url = `https://etherscan.io/tokens-nft?ps=100`;
   if (page) url += `&p=${page}`;
@@ -42,7 +42,7 @@ const getAllItems = async () => {
   // console.log(items);
 };
 
-export const postItems = async (adresses, method) => {
+export const postItems = async (adresses: any, method: string) => {
   const items = adresses ? adresses : nftAddresses;
   for (const address of items) {
     const data = method === 'getTokenIdJSON' ? qs.stringify({ address, tokenId: 1 }) : qs.stringify({ address });
@@ -64,9 +64,7 @@ export const postItems = async (adresses, method) => {
   }
 };
 
-function sleep(s) {
-  return new Promise((resolve) => setTimeout(resolve, s * 1000));
-}
+const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
 
 // getAllItems()
 
@@ -118,3 +116,26 @@ export const readPromise = (path: string, method: string) =>
       resolve(data);
     });
   });
+  
+export const openseaAssetMapper = (asset: any) => ({
+  tokenId: asset.token_id,
+  contractAddress: asset.asset_contract.address.toLowerCase(),
+  slug: asset.collection.slug,
+  name: asset.name,
+  owners: asset.owners,
+  owner: asset.owner,
+  description: asset.description, //  rariMeta.description,
+  imageBig: asset.image_original_url, // rariMeta.image.url.BIG,
+  imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
+  animationUrl: asset.animation_url,
+  traits: asset.traits,
+  rarityScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc: number, t: { trait_count: number; }) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
+  tokenMetadata: asset.token_metadata,
+  updatedAt: new Date(),
+  creator: asset.creator,
+  topBid: asset.top_bid,
+  lastSale: asset.last_sale,
+  sellOrders: asset.sell_orders,
+  numSales: asset.num_sales,
+  _lastSalePrice: +asset.last_sale?.payment_token?.usd_price || null,
+});
