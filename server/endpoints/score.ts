@@ -1,9 +1,9 @@
-import { any, curry, find, map, mergeRight, objOf, pick, pipe, prop, propEq, tap } from 'ramda';
+import { find, mergeRight, pick, pipe, prop, propEq } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
 import { match } from '../../models/util';
-import { error, respond } from '../util';
+import { error, handleError, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Stats from '../../lib/stats';
 
@@ -55,12 +55,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get(
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-
       return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-        .then((body) => (body === null ? error(404, 'Not found') : ({ body: body._source } as any)))
+        .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : ({ body: body._source })))
         .then(({ body }) =>
           Query.findOne(db, 'collections', { term: { _id: body.slug } })
-            .then((body) => body === null ? error(404, 'Not found') : ({ collection: body._source } as any))
+            .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body._source }))
             .then(({ collection }) => {
               body.collection = collection;
               const count = body.collection?.stats?.count || null;
@@ -89,11 +88,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     }))
                 )
             })
-        )
-        .catch((e) => {
-          console.error('[/score error]', e);
-          return error(503, 'Service error');
-        })
+        ).catch(handleError('[/score error]'))
     })
       .defaultTo(error(400, 'Bad request'))
     )

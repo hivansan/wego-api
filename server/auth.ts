@@ -6,6 +6,9 @@ import { path } from 'ramda';
 
 const FileStore = require('session-file-store')(session);
 
+type GenericObject = { [key: string]: any };
+type Callback = <Val>(err: GenericObject | string | null, val: Val) => void;
+
 export const useSession: RequestHandler = (req, _, next) => {
   if (req.session && (req.session as any).passport && (req.session as any).passport.user) {
     try {
@@ -37,16 +40,19 @@ export const init = (app: Express, { callbackURL }: { callbackURL: string }) => 
     clientID: process.env.GOOGLE_AUTH_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_AUTH_CLIENT_SECRET!,
     callbackURL
-  },
-    (_accessToken, _refreshToken, { id, displayName, emails, photos }, cb) => {
-      cb(null, {
-        id,
-        name: displayName!,
-        email: emails![0]!.value,
-        photo: photos![0]!.value
-      });
-    }
-  ));
+  }, (
+    _accessToken: string,
+    _refreshToken: string,
+    { id, displayName, emails, photos }: any,
+    cb: (err: any, user: any) => void
+  ) => (
+    cb(null, {
+      id,
+      name: displayName!,
+      email: emails![0]!.value,
+      photo: photos![0]!.value
+    })))
+  );
 
   passport.serializeUser((user, done) => {
     done(null, JSON.stringify(user))
