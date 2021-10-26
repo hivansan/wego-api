@@ -1,6 +1,6 @@
 import { always, anyPass, cond, converge, curry, equals, evolve, identity, is, map, mergeRight, pathSatisfies, pipe, reduce, toLower, trim } from 'ramda';
 
-export const toString = s => s + "";
+export const toString = (s: any) => s + "";
 
 export const truncate = curry((length: number, suffix: string, val: string) => (
   (!val || val.length <= length)
@@ -12,7 +12,7 @@ export const truncate = curry((length: number, suffix: string, val: string) => (
  * Map an individual ElasticSearch hit to a search result response.
  */
 export const toResult = pipe(
-  ({ _score: score, _source: value, _index }) => ({
+  ({ _score: score, _source: value, _index }: any) => ({
     meta: {
       score,
       index: _index,
@@ -42,7 +42,7 @@ export const isExact = curry(((fields: string[][], q: string, { meta, ...props }
 })));
 
 export const mapObject = curry((mapper, object) => {
-  const keyMapper = (key) => ({
+  const keyMapper: any = (key: string) => ({
     [key]: cond([
       [is(Function), fn => fn(object)],
       [anyPass([is(String), is(Number), is(Boolean)]), identity],

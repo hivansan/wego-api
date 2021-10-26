@@ -10,7 +10,7 @@ import { clamp, pipe, always, identity, tap } from 'ramda';
 import * as Query from '../../lib/query';
 import { toResult } from './util';
 import { Asset } from '../../models/asset';
-import { openseaAssetMapper } from '../../scraper/scraper';
+import { openseaAssetMapper } from '../../scraper/scraper.utils';
 import { load } from '../../scraper/scraper.utils';
 
 /**
@@ -67,11 +67,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
         .then(body => body === null
           ? AssetLoader.assetFromRemote(contractAddress, tokenId)
-             .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
-             .catch(e => {
-               console.error('[Get Asset]', e);
-               return error(503, 'Service error');
-             })
+            .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
+            .catch(e => {
+              console.error('[Get Asset]', e);
+              return error(503, 'Service error');
+            })
           : { body: body._source } as any)
         .catch(e => {
           console.error('[Get Asset]', e);
@@ -103,10 +103,10 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         }) */
         return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
-          .then(({ body: {took, timed_out: timedOut, hits: { total, hits } ,} ,}) => ({
+          .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
               body: {
                 meta: { took, timedOut, total: total.value },
-                results: hits.map(toResult).map((r) => r.value),
+                results: hits.map(toResult).map((r: any) => r.value),
               },
             })
           )

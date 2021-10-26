@@ -71,7 +71,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       offset: Math.max((page - 1) * limit, 0),
       sort: sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : []
     })
-      .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+      .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
         body: {
           meta: { q, took, timedOut, total: total.value },
           results: hits.map(toResult)
@@ -87,14 +87,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
     return params.getCollection(req.params).map(({ slug }) => (
       Query.findOne(db, 'collections', { term: { _id: slug } })
-      .then(body => body === null
-        ? AssetLoader.collectionFromRemote(slug)
-          .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
-          .catch(e => {
-            console.error('[Collection]', e);
-            return error(503, 'Service error');
-          })
-        : { body: body._source } as any)
+        .then(body => body === null
+          ? AssetLoader.collectionFromRemote(slug)
+            .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
+            .catch(e => {
+              console.error('[Collection]', e);
+              return error(503, 'Service error');
+            })
+          : { body: body._source } as any)
     )).defaultTo(error(400, 'Bad request'))
   }));
 

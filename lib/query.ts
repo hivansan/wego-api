@@ -126,5 +126,5 @@ export const count = curry((
   query: { [key: string]: any },
   opts: CountOptions
 ): Promise<{ count: number }> => (
-  db.count({ index, body: query, ...opts }).then(prop('body')) as Promise<{ count: number }>
+  db.count({ index, body: { query }, ...opts }).then(prop('body')) as Promise<{ count: number }>
 ));
