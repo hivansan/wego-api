@@ -13,6 +13,7 @@ import { tap } from 'ramda';
 import { Client } from '@elastic/elasticsearch';
 
 import datasources from '../server/datasources';
+import { error } from '../server/util';
 const { es } = datasources;
 const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
@@ -139,7 +140,25 @@ export async function getCollection(slug: string): Promise<any> {
             ? null 
             : ({ body: indexCollection({ ...body, addedAt: +new Date() }) } as any))) 
         : { body: body._source }
-    );
+    )
+    .catch(e => {
+      return error(503, 'Service error');
+    });
+}
+
+const indexAsset = tap((asset: Asset.Asset) => (
+  Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+));
+
+export async function getAsset(contractAddress: string, tokenId: string): Promise<any> {
+  return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
+    .then(body => body === null
+      ? assetFromRemote(contractAddress, tokenId)
+        .then(body => body === null ? null : { body: indexAsset(body) } as any)
+        .catch(e => {
+          return error(503, 'Service error');
+        })
+      : { body: body._source } as any)
 }
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {

@@ -64,19 +64,12 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
     params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
 
-      return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-        .then(body => body === null
-          ? AssetLoader.assetFromRemote(contractAddress, tokenId)
-            .then(body => body === null ? error(404, 'Not found') : { body: index(body) } as any)
-            .catch(e => {
-              console.error('[Get Asset]', e);
-              return error(503, 'Service error');
-            })
-          : { body: body._source } as any)
-        .catch(e => {
-          console.error('[Get Asset]', e);
-          return error(503, 'Service error');
-        })
+      return AssetLoader.getAsset(contractAddress, tokenId).then(body => body)
+      .then(body => body === null ? error(404, 'Not found') : body as any)
+      .catch(e => {
+        console.error('[get asset]', e);
+        return error(503, 'Service error');
+      })
     }).defaultTo(error(400, 'Bad request'))
   ));
 

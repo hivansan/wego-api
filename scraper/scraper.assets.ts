@@ -167,22 +167,22 @@ const collectionData = (slug?: string) =>
         body.results.filter((c: { slug: string | any[] }) => c.slug?.length)
     );
 
-  const countInDb = (collections: any[]) => {
-    const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { match: { slug: c.slug } }, {}));
-      return Promise.all(dbPromises)
-        .then((dbResults: any[]) =>
-          collections.map((c: any, i: number) => ({
-            slug: c.slug,
-            updatedAt: c.updatedAt,
-            addedAt: c.addedAt,
-            totalSupply: c.stats.count, // should have
-            count: dbResults[i].count, // has
-            // originalSlug: dbResults[i].slug,
-            shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
-          }))
-        )
-        .catch((e) => console.log(`[err], ${e}`));
-  }
+const countInDb = (collections: any[]) => {
+  const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { match: { slug: c.slug } }, {}));
+    return Promise.all(dbPromises)
+      .then((dbResults: any[]) =>
+        collections.map((c: any, i: number) => ({
+          slug: c.slug,
+          updatedAt: c.updatedAt,
+          addedAt: c.addedAt,
+          totalSupply: c.stats.count, // should have
+          count: dbResults[i].count, // has
+          // originalSlug: dbResults[i].slug,
+          shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
+        }))
+      )
+      .catch((e) => console.log(`[err], ${e}`));
+}
 
 export const saveAssets = (slug?: string) =>
   collectionData(slug)
