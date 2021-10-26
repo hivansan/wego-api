@@ -9,6 +9,12 @@ import Result from '@ailabs/ts-utils/dist/result';
 import util from 'util';
 
 import { URLSearchParams } from 'url';
+import { tap } from 'ramda';
+import { Client } from '@elastic/elasticsearch';
+
+import datasources from '../server/datasources';
+const { es } = datasources;
+const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -116,6 +122,24 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   } catch (error) {
     throw error;
   }
+}
+
+// this would mean that collection - and neither it's assets - would exists
+const indexCollection = tap((collection: any) => (
+  Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
+  //, console.log('hola') // this function will execute without being returned
+));
+
+export async function getCollection(slug: string): Promise<any> {
+  return Query.findOne(db, 'collections', { term: { _id: slug } })
+    .then((body) =>
+      body === null 
+        ? collectionFromRemote(slug).then((body) => (
+          body === null 
+            ? null 
+            : ({ body: indexCollection({ ...body, addedAt: +new Date() }) } as any))) 
+        : { body: body._source }
+    );
 }
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {

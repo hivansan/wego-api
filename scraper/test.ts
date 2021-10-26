@@ -4,6 +4,7 @@ import * as Query from '../lib/query';
 import { Client } from '@elastic/elasticsearch';
 import { toResult } from '../server/endpoints/util';
 import datasources from '../server/datasources';
+import { clamp } from 'ramda';
 
 
 const { es } = datasources;
@@ -17,28 +18,27 @@ const main = () =>
     )
     .then(async ({ body }) => {
       const collections = body.results.filter((c: { slug: string | any[]; }) => c.slug?.length);
-      const all = collections.map((c: { slug: any; }) => Query.count(db, 'assets', { match: { slug: c.slug } }, {}));
+      const all = collections.map((c: { slug: any; }) => Query.count(db, 'assets', { term: { slug: c.slug } }, {}));
       return Promise.all(all)
-        .then((results: any[]) =>
+        .then((dbResults: any[]) =>
           collections.map((c: any, i: number) => ({
             slug        : c.slug,
             updatedAt   : c.updatedAt,
-            shouldHave  : c.stats.count,
-            totalSupply : c.stats.count,
-            has         : results[i].count,
-            originalSlug: results[i].slug
+            addedAt     : c.addedAt,
+            totalSupply : clamp(1, 10000, c.stats.count),    // should have
+            count       : dbResults[i].count,                // has 
+            originalSlug: dbResults[i].slug,
+            shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count)
           }))
         )
         .catch(e => console.log(`[err], ${e}`))
     })
 
-
 const run = async () => {
   let res = await main();
   console.log(res);
-  
 }
 
-run()
+run();
 
 export default main;
