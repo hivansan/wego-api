@@ -36,4 +36,9 @@ export const respond = (fn: RequestFn) => (
 
 export const error = (status: number, msg: string, extra: {} = {}) => Promise.resolve({ status, body: { msg, ...extra } });
 
+export const handleError = (msg: string) => (e: any) => {
+  console.error(msg, e);
+  return Promise.resolve(e).then(eVal => eVal.status && eVal.status > 100 ? eVal : error(503, 'Service error'));
+}
+
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));

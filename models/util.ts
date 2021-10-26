@@ -3,7 +3,7 @@
  */
 
 import { Result } from '@ailabs/ts-utils';
-import { pipe, tap } from 'ramda';
+import { mergeRight, pipe, prop, tap } from 'ramda';
 import { parse, string } from '@ailabs/ts-utils/dist/decoder';
 
 export const date = (val: string): Result<Error, Date> => (
@@ -29,4 +29,12 @@ export const match = <T extends string>(pattern: RegExp) => pipe(
       ? Result.ok(val)
       : Result.err(new Error('Value does not match pattern'))
   ) as Result<Error, T>)
+);
+
+export const buildObject = <T extends object, K extends keyof T, R, Val extends object>(
+  mappers: { [Key in K]: (val: Val) => R }
+) => (obj: Val): { [Key in K]: R } => (
+  (Object.keys(mappers) as K[])
+    .map(key => ({ [key]: mappers[key](obj) }))
+    .reduce(mergeRight, {}) as { [Key in K]: R }
 );

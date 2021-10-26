@@ -7,7 +7,7 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "start": "NODE_PORT=3000 nodemon server/index.ts --ignore data --ignore slugs",
+    "start": "NODE_PORT=3000 nodemon -r dotenv/config server/index.ts --ignore data --ignore slugs/ --ignore sessions/",
     "posttest": "npm run lint"
   },
   "dependencies": {
@@ -20,8 +20,6 @@
     "body-parser": "1.19.0",
     "compression": "1.0.3",
     "cors": "2.8.5",
-    "dotenv": "^10.0.0",
-    "elasticdump": "^6.75.0",
     "ethereumjs-tx": "2.1.2",
     "express-session": "^1.17.2",
     "helmet": "3.10.0",
@@ -54,9 +52,9 @@
     "@types/express-session": "^1.17.4",
     "@types/mysql": "^2.15.19",
     "@types/node": "^16.9.6",
+    "@types/node-fetch": "^3.0.3",
     "@types/passport": "^1.0.7",
     "@types/passport-google-oauth20": "^2.0.10",
-    "@types/node-fetch": "^3.0.3",
     "@types/ramda": "0.27.44",
     "@types/session-file-store": "^1.2.2",
     "command-line-args": "^5.2.0",
