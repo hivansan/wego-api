@@ -1,9 +1,9 @@
-import { any, curry, find, map, mergeRight, objOf, pick, pipe, prop, propEq, tap } from 'ramda';
+import { any, curry, find, map, mergeRight, objOf, path, pick, pipe, prop, propEq, tap } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
 import { match } from '../../models/util';
-import { error, respond } from '../util';
+import { debugStr, error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Stats from '../../lib/stats';
 
@@ -58,45 +58,47 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
       return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
         .then((body) => (body === null ? error(404, 'Not found') : ({ body: body._source } as any)))
-        .then(({ body }) =>
-          Query.findOne(db, 'collections', { term: { _id: body.slug } })
-            .then((body) => body === null ? error(404, 'Not found') : ({ collection: body._source } as any))
-            .then(({ collection }) => {
-              body.collection = collection;
-              const count = body.collection?.stats?.count || null;
-              const mapped = body.traits?.map(mapTraits(count)) || [];
-              return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
-                .then(
-                  ({ body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
-                    ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map(prop('value')), }, })
-                )
-                .then(({ body: assets }) =>
-                  Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
-                    .then(find(propEq('id', tokenId)))
-                    .then((stats) => ({
-                      body: mergeRight(body, {
-                        count,
-                        traits: mapped,
-                        ...mapped.reduce(traitReducer, {
-                          statisticalRarity: 1,
-                          singleTraitRarity: 1,
-                          avgTraitRarity: 0,
-                          rarityScore: 0,
-                          traits: [],
-                        }),
-                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+        .then(({ body }) => Query.findOne(db, 'collections', { term: { _id: body.slug } })
+          .then((body) => body === null ? error(404, 'Not found') : ({ collection: body._source } as any))
+          .then(({ collection }) => {
+            body.collection = collection;
+            const count = body.collection?.stats?.count || null;
+            const mapped = body.traits?.map(mapTraits(count)) || [];
+
+            return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
+              .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+                body: {
+                  meta: { took, timedOut, total: total.value },
+                  results: hits.map(toResult).map(prop('value'))
+                }
+              }))
+              .then(({ body: assets }) =>
+                Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                  .then(find(propEq('id', tokenId)))
+                  .then((stats) => ({
+                    body: mergeRight(body, {
+                      count,
+                      traits: mapped,
+                      ...mapped.reduce(traitReducer, {
+                        statisticalRarity: 1,
+                        singleTraitRarity: 1,
+                        avgTraitRarity: 0,
+                        rarityScore: 0,
+                        traits: [],
                       }),
-                    }))
-                )
-            })
-        )
+                      ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+                    }),
+                  }))
+              )
+          }))
         .catch((e) => {
-          console.error('[/score error]', e);
+          console.error(
+            `[/score error] Params: ${debugStr({ contractAddress, tokenId })}`,
+            path(['meta', 'body', 'error'], e) || e
+          );
           return error(503, 'Service error');
         })
-    })
-      .defaultTo(error(400, 'Bad request'))
-    )
+    }).defaultTo(error(400, 'Bad request')))
   );
 
 };

@@ -37,3 +37,5 @@ export const respond = (fn: RequestFn) => (
 export const error = (status: number, msg: string, extra: {} = {}) => Promise.resolve({ status, body: { msg, ...extra } });
 
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
+
+export const debugStr = (val: { [key: string]: any }) => JSON.stringify(val).replaceAll(/[{}\"]+/, '');
