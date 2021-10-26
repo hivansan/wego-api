@@ -17,6 +17,7 @@
 coverage
 node_modules
 npm-debug.log
+public
 .vscode/*
 node_modules
 data/assets.json
