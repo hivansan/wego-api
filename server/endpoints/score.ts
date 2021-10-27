@@ -56,10 +56,10 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get(
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-      return AssetLoader.getAsset(contractAddress.toLowerCase(), tokenId)
+      return AssetLoader.getAsset(db, contractAddress.toLowerCase(), tokenId)
         .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body))
         .then(({ body }) =>
-          AssetLoader.getCollection(body.slug)
+          AssetLoader.getCollection(db, body.slug)
             // Query.findOne(db, 'collections', { term: { _id: body.slug } })
             .then(({ body }: any) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
             .then(({ collection }) =>

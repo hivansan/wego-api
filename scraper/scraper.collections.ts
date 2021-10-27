@@ -12,13 +12,9 @@
 import { sleep } from '../server/util';
 import { readPromise } from './scraper.utils';
 import * as Query from '../lib/query';
-import { Client } from '@elastic/elasticsearch';
 import { toResult } from '../server/endpoints/util';
-import datasources from '../server/datasources';
 import * as AssetLoader from '../lib/asset-loader';
-
-const { es } = datasources;
-const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
+import { db } from '../bootstrap';
 
 const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
 const dirPath: any = process.argv.find((s) => s.startsWith('--dir='))?.replace('--dir=', '');

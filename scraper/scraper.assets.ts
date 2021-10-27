@@ -21,17 +21,13 @@ import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepea
 import { sleep } from '../server/util';
 import { load, openseaAssetMapper, readPromise } from './scraper.utils';
 import * as Query from '../lib/query';
-import { Client } from '@elastic/elasticsearch';
 import { toResult } from '../server/endpoints/util';
-import datasources from '../server/datasources';
 
 const promiseRetry = require('promise-retry');
 const torAxios = require('tor-axios');
 import * as AssetLoader from '../lib/asset-loader';
 
-
-const { es } = datasources;
-const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
+import { db } from '../bootstrap';
 
 const ports = [9050, 9052, 9053, 9054];
 const bail = (err: any) => {
@@ -71,7 +67,7 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
     const clientCall = !!bots ? tor.get(url) : axios(url);
     // console.log(!!bots, bots, url);
     await sleep(0.35);
-      // const data = await clientCall;
+    // const data = await clientCall;
     // try {
     promiseRetry({ retries: 5 }, (retry: any, number: any) =>
       clientCall
@@ -92,8 +88,8 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
           const isLastUrlOfCollection = (+offset + 50) > +collectionsCounts[slug].supply; // links.indexOf(url) == filteredBySlug.length - 1;
 
           console.log('collectionsCounts --', collectionsCounts);
-          
-          
+
+
           if (assets?.length) {
             const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
             load(JSON.parse(content), 'assets');
@@ -167,30 +163,30 @@ const distributeToHttpClients = tap((arrOfLinks: string[][]) => {
 
 const collectionData = (slug?: string) =>
   !!slug
-    ? AssetLoader.getCollection(slug)
+    ? AssetLoader.getCollection(db, slug)
       .then(({ body }) => [body])
     : Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
-      .then( ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
+      .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
       .then(async ({ body }) =>
         body.results.filter((c: { slug: string | any[] }) => c.slug?.length)
-    );
+      );
 
 export const countInDb = (collections: any[]): any => {
   const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { match: { slug: c.slug } }, {}));
-    return Promise.all(dbPromises)
-      .then((dbResults: any[]) =>
-        collections.map((c: any, i: number) => ({
-          slug: c.slug,
-          updatedAt: c.updatedAt,
-          addedAt: c.addedAt,
-          totalSupply: c.stats.count, // should have
-          count: dbResults[i].count, // has
-          // originalSlug: dbResults[i].slug,
-          shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
-        }))
-      )
-      .catch((e) => console.log(`[err], ${e}`));
+  return Promise.all(dbPromises)
+    .then((dbResults: any[]) =>
+      collections.map((c: any, i: number) => ({
+        slug: c.slug,
+        updatedAt: c.updatedAt,
+        addedAt: c.addedAt,
+        totalSupply: c.stats.count, // should have
+        count: dbResults[i].count, // has
+        // originalSlug: dbResults[i].slug,
+        shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
+      }))
+    )
+    .catch((e) => console.log(`[err], ${e}`));
 }
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));

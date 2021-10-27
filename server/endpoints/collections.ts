@@ -83,14 +83,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       })
   }));
 
-  app.get('/api/collections/:slug', respond(req => 
+  app.get('/api/collections/:slug', respond(req =>
     params.getCollection(req.params).map(({ slug }) => (
-      AssetLoader.getCollection(slug)
-      .then(body => body === null ? error(404, 'Not found') : body as any)
-      .catch(e => {
-        console.error('[Collection]', e);
-        return error(503, 'Service error');
-      })
+      AssetLoader.getCollection(db, slug)
+        .then(body => body === null ? error(404, 'Not found') : body as any)
+        .catch(e => {
+          console.error('[Collection]', e);
+          return error(503, 'Service error');
+        })
     )).defaultTo(error(400, 'Bad request'))
   ));
 

@@ -64,12 +64,12 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
     params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
 
-      return AssetLoader.getAsset(contractAddress, tokenId).then(body => body)
-      .then(body => body === null ? error(404, 'Not found') : body as any)
-      .catch(e => {
-        console.error('[get asset]', e);
-        return error(503, 'Service error');
-      })
+      return AssetLoader.getAsset(db, contractAddress, tokenId).then(body => body)
+        .then(body => body === null ? error(404, 'Not found') : body as any)
+        .catch(e => {
+          console.error('[get asset]', e);
+          return error(503, 'Service error');
+        })
     }).defaultTo(error(400, 'Bad request'))
   ));
 
@@ -97,11 +97,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
-              body: {
-                meta: { took, timedOut, total: total.value },
-                results: hits.map(toResult).map((r: any) => r.value),
-              },
-            })
+            body: {
+              meta: { took, timedOut, total: total.value },
+              results: hits.map(toResult).map((r: any) => r.value),
+            },
+          })
           )
           .then(({ body }) => {
             /* console.log(body, count);

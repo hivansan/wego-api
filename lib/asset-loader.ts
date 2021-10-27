@@ -6,16 +6,11 @@ import * as Collection from '../models/collection';
 import * as Remote from '../models/remote';
 import * as Query from './query';
 import Result from '@ailabs/ts-utils/dist/result';
-import util from 'util';
 
 import { URLSearchParams } from 'url';
-import { tap } from 'ramda';
-import { Client } from '@elastic/elasticsearch';
+import { curry, tap } from 'ramda';
 
-import datasources from '../server/datasources';
 import { error } from '../server/util';
-const { es } = datasources;
-const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -87,8 +82,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           collection: { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug }) },
         })
       )
-    }
-    );
+    });
 
   return asset.defaultTo(null as any);
 };
@@ -126,35 +120,34 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
 }
 
 // this would mean that collection - and neither it's assets - would exists
-const indexCollection = tap((collection: any) => (
+const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
   //, console.log('hola') // this function will execute without being returned
 ));
 
-export async function getCollection(slug: string): Promise<any> {
+export async function getCollection(db: ElasticSearch.Client, slug: string): Promise<any> {
   return Query.findOne(db, 'collections', { term: { _id: slug } })
     .then((body) =>
-      body === null 
+      body === null
         ? collectionFromRemote(slug).then((body) => (
-          body === null 
-            ? null 
-            : ({ body: indexCollection({ ...body, addedAt: +new Date() }) } as any))) 
+          body === null
+            ? null
+            : ({ body: indexCollection(db)({ ...body, addedAt: +new Date() }) } as any)
+        ))
         : { body: body._source }
     )
-    .catch(e => {
-      return error(503, 'Service error');
-    });
+    .catch(e => Promise.reject(error(503, 'Service error')));
 }
 
-const indexAsset = tap((asset: Asset.Asset) => (
+const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
   Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
 ));
 
-export async function getAsset(contractAddress: string, tokenId: string): Promise<any> {
+export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
     .then(body => body === null
       ? assetFromRemote(contractAddress, tokenId)
-        .then(body => body === null ? null : { body: indexAsset(body) } as any)
+        .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
         .catch(e => {
           return error(503, 'Service error');
         })
