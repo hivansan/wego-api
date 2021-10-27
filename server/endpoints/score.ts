@@ -1,4 +1,4 @@
-import { find, mergeRight, pick, pipe, prop, propEq } from 'ramda';
+import { find, mergeRight, nth, pick, pipe, prop, propEq } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
@@ -57,53 +57,51 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
       return AssetLoader.getAsset(contractAddress.toLowerCase(), tokenId)
-        // Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
         .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body))
         .then(({ body }) =>
           AssetLoader.getCollection(body.slug)
             // Query.findOne(db, 'collections', { term: { _id: body.slug } })
-            .then(({ body }) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
+            .then(({ body }: any) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
             .then(({ collection }) =>
               countInDb([collection]).then((counts: any[]) => {
                 console.log('counts[0]', counts[0]);
                 return { collection, ...counts[0] }
               })
             )
-            // .then()
             .then(({ collection }) => {
-              console.log('collection', collection);
               body.collection = collection;
 
               const count = body.collection?.stats?.count || null;
               const mappedTraits = body.traits?.map(mapTraits(count)) || [];
 
-              return countInDb([collection])[0]
+              return countInDb([collection])
+                .then(nth(0))
                 .then(({ shouldScrape }: any) => shouldScrape ? saveAssets(collection.slug) : Promise.resolve(null))
-                .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
-                  .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
-                    body: {
-                      meta: { took, timedOut, total: total.value },
-                      results: hits.map(toResult).map(prop('value'))
-                    }
-                  }))
-                  .then(({ body: assets }) =>
-                    Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
-                      .then(find(propEq('id', tokenId)))
-                      .then((stats) => ({
-                        body: mergeRight(body, {
-                          count,
-                          traits: mappedTraits,
-                          ...mappedTraits.reduce(traitReducer, {
-                            statisticalRarity: 1,
-                            singleTraitRarity: 1,
-                            avgTraitRarity: 0,
-                            rarityScore: 0,
-                            traits: [],
-                          }),
-                          ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+                .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 }))
+                .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
+                  body: {
+                    meta: { took, timedOut, total: total.value },
+                    results: hits.map(toResult).map(prop('value'))
+                  }
+                }))
+                .then(({ body: assets }: any) => {
+                  return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                    .then(find(propEq('id', tokenId)))
+                    .then((stats) => ({
+                      body: mergeRight(body, {
+                        count,
+                        traits: mappedTraits,
+                        ...mappedTraits.reduce(traitReducer, {
+                          statisticalRarity: 1,
+                          singleTraitRarity: 1,
+                          avgTraitRarity: 0,
+                          rarityScore: 0,
+                          traits: [],
                         }),
-                      }))
-                  ))
+                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+                      }),
+                    }))
+                })
             })
         ).catch(handleError('[/score error]'))
     })
