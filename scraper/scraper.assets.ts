@@ -28,6 +28,7 @@ const torAxios = require('tor-axios');
 import * as AssetLoader from '../lib/asset-loader';
 
 import { db } from '../bootstrap';
+import { Asset } from '../models/asset';
 
 const ports = [9050, 9052, 9053, 9054];
 const bail = (err: any) => {
@@ -148,11 +149,13 @@ const getSplices = (links: string[], workers: number): string[][] =>
 
 const transform = pipe(toLinks, flatten, dropRepeats);
 
-const distributeToHttpClients = async (arrOfLinks: string[][]) =>
-  Promise.all(
-    splitEvery(arrOfLinks.length / +bots, arrOfLinks)
-      .map((chunk, i) => Promise.all(chunk.map((link: any) => saveAssetsFromUrl(link, i))))
-  ).then(flatten)
+const distributeToHttpClients = async (arrOfLinks: string[][]) => (
+  splitEvery(arrOfLinks.length / +bots, arrOfLinks).reduce((all, chunk, i) => (
+    sleep(5)
+      .then(() => Promise.all(chunk.map((link: any) => saveAssetsFromUrl(link, i))))
+      .then((newAssets: any) => all.then(assets => assets.concat(newAssets)))
+  ), Promise.resolve<Asset[]>([]))
+);
 
 const collectionData = (slug?: string) =>
   !!slug
