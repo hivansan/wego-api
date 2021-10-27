@@ -57,13 +57,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
       return AssetLoader.getAsset(contractAddress.toLowerCase(), tokenId)
-      // Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-        .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body ))
+        // Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
+        .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body))
         .then(({ body }) =>
           AssetLoader.getCollection(body.slug)
-          // Query.findOne(db, 'collections', { term: { _id: body.slug } })
+            // Query.findOne(db, 'collections', { term: { _id: body.slug } })
             .then(({ body }) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
-            .then(({ collection }) => 
+            .then(({ collection }) =>
               countInDb([collection]).then((counts: any[]) => {
                 console.log('counts[0]', counts[0]);
                 return { collection, ...counts[0] }
@@ -74,36 +74,36 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               console.log('collection', collection);
               body.collection = collection;
 
-              // let cole: any = await countInDb([collection])[0];
-              // console.log('cole', cole);
-              // if (cole.shouldScrape) await saveAssets(collection.slug);
-
               const count = body.collection?.stats?.count || null;
               const mappedTraits = body.traits?.map(mapTraits(count)) || [];
 
-              return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
-                .then(
-                  ({ body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
-                    ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map(prop('value')), }, })
-                )
-                .then(({ body: assets }) =>
-                  Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
-                    .then(find(propEq('id', tokenId)))
-                    .then((stats) => ({
-                      body: mergeRight(body, {
-                        count,
-                        traits: mappedTraits,
-                        ...mappedTraits.reduce(traitReducer, {
-                          statisticalRarity: 1,
-                          singleTraitRarity: 1,
-                          avgTraitRarity: 0,
-                          rarityScore: 0,
-                          traits: [],
+              return countInDb([collection])[0]
+                .then(({ shouldScrape }: any) => shouldScrape ? saveAssets(collection.slug) : Promise.resolve(null))
+                .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
+                  .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }) => ({
+                    body: {
+                      meta: { took, timedOut, total: total.value },
+                      results: hits.map(toResult).map(prop('value'))
+                    }
+                  }))
+                  .then(({ body: assets }) =>
+                    Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                      .then(find(propEq('id', tokenId)))
+                      .then((stats) => ({
+                        body: mergeRight(body, {
+                          count,
+                          traits: mappedTraits,
+                          ...mappedTraits.reduce(traitReducer, {
+                            statisticalRarity: 1,
+                            singleTraitRarity: 1,
+                            avgTraitRarity: 0,
+                            rarityScore: 0,
+                            traits: [],
+                          }),
+                          ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
                         }),
-                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
-                      }),
-                    }))
-                )
+                      }))
+                  ))
             })
         ).catch(handleError('[/score error]'))
     })
