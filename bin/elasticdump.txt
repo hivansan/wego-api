@@ -11,4 +11,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://lo
 
 # asset file
 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000
-./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000 | gzip > ./data/assets.json.gz
+./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000           | gzip > ./data/assets.json.gz
+./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=./data/collections.json --type=data --overwrite=true --limit=10000 | gzip > ./data/collections.json.gz
+
+./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=$ --type=data --overwrite=true --limit=10000 | gzip > ./data/collections.json.gz
+./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=$ --type=data --overwrite=true --limit=10000 | gzip > ./data/assets.json.gz
