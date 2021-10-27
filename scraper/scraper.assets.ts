@@ -16,7 +16,7 @@ import fs from 'fs';
 // import moment from 'moment';
 import axios from 'axios';
 
-import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse } from 'ramda';
+import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse, splitEvery } from 'ramda';
 
 import { sleep } from '../server/util';
 import { load, openseaAssetMapper, readPromise } from './scraper.utils';
@@ -55,7 +55,7 @@ const dum = (data: unknown): any => // just to not break the previous flow
  * saves them to disk ./data/chunks/ (this should be parameter)
  * and to db via laod()
  */
-export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<void> => {
+export async function saveAssetsFromUrl(url: string, i?: number): Promise<void> {
   const tor = torAxios.torSetup({
     ip: 'localhost',
     port: i !== undefined ? ports[i] : 9050,
@@ -63,62 +63,57 @@ export const saveAssetsFromLinks = async (links: string[], i?: number): Promise<
     controlPassword: 't00r',
   });
 
-  for (const url of links) {
-    const clientCall = !!bots ? tor.get(url) : axios(url);
-    // console.log(!!bots, bots, url);
-    await sleep(0.35);
-    // const data = await clientCall;
-    // try {
-    promiseRetry({ retries: 5 }, (retry: any, number: any) =>
-      clientCall
-        .then(({ data }: any) => ({
-          assets: data.assets,
-          slug: (url as any)
-            .split('&')
-            .find((s: string) => s.startsWith('collection='))
-            .split('=')[1],
-          offset: (url as any)
-            .split('&')
-            .find((s: string) => s.startsWith('offset='))
-            .split('=')[1],
-        }))
-        .then((body: { slug: any }) => ({ ...body, filteredBySlug: links.filter((s) => s.includes(`collection=${body.slug}`)) }))
-        .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
-        .then(({ assets, slug, offset, filteredBySlug }: any) => {
-          const isLastUrlOfCollection = (+offset + 50) > +collectionsCounts[slug].supply; // links.indexOf(url) == filteredBySlug.length - 1;
+  // const clientCall = !!bots && bots > 1 ? tor.get(url) : axios(url);
+  // await sleep(0.35);
+  return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
+    axios(url) /* tor.get(url) */
+      .then(({ data }: any) => ({
+        assets: data.assets,
+        slug: (url as any)
+          .split('&')
+          .find((s: string) => s.startsWith('collection='))
+          .split('=')[1],
+        offset: (url as any)
+          .split('&')
+          .find((s: string) => s.startsWith('offset='))
+          .split('=')[1],
+      }))
+      .then((body: { slug: any; }) => ({ ...body }))
+      .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
+      .then(({ assets, slug, offset }: any) => {
+        const isLastUrlOfCollection = (+offset + 50) > +collectionsCounts[slug].supply;
 
-          console.log('collectionsCounts --', collectionsCounts);
+        console.log('collectionsCounts --', collectionsCounts, +collectionsCounts[slug].supply);
 
 
-          if (assets?.length) {
-            const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
-            load(JSON.parse(content), 'assets');
-            if (isLastUrlOfCollection || assets.length < 50) {
-              Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
-            }
-          } else {
+        if (assets?.length) {
+          const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
+          load(JSON.parse(content), 'assets');
+          if (isLastUrlOfCollection || assets.length < 50) {
             Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
           }
-          return isLastUrlOfCollection;
-        })
-        .catch(async (e: any) => {
-          console.log(`[err inside PR] ${e} ${url}`);
-          await tor.torNewSession();
-          retry(e);
-        })
-    )
-      .then((result: any) => {
-        console.log('isLastUrlOfCollection --', result);
-        return result;
+        } else {
+          Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
+        }
+        return assets;
       })
       .catch(async (e: any) => {
-        console.log(`[err catch PR] ${e} ${url}`);
-        // fs.appendFile(errsToFile, `${url}\n`, (err) => {
-        //   if (err) console.log(`[write 504 file error]`, err);
-        // });
-      });
-  }
-};
+        console.log(`[err inside PR] ${e} ${url}`);
+        await tor.torNewSession();
+        retry(e);
+      })
+  )
+    .then((result: any) => {
+      return result;
+    })
+    .catch(async (e: any) => {
+      console.log(`[err catch PR] ${e} ${url}`);
+      // fs.appendFile(errsToFile, `${url}\n`, (err) => {
+      //   if (err) console.log(`[write 504 file error]`, err);
+      // });
+    });
+
+}
 
 const topSupply = map((c) => ({ ...Object(c), totalSupply: Object(c).totalSupply > 10000 ? 10000 : Object(c).totalSupply }));
 
@@ -147,19 +142,17 @@ const getLinks = (c: { totalSupply: number; slug: any }): string[] =>
 
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
-const getSplices = (links: string[]): string[][] => {
-  const len = Math.ceil(links.length / +bots);
-  return [...Array(+bots).keys()].map((c, i) => links.splice(0, len));
-};
+// spliceEvery
+const getSplices = (links: string[], workers: number): string[][] =>
+  [...Array(workers).keys()].map((c, i) => links.splice(0, Math.ceil(links.length / workers)))
 
-const divideLinksByWorkers = pipe(toLinks, flatten, dropRepeats, getSplices);
+const transform = pipe(toLinks, flatten, dropRepeats);
 
-/**
- * arrays from links and send them to download to tor or axios
- */
-const distributeToHttpClients = tap((arrOfLinks: string[][]) => {
-  for (const [i, links] of arrOfLinks.entries()) saveAssetsFromLinks(links, i);
-});
+const distributeToHttpClients = async (arrOfLinks: string[][]) =>
+  Promise.all(
+    splitEvery(arrOfLinks.length / +bots, arrOfLinks)
+      .map((chunk, i) => Promise.all(chunk.map((link: any) => saveAssetsFromUrl(link, i))))
+  ).then(flatten)
 
 const collectionData = (slug?: string) =>
   !!slug
@@ -191,17 +184,21 @@ export const countInDb = (collections: any[]): any => {
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
+/** @TODO this needs to be a promise */
 export const saveAssets = (slug?: string) =>
   collectionData(slug)
     .then(countInDb as any)
     // .then((x) => { console.log('x =============', x); return x; })
-    .then(filter((c: any) => c.shouldScrape))
+    .then(filter(prop('shouldScrape') as any))
     .then(topSupply as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
-    .then(divideLinksByWorkers as any)
+    .then(transform as any)
+    // .then((x: any) => splitEvery(x.length / +bots, x))
     // .then(saveLinkSlicedFile) // optional
     .then(distributeToHttpClients as any)
+    .then(tap(x => console.log('x ---------', x.length)))
+    // .then(() => sleep(5))
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
@@ -218,7 +215,7 @@ const fromFile = () =>
   readFilePromise(errsFromFile)
     .then(toString)
     .then(split('\\n'))
-    .then(getSplices)
+    .then((x) => getSplices(x, +bots))
     .then(distributeToHttpClients)
     .catch((e) => console.log(`[err] ${e}`));
 
