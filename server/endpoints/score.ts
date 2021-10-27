@@ -9,6 +9,7 @@ import * as Stats from '../../lib/stats';
 
 import * as Query from '../../lib/query';
 import { toResult } from './util';
+import { countInDb, saveAssets } from '../../scraper/scraper.assets';
 
 type Stats = {
   statisticalRarity: number;
@@ -55,15 +56,31 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get(
     '/api/asset/:contractAddress/:tokenId/score',
     respond((req) => params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-      return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-        .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : ({ body: body._source })))
+      return AssetLoader.getAsset(contractAddress.toLowerCase(), tokenId)
+      // Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
+        .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body ))
         .then(({ body }) =>
-          Query.findOne(db, 'collections', { term: { _id: body.slug } })
-            .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body._source }))
+          AssetLoader.getCollection(body.slug)
+          // Query.findOne(db, 'collections', { term: { _id: body.slug } })
+            .then(({ body }) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
+            .then(({ collection }) => 
+              countInDb([collection]).then((counts: any[]) => {
+                console.log('counts[0]', counts[0]);
+                return { collection, ...counts[0] }
+              })
+            )
+            // .then()
             .then(({ collection }) => {
+              console.log('collection', collection);
               body.collection = collection;
+
+              // let cole: any = await countInDb([collection])[0];
+              // console.log('cole', cole);
+              // if (cole.shouldScrape) await saveAssets(collection.slug);
+
               const count = body.collection?.stats?.count || null;
-              const mapped = body.traits?.map(mapTraits(count)) || [];
+              const mappedTraits = body.traits?.map(mapTraits(count)) || [];
+
               return Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 })
                 .then(
                   ({ body: { took, timed_out: timedOut, hits: { total, hits } } }) =>
@@ -75,8 +92,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     .then((stats) => ({
                       body: mergeRight(body, {
                         count,
-                        traits: mapped,
-                        ...mapped.reduce(traitReducer, {
+                        traits: mappedTraits,
+                        ...mappedTraits.reduce(traitReducer, {
                           statisticalRarity: 1,
                           singleTraitRarity: 1,
                           avgTraitRarity: 0,
