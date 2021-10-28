@@ -1,6 +1,5 @@
-import { curry } from "ramda";
-import { CollectionStats } from "../models/collection";
-import { Asset } from "../models/asset";
+import { curry } from 'ramda';
+import { Asset } from '../models/asset';
 
 export const statsByTraits = curry((traits, count) => {
   let scores = traits.reduce((acc: any, t: any) => {
@@ -33,27 +32,41 @@ export const statsByTraits = curry((traits, count) => {
   return scores;
 });
 
-export async function collection(collection: CollectionStats, assets: Asset[]) {
-  const collectionStats = assets.map(asset => Object.assign(
-    { id: asset.tokenId },
-    statsByTraits(asset.traits, collection.count)
-  ));
+/**
+ * Destructively sorts and ranks an array by `from` key, ranking duplicate values as equal. Writes results to `to` key.
+ */
+export const rank = <
+  Val extends object & { [key in From]: number },
+  From extends keyof Val,
+  NewKey extends string
+>(from: keyof Val, to: NewKey, vals: Val[]) => {
+  vals.sort((a, b) => a[from] - b[from]);
 
-  collectionStats
-    .sort((a, b) => a.statisticalRarity - b.statisticalRarity)
-    .forEach((nft, ix) => (nft.statisticalRarityRank = ix + 1));
+  let lastRank = 1, lastVal: number = vals[0][from];
 
-  collectionStats
-    .sort((a, b) => a.singleTraitRarity - b.singleTraitRarity)
-    .forEach((nft, ix) => (nft.singleTraitRarityRank = ix + 1));
+  vals.forEach(val => {
+    console.log('rank', lastRank, 'from', lastVal, 'to', val[from], 'next?', lastVal !== val[from]);
 
-  collectionStats
-    .sort((a, b) => a.avgTraitRarity - b.avgTraitRarity)
-    .forEach((nft, ix) => (nft.avgTraitRarityRank = ix + 1));
+    if (lastVal !== val[from]) {
+      lastRank++;
+    }
+    Object.assign(val, { [to]: lastRank });
+    lastVal = val[from];
+  });
 
-  collectionStats
-    .sort((a, b) => b.rarityScore - a.rarityScore)
-    .forEach((nft, ix) => (nft.rarityScoreRank = ix + 1));
+  return vals as (Val & { [key in NewKey]: number });
+}
+
+export async function collection(count: number, assets: Asset[]) {
+  const collectionStats = assets.map(asset => Object.assign({ id: asset.tokenId }, statsByTraits(asset.traits, count)));
+
+  ([
+    ['statisticalRarity', 'statisticalRarityRank'],
+    ['singleTraitRarity', 'singleTraitRarityRank'],
+    ['avgTraitRarity', 'avgTraitRarityRank'],
+    ['rarityScore', 'rarityScoreRank']
+  ] as const)
+    .forEach(([from, to]) => rank(from, to, collectionStats));
 
   return collectionStats;
 }

@@ -42,3 +42,5 @@ export const handleError = (msg: string) => (e: any) => {
 }
 
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
+
+export const debugStr = (val: { [key: string]: any }) => JSON.stringify(val).replaceAll(/[{}\"]+/, '');
