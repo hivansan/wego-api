@@ -1,13 +1,38 @@
 import { Request, Response } from "express";
+import { Readable } from "stream";
 import { isPromise } from "util/types";
 
-export type ResponseVal = {
+export type ResponseVal<Body = any> = {
   status?: number;
   headers?: { [key: string]: any },
-  body?: any;
+  wrap?: [string, string, string],
+  body?: Body;
 };
 
 type RequestFn = (req: Request) => ResponseVal | Promise<ResponseVal>;
+
+const sendStream = (res: Response, { body, wrap }: ResponseVal<Readable>) => {
+  let started = false;
+  const [start, end, between] = wrap || ['', '', ''];
+  res.write(start);
+
+  body!.on('data', obj => {
+    res.write((started ? between : '') + JSON.stringify(obj));
+    started = true;
+  });
+  body!.on('end', () => {
+    res.write(end);
+    res.end();
+  });
+};
+
+const handleBody = (res: Response, val: ResponseVal<Readable>) => {
+  (val.body !== undefined)
+    ? val.body instanceof Readable
+      ? sendStream(res, val)
+      : res.json(val.body)
+    : res.end();
+};
 
 /**
  * Simple utility function to build Express request handlers. Pass in a callback that accepts a `Request` object,
@@ -19,12 +44,12 @@ export const respond = (fn: RequestFn) => (
     (isPromise(handlerResult) ? handlerResult : Promise.resolve(handlerResult)).then((result: ResponseVal) => {
       res.status(result.status || 200);
       result.headers && res.set(result.headers);
-      (result.body !== undefined) ? res.json(result.body) : res.end();
+      handleBody(res, result);
     }, (e) => {
       if (e && (e.status || e.body)) {
         res.status(e.status || 500);
         e.headers && res.set(e.headers);
-        (e.body !== undefined) ? res.json(e.body) : res.end();
+        handleBody(res, e);
         return;
       }
 

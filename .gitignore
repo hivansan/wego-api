@@ -27,3 +27,4 @@ data/assets.json
 data/chunks/*
 data/links-chunks/*
 sessions/*
+.cache*

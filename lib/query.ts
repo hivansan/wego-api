@@ -1,17 +1,23 @@
-import { curry, prop } from 'ramda';
+import { curry, equals, groupBy, identity, last, map, mergeDeepRight, pipe, prop, uniq } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
+import { Readable } from 'stream';
+import { parser } from 'stream-json';
 
 export type Options = {
+  filter?: { [key: string]: any },
   limit?: number,
   offset?: number,
   sort?: { [key: string]: { order: 'asc' | 'desc', unmapped_type?: string } }[] | string[]
+  asStream?: boolean;
 };
+
+export const stream = ({ body }: { body: Readable }) => body.setEncoding('utf8').pipe(parser());
 
 export const find = curry((
   db: ElasticSearch.Client,
   index: string,
   query: any,
-  { limit, offset, sort }: Options
+  { limit, offset, sort, asStream }: Options
 ): Promise<any> => db.search({
   index: index ? index : ['assets', 'collections'],
   from: offset || 0,
@@ -21,7 +27,7 @@ export const find = curry((
     ...(query && Object.keys(query).length ? { query } : {}),
     sort
   },
-}));
+}, { asStream }));
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (
   find(db, index, query, { limit: 1 }).then(({ body: { hits: { hits: toMatch } } }) => (
@@ -37,9 +43,9 @@ export const search = curry((
   index: string,
   fields: string[],
   query: string | null,
-  opts: Options
+  { filter, ...opts }: Options
 ) => (
-  find(db, index, !query ? {} : { multi_match: { query, fuzziness: 6, fields } }, opts)
+  find(db, index, mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {}), opts)
 ));
 
 /**
@@ -110,7 +116,7 @@ export const update = curry(<Doc>(
   docAsUpsert: boolean,
 ) => (
   typeof idOrQuery === 'string'
-    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert : true } : {} ) } })
+    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
     : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } }))
 );
 
