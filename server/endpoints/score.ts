@@ -1,4 +1,4 @@
-import { any, curry, find, map, mergeRight, nth, objOf, path, pick, pipe, prop, propEq, tap } from 'ramda';
+import { concat, curry, find, map, mergeRight, nth, objOf, path, pick, pipe, prop, propEq, tap, whereEq } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
@@ -10,6 +10,12 @@ import * as Stats from '../../lib/stats';
 import * as Query from '../../lib/query';
 import { toResult } from './util';
 import { countInDb, saveAssets } from '../../scraper/scraper.assets';
+
+import * as Stream from '@trivago/samsa';
+import * as StreamOps from 'stream-json/filters/Pick';
+import { streamValues } from 'stream-json/streamers/StreamValues';
+import { Readable } from 'stream';
+import { Asset } from '../../models/asset';
 
 type Stats = {
   statisticalRarity: number;
@@ -77,36 +83,71 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               return countInDb([collection])
                 .then(nth(0))
                 .then(({ shouldScrape }: any) => shouldScrape ? saveAssets(collection.slug) : Promise.resolve(null))
-                .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 }))
-                .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
-                  body: {
-                    meta: { took, timedOut, total: total.value },
-                    results: hits.map(toResult).map(prop('value'))
-                  }
-                }))
-                .then(({ body: assets }: any) => {
-                  return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
-                    .then(find(propEq('id', tokenId)))
-                    .then((stats) => ({
-                      body: mergeRight(body, {
-                        count,
-                        traits: mappedTraits,
-                        ...mappedTraits.reduce(traitReducer, {
-                          statisticalRarity: 1,
-                          singleTraitRarity: 1,
-                          avgTraitRarity: 0,
-                          rarityScore: 0,
-                          traits: [],
-                        }),
-                        ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
-                      }),
+                .then(() => Promise.all([
+                  Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 9000, asStream: true }).then(Query.stream),
+                  Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 9000, offset: 9000, asStream: true }).then(Query.stream)
+                ]))
+                .then(Stream.merge)
+                .then((stream: Readable) => {
+                  const allAssets = stream
+                    .pipe(StreamOps.pick({
+                      filter: stack => stack.join('.').replace(/\d+/, '()').startsWith('hits.hits.()._source')
                     }))
+                    .pipe(streamValues())
+                    .pipe(Stream.map<any, Asset>(prop('value')));
+
+                  const asset = allAssets.pipe(Stream.filter(whereEq({ tokenId })));
+
+                  const ranked = allAssets
+                    .pipe(Stream.map(Stats.index(count)))
+                    .pipe(Stream.reduce<Asset, Asset[]>((all, next) => all.concat(next), []))
+                    .pipe(Stream.map<Stats.TraitStats[], Stats.TraitStats[]>(stats => {
+                      Stats.rankFields.forEach(([from, to]) => Stats.rank(from, to, stats as any))
+                      return stats;
+                    }))
+                    .pipe(Stream.flatMap(Stream.from));
+
+                  return {
+                    status: 200,
+                    body: Stream
+                      .merge([asset, ranked] as any)
+                      .pipe(Stream.reduce(mergeRight, {} as any))
+                      .pipe(Stream.map(objOf('result')))
+                  };
                 })
-            })
-        ).catch(handleError('[/score error]'))
-    })
-      .defaultTo(error(400, 'Bad request'))
-    )
-  );
+            }))
+    }).defaultTo({} as any) as any));
+
+  // .then((stream: Readable) => stream.pipe(StreamOps.pick({ filter: pipe(last, equals('traits')) }))
+  //             .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
+  //               body: {
+  //                 meta: { took, timedOut, total: total.value },
+  //                 results: hits.map(toResult).map(prop('value'))
+  //               }
+  //             }))
+  //             .then(({ body: assets }: any) => {
+  //               return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+  //                 .then(find(propEq('id', tokenId)))
+  //                 .then((stats) => ({
+  //                   body: mergeRight(body, {
+  //                     count,
+  //                     traits: mappedTraits,
+  //                     ...mappedTraits.reduce(traitReducer, {
+  //                       statisticalRarity: 1,
+  //                       singleTraitRarity: 1,
+  //                       avgTraitRarity: 0,
+  //                       rarityScore: 0,
+  //                       traits: [],
+  //                     }),
+  //                     ...pick(['statisticalRarityRank', 'singleTraitRarityRank', 'avgTraitRarityRank', 'rarityScoreRank'], stats || {}),
+  //                   }),
+  //                 }))
+  //             })
+  //         })
+  //     ).catch(handleError('[/score error]'))
+  // })
+  //   .defaultTo(error(400, 'Bad request'))
+  // )
+  // );
 
 };
