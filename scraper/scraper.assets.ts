@@ -147,7 +147,7 @@ const collectionData = (slug?: string) =>
       );
 
 export const countInDb = (collections: any[]): any => {
-  const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { match: { slug: c.slug } }, {}));
+  const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { term: { 'slug.keyword': c.slug } }, {}));
   return Promise.all(dbPromises)
     .then((dbResults: any[]) =>
       collections.map((c: any, i: number) => ({

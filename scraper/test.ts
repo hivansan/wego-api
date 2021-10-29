@@ -10,7 +10,7 @@ import { clamp } from 'ramda';
 const { es } = datasources;
 const db = new Client({ node: es.configuration.node || 'http://localhost:9200' });
 
-const main = () => 
+const main = () =>
   Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
     .then(
       ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
@@ -18,18 +18,20 @@ const main = () =>
     )
     .then(async ({ body }) => {
       const collections = body.results.filter((c: { slug: string | any[]; }) => c.slug?.length);
-      const all = collections.map((c: { slug: any; }) => Query.count(db, 'assets', { term: { slug: c.slug } }, {}));
+      const all = collections.map((c: { slug: any; }) => Query.count(db, 'assets', { term: { 'slug.keyword': c.slug } }, {}));
       return Promise.all(all)
         .then((dbResults: any[]) =>
           collections.map((c: any, i: number) => ({
-            slug        : c.slug,
-            updatedAt   : c.updatedAt,
-            addedAt     : c.addedAt,
-            totalSupply : clamp(1, 10000, c.stats.count),    // should have
-            count       : dbResults[i].count,                // has 
+            slug: c.slug,
+            updatedAt: c.updatedAt,
+            addedAt: c.addedAt,
+            totalSupply: clamp(1, 10000, c.stats.count),    // should have
+            count: dbResults[i].count,                // has 
             originalSlug: dbResults[i].slug,
             shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count)
           }))
+            .filter((c: any) => { /* console.log(c.shouldScrape, c.count); */ return c.shouldScrape && c.count; })
+            .reduce((a: any, b: any) => { console.log(a, b); return a + b.count; }, 0)
         )
         .catch(e => console.log(`[err], ${e}`))
     })

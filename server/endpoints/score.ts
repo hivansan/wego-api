@@ -84,8 +84,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                 .then(nth(0))
                 .then(({ shouldScrape }: any) => shouldScrape ? saveAssets(collection.slug) : Promise.resolve(null))
                 .then(() => Promise.all([
-                  Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 9000, asStream: true }).then(Query.stream),
-                  Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 9000, offset: 9000, asStream: true }).then(Query.stream)
+                  Query.find(db, 'assets', { term: { 'slug.keyword': body.slug } }, { limit: 9000, asStream: true }).then(Query.stream),
+                  Query.find(db, 'assets', { term: { 'slug.keyword': body.slug } }, { limit: 9000, offset: 9000, asStream: true }).then(Query.stream)
                 ]))
                 .then(Stream.merge)
                 .then((stream: Readable) => {
@@ -112,7 +112,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     body: Stream
                       .merge([asset, ranked] as any)
                       .pipe(Stream.reduce(mergeRight, {} as any))
-                      .pipe(Stream.map(objOf('result')))
+                    // .pipe(Stream.map(objOf('result')))
                   };
                 })
             }))
