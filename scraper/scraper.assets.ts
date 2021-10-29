@@ -15,6 +15,7 @@
 import fs from 'fs';
 
 import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse, splitEvery } from 'ramda';
+import axios from 'axios';
 
 import { sleep } from '../server/util';
 import { load, openseaAssetMapper, readPromise } from './scraper.utils';
@@ -23,6 +24,7 @@ import { toResult } from '../server/endpoints/util';
 
 const promiseRetry = require('promise-retry');
 const torAxios = require('tor-axios');
+
 import * as AssetLoader from '../lib/asset-loader';
 
 import { db } from '../bootstrap';
@@ -38,11 +40,12 @@ const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile=
 
 let collectionsCounts: any = {};
 
-export async function saveAssetsFromUrl(url: string, i?: number, tor?: any, sleepFactor?: number): Promise<void> {
-  const SLEEP = 4;
+export async function saveAssetsFromUrl(url: string, i?: number, tor?: any, torInstance?: any, sleepFactor?: number): Promise<void> {
+  const SLEEP = (ports.length - 1) * .3;
   await sleep(sleepFactor as number * SLEEP);
+  console.log(`[attempting] ${url} ${i}`);
   return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
-    tor.get(url)
+    torInstance.get(url)
       .then(({ data }: any) => ({
         assets: data.assets,
         slug: (url as any)
@@ -119,19 +122,29 @@ const transform = pipe(toLinks, flatten, dropRepeats);
 
 const distributeToHttpClients = (arrOfLinks: string[]) => {
   const split = Math.ceil(arrOfLinks.length / +bots)
-  const tors: any = []
+  const tors: any = [];
+  const torInstances: any = [];
   for (let i = 0; i < +bots; i++) {
-    tors.push(torAxios.torSetup({
+
+    const tor = torAxios.torSetup({
       ip: 'localhost',
       port: ports[i],
       controlPort: '9051',
       controlPassword: 't00r',
+    })
+
+    torInstances.push(axios.create({
+      httpAgent: tor.httpAgent(),
+      httpsAgent: tor.httpsAgent(),
+      timeout: 0,
     }));
+
+    tors.push(tor);
   }
 
   return Promise.all(
     splitEvery(split, arrOfLinks)
-      .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl(link, i, tors[i], linkIndex))))
+      .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl(link, i, tors[i], torInstances[i], linkIndex))))
   ).then(flatten)
 }
 
