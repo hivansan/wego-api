@@ -96,7 +96,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     .pipe(streamValues())
                     .pipe(Stream.map<any, Asset>(prop('value')));
 
-                  const asset = allAssets.pipe(Stream.filter(whereEq({ tokenId })));
+                  const asset = Stream.from([body]); //allAssets.pipe(Stream.filter(whereEq({ tokenId })));
 
                   const ranked = allAssets
                     .pipe(Stream.map(Stats.index(count)))
