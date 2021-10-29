@@ -23,7 +23,7 @@ export async function fromDb(
   const q = {
     bool: {
       must: [
-        slug ? { match: { 'slug.keyword': slug } } : null,
+        slug ? { term: { 'slug.keyword': slug } } : null,
         /**
          * @TODO Either get rid of tokenId or also take contract address
          */

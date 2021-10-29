@@ -61,7 +61,7 @@ export const search2 = curry((
 export const byTraits = curry((slug: string, traits?: { [key: string]: string | number | (string | number)[] }) => ({
   bool: {
     must: [
-      slug ? { match: { 'slug.keyword': slug } } : null,
+      slug ? { term: { 'slug.keyword': slug } } : null,
       ...(Object.entries(traits || {}).map(([type, value]) => {
         return Array.isArray(value)
           ? {
