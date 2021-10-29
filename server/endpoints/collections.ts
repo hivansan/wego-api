@@ -101,15 +101,15 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
       return Promise.all([
-        Query.find(db, 'assets', { match: { 'slug.keyword': slug } }, { limit: 10000, asStream: true }).then(Query.stream),
-        Query.find(db, 'assets', { match: { 'slug.keyword': slug } }, { limit: 10000, offset: 10000, asStream: true }).then(Query.stream)
+        Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, asStream: true }).then(Query.stream),
+        Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 10000, asStream: true }).then(Query.stream)
       ])
         .then<any>(Stream.merge as any)
         .then((stream: Readable) => stream.pipe(StreamOps.pick({ filter: pipe(last, equals('traits')) }))
           .pipe(streamValues())
           .pipe(Stream.flatMap(pipe(prop<any, any>('value'), Stream.from)))
         ).then(body => ({
-          wrap: ['{ "result": [', '] }', ','] as const,
+          wrap: ['{ "results": [', '] }', ','] as const,
           body
         }) as ResponseVal)
         .catch(handleError(`[/traits error, slug: ${slug}]`));
