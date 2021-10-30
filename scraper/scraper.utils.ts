@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-import nftAddresses from '../data/nft-addresses';
+// import nftAddresses from '../data/nft-addresses';
 import qs from 'qs';
 import { Client } from '@elastic/elasticsearch';
 import datasources from '../server/datasources';
@@ -42,27 +42,27 @@ const getAllItems = async () => {
   // console.log(items);
 };
 
-export const postItems = async (adresses: any, method: string) => {
-  const items = adresses ? adresses : nftAddresses;
-  for (const address of items) {
-    const data = method === 'getTokenIdJSON' ? qs.stringify({ address, tokenId: 1 }) : qs.stringify({ address });
+// export const postItems = async (adresses: any, method: string) => {
+//   const items = adresses ? adresses : nftAddresses;
+//   for (const address of items) {
+//     const data = method === 'getTokenIdJSON' ? qs.stringify({ address, tokenId: 1 }) : qs.stringify({ address });
 
-    try {
-      await sleep(0.2);
+//     try {
+//       await sleep(0.2);
 
-      const res = axios('http://localhost:3000/api/Scrapers/' + method, {
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Accept: 'application/json',
-        },
-        data,
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  }
-};
+//       const res = axios('http://localhost:3000/api/Scrapers/' + method, {
+//         method: 'post',
+//         headers: {
+//           'Content-Type': 'application/x-www-form-urlencoded',
+//           Accept: 'application/json',
+//         },
+//         data,
+//       });
+//     } catch (error) {
+//       console.log(error);
+//     }
+//   }
+// };
 
 const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
 
@@ -116,7 +116,7 @@ export const readPromise = (path: string, method: string) =>
       resolve(data);
     });
   });
-  
+
 export const openseaAssetMapper = (asset: any) => ({
   tokenId: asset.token_id,
   contractAddress: asset.asset_contract.address.toLowerCase(),
