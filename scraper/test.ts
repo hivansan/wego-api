@@ -31,7 +31,7 @@ const main = () =>
             shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count)
           }))
             .filter((c: any) => { /* console.log(c.shouldScrape, c.count); */ return c.shouldScrape && c.count; })
-            .reduce((a: any, b: any) => { console.log(a, b); return a + b.count; }, 0)
+            .reduce((a: any, b: any) => { console.log(a, b); return a + b.totalSupply - b.count; }, 0)
         )
         .catch(e => console.log(`[err], ${e}`))
     })

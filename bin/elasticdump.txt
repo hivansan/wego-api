@@ -9,6 +9,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://lo
 
 NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=https://localhost:9201/assets --type=data --limit=5000
 
+./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=https://6208-189-224-86-57.ngrok.io/assets --type=data --limit=10000
+
 # asset file
 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000
 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=./data/assets.json --type=data --overwrite=true --limit=10000           | gzip > ./data/assets.json.gz
@@ -16,3 +18,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://lo
 
 ./node_modules/.bin/elasticdump --input=http://localhost:9200/collections --output=$ --type=data --overwrite=true --limit=10000 | gzip > ./data/collections.json.gz
 ./node_modules/.bin/elasticdump --input=http://localhost:9200/assets --output=$ --type=data --overwrite=true --limit=10000 | gzip > ./data/assets.json.gz
+
+
+# import
+./node_modules/.bin/elasticdump --input=assets.json --output=http://localhost:9200/assets
