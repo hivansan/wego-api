@@ -144,7 +144,7 @@ const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => body === null
+    .then(body => body === null || !!!body?._source?.slug
       ? assetFromRemote(contractAddress, tokenId)
         .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
         .catch(e => {

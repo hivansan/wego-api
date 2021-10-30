@@ -63,7 +63,7 @@ export async function saveAssetsFromUrl(url: string, i: number, tor?: any, torIn
 
 
         if (assets?.length) {
-          const content = JSON.stringify(assets.map((c: any) => ({ ...c, collection: { stats: { total_supply: collectionsCounts[slug].supply } } })).map(openseaAssetMapper)) as any;
+          const content = JSON.stringify(assets.map((c: any) => ({ ...c, collection: { ...c.collection, stats: { total_supply: collectionsCounts[slug].supply } } })).map(openseaAssetMapper)) as any;
           // console.log(content);
 
           load(JSON.parse(content), 'assets');
