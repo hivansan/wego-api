@@ -31,39 +31,41 @@ import { db } from '../bootstrap';
 import { Asset } from '../models/asset';
 
 // add SocksPort mac: /usr/local/etc/tor/torrc linux: /etc/tor/torrc
-const ports: number[] = [9050, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064, 9065, 9066, 9067, 9068, 9069, 9070, 9071, 9072, 9074, 9075, 9076, 9077, 9078, 9079, 9080, 9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088, 9089, 9090, 9091, 9092, 9093, 9094, 9095, 9096, 9097, 9098, 9099, 9100];
+const ports: number[] = [9050]//, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064, 9065, 9066, 9067, 9068, 9069, 9070, 9071, 9072, 9074, 9075, 9076, 9077, 9078, 9079, 9080, 9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088, 9089, 9090, 9091, 9092, 9093, 9094, 9095, 9096, 9097, 9098, 9099, 9100];
 
 const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
-const bots: number = +(process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '') as any) || ports.length - 1;
+const bots: number = +(process.argv.find((s) => s.startsWith('--bots='))?.replace('--bots=', '') as any) || ports.length;
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
+const linear: boolean = true;//!!process.argv.find((s) => s.startsWith('--linear='))?.replace('--linear=', '');
 
 let collectionsCounts: any = {};
 
-export async function saveAssetsFromUrl(url: string, i?: number, tor?: any, torInstance?: any, sleepFactor?: number): Promise<void> {
-  const SLEEP = (ports.length - 1) * .3;
-  await sleep(sleepFactor as number * SLEEP);
+export async function saveAssetsFromUrl(url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number): Promise<void> {
+  const SLEEP = (ports.length - 1) * .8;
+  await sleep(linear ? i / 3 : (sleepFactor as number * SLEEP));
+
   console.log(`[attempting] ${url} ${i}`);
   return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
-    torInstance.get(url)
+    // torInstance.get(url)
+    axios(url)
       .then(({ data }: any) => ({
         assets: data.assets,
-        slug: (url as any)
-          .split('&')
-          .find((s: string) => s.startsWith('collection='))
-          .split('=')[1],
-        offset: (url as any)
-          .split('&')
-          .find((s: string) => s.startsWith('offset='))
-          .split('=')[1],
+        slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
+        offset: (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1],
       }))
       .then((body: { slug: any; }) => ({ ...body }))
       .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
       .then(tap(({ assets, slug, offset }: any) => {
         const isLastUrlOfCollection = (+offset + 50) > +collectionsCounts[slug].supply;
 
+        console.log('collectionsCounts', collectionsCounts);
+
+
         if (assets?.length) {
-          const content = JSON.stringify(assets.map(openseaAssetMapper)) as any;
+          const content = JSON.stringify(assets.map((c: any) => ({ ...c, collection: { stats: { total_supply: collectionsCounts[slug].supply } } })).map(openseaAssetMapper)) as any;
+          // console.log(content);
+
           load(JSON.parse(content), 'assets');
           if (isLastUrlOfCollection || assets.length < 50) {
             Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
@@ -107,14 +109,18 @@ const sortByAddedAt = sortBy(prop('addedAt') as any);
 // const sortByAddedAt = (x: any) => x.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true));
 
 const filterData = pipe(
-  map(pipe<any, any, any>(({ stats, ...fields }) => mergeRight(fields, stats), pick(['slug', 'totalSupply', 'addedAt', 'updatedAt']))),
+  map(pipe<any, any, any>(({ stats, ...fields }) => mergeRight(fields, stats), pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt']))),
   sortByAddedAt,
   filter((c: any) => c.totalSupply),
 );
 
-const getLinks = (c: { totalSupply: number; slug: any }): string[] =>
-  [...Array(Math.ceil(c.totalSupply / 50)).keys()].map((i) =>
-    `https://api.opensea.io/api/v1/assets?format=json&limit=50&offset=${i * 50}&collection=${c.slug}`);
+const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[] => {
+  // console.log('c ------------', c);
+  c.count = c.count || 0;
+  const startingOffset = Math.floor(c.count / 50) || 0;
+  return [...Array(Math.ceil((c.totalSupply - c.count) / 50)).keys()].map((i) =>
+    `https://api.opensea.io/api/v1/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
+}
 
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
@@ -142,10 +148,19 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
     tors.push(tor);
   }
 
-  return Promise.all(
-    splitEvery(split, arrOfLinks)
-      .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl(link, i, tors[i], torInstances[i], linkIndex))))
-  ).then(flatten)
+  if (linear) {
+    return Promise.all(
+      arrOfLinks.map((link: any, linkIndex: number) => {
+        console.log(linkIndex, ports, ports.length, linkIndex % (ports.length))
+        return saveAssetsFromUrl(link, linkIndex, tors[linkIndex % (ports.length)], torInstances[linkIndex % (ports.length)], linkIndex)
+      })
+    ).then(flatten)
+  } else {
+    return Promise.all(
+      splitEvery(split, arrOfLinks)
+        .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl(link, i, tors[i], torInstances[i], linkIndex))))
+    ).then(flatten)
+  }
 }
 
 const collectionData = (slug?: string) =>
@@ -169,6 +184,7 @@ export const countInDb = (collections: any[]): any => {
         addedAt: c.addedAt,
         totalSupply: c.stats.count, // should have
         count: dbResults[i].count,  // has
+        loading: dbResults[i].loading,
         shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
       }))
     )
@@ -180,12 +196,13 @@ const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i)
 export const saveAssets = (slug?: string) =>
   collectionData(slug)
     .then(countInDb as any)
-    .then(filter(prop('shouldScrape') as any))
+    // .then(filter(prop('shouldScrape') as any))
     .then(topSupply as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
     .then(transform as any)
     // .then(saveLinkSlicedFile) // optional
+    .then(tap((x: any[]) => console.log('x ---------', x)) as any)
     .then(distributeToHttpClients as any)
     .then(tap((x: any[]) => console.log('x ---------', x.length)) as any)
     .catch((e) => {
