@@ -32,7 +32,7 @@ const assets = ['http://localhost:3000/api/asset/0x8a90cab2b38dba80c64b7734e58ee
   'http://localhost:3000/api/asset/0xc92ceddfb8dd984a89fb494c376f9a48b999aafc/5061/score',
   'http://localhost:3000/api/asset/0x57a204aa1042f6e66dd7730813f4024114d74f37/1059/score',
   'http://localhost:3000/api/asset/0x26437d312fb36bdd7ac9f322a6d4ccfe0c4fa313/1988/score',
-  'http://localhost:3000/api/asset/klaytn/0xe47e90c58f8336a2f24bcd9bcb530e2e02e1e8ae/score/1993',
+  'http://localhost:3000/api/asset/klaytn/0xe47e90c58f8336a2f24bcd9bcb530e2e02e1e8ae/1993/score',
   'http://localhost:3000/api/asset/0x76be3b62873462d2142405439777e971754e8e77/10371/score',
   'http://localhost:3000/api/asset/0x368ad4a7a7f49b8fa8f34476be0fc4d04ce622f5/9028/score',
   'http://localhost:3000/api/asset/0xab0b0dd7e4eab0f9e31a539074a03f1c1be80879/572/score',
