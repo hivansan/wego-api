@@ -21,4 +21,8 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/elasticdump --input=http://lo
 
 
 # import
-./node_modules/.bin/elasticdump --input=assets.json --output=http://localhost:9200/assets
+./node_modules/.bin/elasticdump --input=assets.json --output=http://localhost:9200/assets --limit 100000
+
+# prod
+/home/ubuntu/api/current/node_modules/.bin/elasticdump --input=assets.json --output=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 --limit 100000
+/home/ubuntu/api/current/node_modules/.bin/elasticdump --input=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 --output=$ --type=data --overwrite=true --limit=10000 | gzip > /home/ubuntu/assets.json.gz

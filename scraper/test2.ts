@@ -121,10 +121,9 @@ const main = async () => {
   for (const url of assets) {
     try {
       await axios.get(url)
-
+      console.log('completed: ', url);
     } catch (error) {
-      console.log("holi ----------", url);
-
+      console.log('err: ', url);
     }
   }
 }

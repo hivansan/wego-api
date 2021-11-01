@@ -116,8 +116,8 @@ const filterData = pipe(
 
 const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[] => {
   // console.log('c ------------', c);
-  c.count = c.count || 0;
-  const startingOffset = Math.floor(c.count / 50) || 0;
+  c.count = 0; // c.count || 0;
+  const startingOffset = 0; // Math.floor(c.count / 50) || 0;
   return [...Array(Math.ceil((c.totalSupply - c.count) / 50)).keys()].map((i) =>
     `https://api.opensea.io/api/v1/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
 }
