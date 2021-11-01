@@ -59,7 +59,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       return AssetLoader.getAsset(db, contractAddress.toLowerCase(), tokenId)
         .then((body) => (body === null ? Promise.reject(error(404, 'Asset not found')) : body))
         .then(({ body }) =>
-          AssetLoader.getCollection(db, body.slug)
+          AssetLoader.getCollection(db, body.slug, true)
             // Query.findOne(db, 'collections', { term: { _id: body.slug } })
             .then(({ body }: any) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
             .then(({ collection }) =>
@@ -76,7 +76,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
               return countInDb([collection])
                 .then(nth(0))
-                .then(({ shouldScrape }: any) => shouldScrape ? saveAssets(collection.slug) : Promise.resolve(null))
+                .then(({ shouldScrape }: any) => shouldScrape ? Promise.reject({ status: 299, message: 'Collection is being loaded.' }) : Promise.resolve(null))
                 .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 }))
                 .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
                   body: {

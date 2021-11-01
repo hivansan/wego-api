@@ -4,6 +4,9 @@
  * this saves the assets
  * Example usage:
  * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --bots=4 --errsToFile=./data/errors-to-assets.txt`
+ * 
+ * only requested via score endpoint
+ * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt`
  *
  * for just a collection
  * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --collectionFilter=nfh --bots=1`
@@ -14,7 +17,7 @@
 
 import fs from 'fs';
 
-import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse, splitEvery } from 'ramda';
+import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse, splitEvery, when } from 'ramda';
 import axios from 'axios';
 
 import { sleep } from '../server/util';
@@ -38,6 +41,7 @@ const bots: number = +(process.argv.find((s) => s.startsWith('--bots='))?.replac
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
 const linear: boolean = true;//!!process.argv.find((s) => s.startsWith('--linear='))?.replace('--linear=', '');
+const onlyRequested: boolean = !!process.argv.find((s) => s.startsWith('--onlyRequested='))?.replace('--onlyRequested=', '');
 
 let collectionsCounts: any = {};
 
@@ -68,10 +72,10 @@ export async function saveAssetsFromUrl(url: string, i: number, tor?: any, torIn
 
           load(JSON.parse(content), 'assets');
           if (isLastUrlOfCollection || assets.length < 50) {
-            Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
+            Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
           }
         } else {
-          Query.update(db, 'collections', slug, { updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
+          Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[err update collection] url: ${url} ${e}`));
         }
         return assets;
       }))
@@ -105,12 +109,14 @@ const saveLinkSlicedFile = (links: string[][]) => {
   return links;
 };
 
+const sortByRequested = sortBy(prop('requestedScore') as any);
 const sortByAddedAt = sortBy(prop('addedAt') as any);
 // const sortByAddedAt = (x: any) => x.sort((a, b) => (!!a.addedAt ? a.addedAt > b.addedAt : true));
 
 const filterData = pipe(
-  map(pipe<any, any, any>(({ stats, ...fields }) => mergeRight(fields, stats), pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt']))),
-  sortByAddedAt,
+  when(() => onlyRequested, filter(prop('requestedScore') as any)),
+  filter(prop('shouldScrape') as any) as any,
+  map(pipe<any, any, any>(({ stats, ...fields }) => mergeRight(fields, stats), pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt', 'requestedScore']))),
   filter((c: any) => c.totalSupply),
 );
 
@@ -124,7 +130,11 @@ const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[
 
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
-const transform = pipe(toLinks, flatten, dropRepeats);
+const transform = pipe(
+  when((x: any) => onlyRequested && x.length, (x) => [x[0]]),
+  toLinks,
+  flatten,
+  dropRepeats);
 
 const distributeToHttpClients = (arrOfLinks: string[]) => {
   const split = Math.ceil(arrOfLinks.length / +bots)
@@ -151,7 +161,7 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
   if (linear) {
     return Promise.all(
       arrOfLinks.map((link: any, linkIndex: number) => {
-        console.log(linkIndex, ports, ports.length, linkIndex % (ports.length))
+        // console.log(linkIndex, ports, ports.length, linkIndex % (ports.length))
         return saveAssetsFromUrl(link, linkIndex, tors[linkIndex % (ports.length)], torInstances[linkIndex % (ports.length)], linkIndex)
       })
     ).then(flatten)
@@ -182,9 +192,10 @@ export const countInDb = (collections: any[]): any => {
         slug: c.slug,
         updatedAt: c.updatedAt,
         addedAt: c.addedAt,
-        totalSupply: c.stats.count, // should have
+        totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
-        loading: dbResults[i].loading,
+        loading: c.loading,
+        requestedScore: c.requestedScore,
         shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
       }))
     )
@@ -196,13 +207,10 @@ const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i)
 export const saveAssets = (slug?: string) =>
   collectionData(slug)
     .then(countInDb as any)
-    // .then(filter(prop('shouldScrape') as any))
-    .then(topSupply as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
-    .then(transform as any)
-    // .then(saveLinkSlicedFile) // optional
     .then(tap((x: any[]) => console.log('x ---------', x)) as any)
+    .then(transform as any)
     .then(distributeToHttpClients as any)
     .then(tap((x: any[]) => console.log('x ---------', x.length)) as any)
     .catch((e) => {

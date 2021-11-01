@@ -63,7 +63,7 @@ export const error = (status: number, msg: string, extra: {} = {}) => Promise.re
 
 export const handleError = (msg: string) => (e: any) => {
   console.error(msg, e);
-  return Promise.resolve(e).then(eVal => eVal.status && eVal.status > 100 ? eVal : error(503, 'Service error'));
+  return Promise.resolve(e).then(eVal => eVal.status && eVal.status > 100 ? error(eVal.status, eVal.message) : error(503, 'Service error'));
 }
 
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));

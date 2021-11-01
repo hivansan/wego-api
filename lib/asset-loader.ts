@@ -124,14 +124,14 @@ const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   //, console.log('hola') // this function will execute without being returned
 ));
 
-export async function getCollection(db: ElasticSearch.Client, slug: string): Promise<any> {
+export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
   return Query.findOne(db, 'collections', { term: { _id: slug } })
     .then((body) =>
       body === null
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
-            : ({ body: indexCollection(db)({ ...body, addedAt: +new Date() }) } as any)
+            : ({ body: indexCollection(db)({ ...body, addedAt: +new Date(), requestedScore: !!requestedScore }) } as any)
         ))
         : { body: body._source }
     )
