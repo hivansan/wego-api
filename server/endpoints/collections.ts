@@ -8,7 +8,7 @@ import * as AssetLoader from '../../lib/asset-loader';
 import * as Query from '../../lib/query';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop } from 'ramda';
+import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop, concat, map } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
@@ -16,7 +16,7 @@ import { COLLECTION_SORTS } from '../../lib/constants';
 import * as Stream from '@trivago/samsa';
 import * as StreamOps from 'stream-json/filters/Pick';
 import { streamValues } from 'stream-json/streamers/StreamValues';
-import { Readable } from 'stream';
+import { Readable, Transform } from 'stream';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -46,6 +46,8 @@ type CollectionQuery = Decoded<typeof params.listCollections>;
 const searchQuery = object('Search', {
   q: nullable(string),
 });
+
+type Trait = { trait_type: string, value: any };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   const index = tap((collection: any) => (
@@ -100,6 +102,20 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
+
+      const index: string[] = [];
+      const unique = new Transform({ objectMode: true });
+
+      unique._transform = (trait: Trait, _, next) => {
+        let key = `${trait.trait_type}:${trait.value}`;
+
+        if (!index.includes(key)) {
+          unique.push(trait);
+          index.push(key);
+        }
+        next();
+      };
+
       return Promise.all([
         Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, asStream: true }).then(Query.stream),
         Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 10000, asStream: true }).then(Query.stream)
@@ -108,11 +124,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         .then((stream: Readable) => stream.pipe(StreamOps.pick({ filter: pipe(last, equals('traits')) }))
           .pipe(streamValues())
           .pipe(Stream.flatMap(pipe(prop<any, any>('value'), Stream.from)))
+          .pipe(unique)
         ).then(body => ({
-          wrap: ['{ "results": [', '] }', ','] as const,
+          wrap: ['{ "results": [', '] }', ','],
           body
         }) as ResponseVal)
-        .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
   }));
 
