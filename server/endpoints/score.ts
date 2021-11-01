@@ -77,7 +77,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               return countInDb([collection])
                 .then(nth(0))
                 .then(({ shouldScrape }: any) => shouldScrape ? Promise.reject({ status: 299, message: 'Collection is being loaded.' }) : Promise.resolve(null))
-                .then(() => Query.find(db, 'assets', { match: { slug: body.slug } }, { limit: 10000 }))
+                .then(() => Query.find(db, 'assets', { term: { 'slug.keyword': body.slug } }, { limit: 10000 }))
                 .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
                   body: {
                     meta: { took, timedOut, total: total.value },
