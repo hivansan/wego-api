@@ -84,25 +84,34 @@ const getDocId = (doc: any, index: string) => {
   if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
 };
 
-export const load = async (content: any[], index: string) => {
+export const load = async (content: any[], index: string, update?: boolean) => {
   let ix = 0;
   if (!content.length) return;
 
   console.log(`loading ${content.length} ${index}...`, typeof content);
   const body = content.flatMap((doc: any) => [
-    {
-      index: {
-        _index: index,
-        _type: '_doc',
-        _id: getDocId(doc, index),
+    update
+      ? {
+        update: {
+          _id: getDocId(doc, index),
+          _index: index,
+        }
+      }
+      : {
+        index: {
+          _index: index,
+          _type: '_doc',
+          _id: getDocId(doc, index),
+        },
       },
-    },
-    doc,
+    update ? { doc } : doc,
   ]);
+
+  // console.log(JSON.stringify(body))
 
   while (body.length > 0) {
     const chop = maxChop(body);
-    const result = await client.bulk({ refresh: true, body: chop });
+    const result = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
     // console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
     // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
     ix += chop.length;

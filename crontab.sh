@@ -1,0 +1,2 @@
+* * * * * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt &>/tmp/mycommand.log
+* * * * * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/scraper/rank.ts &>/tmp/mycommand.log

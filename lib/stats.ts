@@ -29,7 +29,8 @@ export const traitReducer = (count: number) => (acc: any, t: Trait): TraitStats 
       trait_type: t.trait_type,
       value: t.value,
       traitStat: norm,
-      traitScore: 1 / norm,
+      traitScore: +((1 / norm).toFixed(8)),
+      trait_count: t.trait_count,
     }]),
   };
 };

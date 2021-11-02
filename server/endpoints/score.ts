@@ -76,7 +76,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
               return countInDb([collection])
                 .then(nth(0))
-                .then(({ shouldScrape }: any) => shouldScrape ? Promise.reject({ status: 299, message: 'Collection is being loaded.' }) : Promise.resolve(null))
+                .then(({ shouldScrape }: any) => shouldScrape ? Promise.reject({ status: 202, message: 'Collection is being loaded.' }) : Promise.resolve(null))
                 .then(() => Query.find(db, 'assets', { term: { 'slug.keyword': body.slug } }, { limit: 10000 }))
                 .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
                   body: {
@@ -85,7 +85,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                   }
                 }))
                 .then(({ body: assets }: any) => {
-                  return Stats.collection({ count: body.collection?.stats?.count } as any, assets.results)
+                  return Stats.collection(body.collection?.stats?.count, assets.results)
                     .then(find(propEq('id', tokenId)))
                     .then((stats) => ({
                       body: mergeRight(body, {

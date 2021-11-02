@@ -180,22 +180,22 @@ const collectionData = (slug?: string) =>
     : Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
-      .then(async ({ body }) =>
-        body.results.filter((c: { slug: string | any[] }) => c.slug?.length)
-      );
+      .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length));
 
 export const countInDb = (collections: any[]): any => {
   const dbPromises = collections.map((c: { slug: any }) => Query.count(db, 'assets', { term: { 'slug.keyword': c.slug } }, {}));
   return Promise.all(dbPromises)
     .then((dbResults: any[]) =>
       collections.map((c: any, i: number) => ({
-        slug: c.slug,
+        ...c,
+        // ranked: c.ranked,
+        // slug: c.slug,
         updatedAt: c.updatedAt,
         addedAt: c.addedAt,
         totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
-        loading: c.loading,
-        requestedScore: c.requestedScore,
+        // loading: c.loading,
+        // requestedScore: c.requestedScore,
         shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
       }))
     )
