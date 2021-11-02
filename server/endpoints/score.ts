@@ -64,12 +64,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             .then(({ body }: any) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
             .then(({ collection }) =>
               countInDb([collection]).then((counts: any[]) => {
-                console.log('counts[0]', counts[0]);
+                // console.log('counts[0]', counts[0]);
                 return { collection, ...counts[0] }
               })
             )
             .then(({ collection }) => {
               body.collection = collection;
+
+              if (body.statisticalRarityRank) return { body };
 
               const count = body.collection?.stats?.count || null;
               const mappedTraits = body.traits?.map(mapTraits(count)) || [];
