@@ -29,7 +29,7 @@ const params = {
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
     sortBy: pipe(
-      nullable(inList(['tokenId', 'sale_date', 'sale_count', 'sale_price', 'current_escrow_price' /* 'rarityScore', */] as const), null),
+      nullable(inList(['tokenId', 'sale_date', 'sale_count', 'sale_price', 'current_escrow_price', 'rarityScoreRank', 'rarityScore',] as const), null),
       Result.mapError(always(null))
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
@@ -77,23 +77,6 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
-        /* let count: number;
-        if (slug) {
-          Query.findOne(db, 'collections', { term: { _id: slug } }).then((body) => (count = body?._source?.stats?.count));
-        } */
-        /* return AssetLoader.assetsFromRemote(slug, limit, offset, sortBy, sortDirection, null)
-        .then((body) => (body === null ? error(404, 'Not found') : ({ body } as any)))
-        .then(({ body }) => {
-          if (body.length) {
-            load(body.map(openseaAssetMapper), 'assets')
-            // db.bulk({ refresh: true, body: docs }); //.then(console.log.bind(console, 'saved'));
-          }
-          return { body: { meta: {}, results: body.map(openseaAssetMapper)} };
-        })
-        .catch((e) => {
-          console.error('[Assets]', e);
-          return error(503, 'Service error');
-        }) */
         return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
