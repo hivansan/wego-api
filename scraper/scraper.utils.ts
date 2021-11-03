@@ -126,29 +126,38 @@ export const readPromise = (path: string, method: string) =>
     });
   });
 
-export const openseaAssetMapper = (asset: any) => ({
-  tokenId: asset.token_id,
-  contractAddress: asset.asset_contract.address.toLowerCase(),
-  slug: asset.collection.slug,
-  name: asset.name,
-  owners: asset.owners,
-  owner: asset.owner,
-  description: asset.description, //  rariMeta.description,
-  imageBig: asset.image_original_url, // rariMeta.image.url.BIG,
-  imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
-  animationUrl: asset.animation_url,
-  traits: asset.traits,
-  traitsCount: asset.traits?.length || 0,
-  rarityScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc: number, t: { trait_count: number; }) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
-  tokenMetadata: asset.token_metadata,
-  updatedAt: new Date(),
-  creator: asset.creator,
-  topBid: asset.top_bid,
-  lastSale: asset.last_sale,
-  sellOrders: asset.sell_orders,
-  numSales: asset.num_sales,
-  lastSalePrice: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) : null,
-  lastSalePriceUSD: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) * +asset.last_sale.payment_token?.usd_price : null,
-  currentPrice: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) : null,
-  currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
-});
+export const openseaAssetMapper = (asset: any) => {
+  const count = asset.collection?.stats?.total_supply;
+  const reducer = (acc: number, t: { trait_count: number; }) => {
+    const norm = t.trait_count / count;
+    return norm ? acc + (1 / (norm)) : acc;
+  }
+  const rarityScore = asset?.traits?.length && count && asset.traits.reduce(reducer, 0);
+
+  return {
+    tokenId: asset.token_id,
+    contractAddress: asset.asset_contract.address.toLowerCase(),
+    slug: asset.collection.slug,
+    name: asset.name,
+    owners: asset.owners,
+    owner: asset.owner,
+    description: asset.description, //  rariMeta.description,
+    imageBig: asset.image_original_url, // rariMeta.image.url.BIG,
+    imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
+    animationUrl: asset.animation_url,
+    traits: asset.traits,
+    traitsCount: asset.traits?.length || 0,
+    rarityScore,
+    tokenMetadata: asset.token_metadata,
+    updatedAt: new Date(),
+    creator: asset.creator,
+    topBid: asset.top_bid,
+    lastSale: asset.last_sale,
+    sellOrders: asset.sell_orders,
+    numSales: asset.num_sales,
+    lastSalePrice: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) : null,
+    lastSalePriceUSD: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) * +asset.last_sale.payment_token?.usd_price : null,
+    currentPrice: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) : null,
+    currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
+  }
+};
