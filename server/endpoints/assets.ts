@@ -27,15 +27,12 @@ const params = {
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
     sortBy: pipe(
-
-
-
       nullable(inList([
         // 'tokenId',
-        'sale_date',
-        'sale_count',
-        'sale_price',
-        'current_escrow_price',
+        // 'sale_date',
+        // 'sale_price',
+        // 'current_escrow_price',
+        'numSales',
         'rarityScoreRank',
         'rarityScore',
         'traitsCount',
@@ -74,19 +71,18 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * this should always look first directly into Opensea and upsert it to our db.
    */
   app.get('/api/asset/:contractAddress/:tokenId', respond(req =>
-    params.getAsset(req.params).map(({ contractAddress, tokenId }) => {
-
-      return AssetLoader.getAsset(db, contractAddress, tokenId).then(body => body)
+    params.getAsset(req.params).map(({ contractAddress, tokenId }) =>
+      AssetLoader.getAsset(db, contractAddress, tokenId).then(body => body)
         .then(body => body === null ? error(404, 'Not found') : body as any)
         .catch(e => {
           console.error('[get asset]', e);
           return error(503, 'Service error');
         })
-    }).defaultTo(error(400, 'Bad request'))
+    ).defaultTo(error(400, 'Bad request'))
   ));
 
-  app.get('/api/assets', respond(req => {
-    return params
+  app.get('/api/assets', respond(req =>
+    params
       .getAssets(req.query)
       .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
         return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
@@ -94,21 +90,22 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
               meta: { took, timedOut, total: total.value },
-              results: hits.map(toResult).map((r: any) => r.value),
+              results: hits.map(toResult).map((r: any) => r.value)
+              // .map((a: any) => ({
+              //   currentPrice: a.currentPrice,
+              //   rarityScore: a.rarityScore,
+              //   rarityScoreRank: a.rarityScoreRank,
+              //   tokenId: a.tokenId,
+              //   lastSalePrice: a.lastSalePrice,
+              //   traitsCount: a.traitsCount,
+              // })),
             },
-          })
-          )
-          .then(({ body }) => {
-            /* console.log(body, count);
-            const shouldUpdate = count <= 10000 && body.results.length < count;
-            console.log('shouldUpdate', shouldUpdate); */
-            return { body };
-          })
+          }))
           .catch((e) => {
             console.error('[Get Assets]', e);
             return error(503, e.message + ': ' + JSON.stringify(e.meta));
           });
       })
-      .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity);
-  }));
+      .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity)
+  ));
 };
