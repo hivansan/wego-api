@@ -138,6 +138,7 @@ export const openseaAssetMapper = (asset: any) => ({
   imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
   animationUrl: asset.animation_url,
   traits: asset.traits,
+  traitsCount: asset.traits?.length || 0,
   rarityScore: asset?.traits?.length && asset.collection?.stats?.total_supply ? asset.traits.reduce((acc: number, t: { trait_count: number; }) => acc + 1 / (t.trait_count / asset.collection.stats.total_supply), 0) : null,
   tokenMetadata: asset.token_metadata,
   updatedAt: new Date(),
@@ -146,5 +147,8 @@ export const openseaAssetMapper = (asset: any) => ({
   lastSale: asset.last_sale,
   sellOrders: asset.sell_orders,
   numSales: asset.num_sales,
-  _lastSalePrice: +asset.last_sale?.payment_token?.usd_price || null,
+  lastSalePrice: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) : null,
+  lastSalePriceUSD: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) * +asset.last_sale.payment_token?.usd_price : null,
+  currentPrice: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) : null,
+  currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
 });
