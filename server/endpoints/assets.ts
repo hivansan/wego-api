@@ -10,8 +10,6 @@ import { clamp, pipe, always, identity, tap } from 'ramda';
 import * as Query from '../../lib/query';
 import { toResult } from './util';
 import { Asset } from '../../models/asset';
-import { openseaAssetMapper } from '../../scraper/scraper.utils';
-import { load } from '../../scraper/scraper.utils';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -29,7 +27,21 @@ const params = {
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
     sortBy: pipe(
-      nullable(inList(['tokenId', 'sale_date', 'sale_count', 'sale_price', 'current_escrow_price', 'rarityScoreRank', 'rarityScore',] as const), null),
+
+
+
+      nullable(inList([
+        // 'tokenId',
+        'sale_date',
+        'sale_count',
+        'sale_price',
+        'current_escrow_price',
+        'rarityScoreRank',
+        'rarityScore',
+        'traitsCount',
+        'currentPrice',
+        'lastSalePrice',
+      ] as const), null),
       Result.mapError(always(null))
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
@@ -82,7 +94,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
               meta: { took, timedOut, total: total.value },
-              results: hits.map(toResult).map((r: any) => r.value),
+              results: hits.map(toResult).map((r: any) => r.value).map((a: any) => ({ rarityScore: a.rarityScore, rarityScoreRank: a.rarityScoreRank, tokenId: a.tokenId, lastSalePrice: a.lastSalePrice })),
             },
           })
           )
