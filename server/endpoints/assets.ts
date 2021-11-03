@@ -94,7 +94,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
               meta: { took, timedOut, total: total.value },
-              results: hits.map(toResult).map((r: any) => r.value).map((a: any) => ({ rarityScore: a.rarityScore, rarityScoreRank: a.rarityScoreRank, tokenId: a.tokenId, lastSalePrice: a.lastSalePrice })),
+              results: hits.map(toResult).map((r: any) => r.value),
             },
           })
           )
