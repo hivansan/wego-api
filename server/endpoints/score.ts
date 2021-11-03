@@ -6,25 +6,12 @@ import { match } from '../../models/util';
 import { debugStr, error, handleError, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Stats from '../../lib/stats';
+import * as Asset from '../../models/asset';
 
 import * as Query from '../../lib/query';
 import { toResult } from './util';
 import { countInDb, saveAssets } from '../../scraper/scraper.assets';
 
-type Stats = {
-  statisticalRarity: number;
-  singleTraitRarity: number;
-  avgTraitRarity: number;
-  rarityScore: number;
-};
-
-type Trait = {
-  trait_type: string;
-  value: string | number;
-  trait_count: number;
-}
-
-type TraitStat = { traitStat: number, traitScore: number };
 
 const params = {
   getAsset: object('AssetParams', {
@@ -33,18 +20,7 @@ const params = {
   })
 }
 
-
-const addProps = <T extends object, U extends object>(fn: (obj: T) => U) => (obj: T) => mergeRight(obj, fn(obj));
-
-const mapTraits = (total: number) => pipe<Trait & {}, Trait, Trait>(
-  pick(['trait_type', 'value', 'trait_count']),
-  addProps<Trait, TraitStat>(({ trait_count }) => ({
-    traitStat: trait_count / total,
-    traitScore: 1 / (trait_count / total),
-  }))
-);
-
-const traitReducer = (acc: Stats & { traits: any[] }, t: { traitStat: number }) => ({
+const traitReducer = (acc: Asset.Stats & { traits: any[] }, t: { traitStat: number }) => ({
   statisticalRarity: acc.statisticalRarity * t.traitStat,
   singleTraitRarity: Math.min(acc.singleTraitRarity, t.traitStat),
   avgTraitRarity: acc.avgTraitRarity + t.traitStat,
@@ -74,7 +50,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               if (body.statisticalRarityRank) return { body };
 
               const count = body.collection?.stats?.count || null;
-              const mappedTraits = body.traits?.map(mapTraits(count)) || [];
+              const mappedTraits = body.traits?.map(Asset.mapTraits(count)) || [];
 
               return countInDb([collection])
                 .then(nth(0))

@@ -1,4 +1,4 @@
-import { array, boolean, Decoded, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
+import { array, boolean, Decoded, inList, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { match } from './util';
 import Result from '@ailabs/ts-utils/dist/result';
 
@@ -112,3 +112,34 @@ export const openSeaCollection = object('OpenSeaCollection', {
     })
   })
 });
+
+export const openSeaEvent = object('OpenSeaEvent', {
+  asset: object('EventAsset', {
+    token_id: string,
+    asset_contract: object('EventContract', {
+      address: string
+    }),
+    collection: object('EventCollection', {
+      name: string,
+      slug: string,
+    })
+  }),
+  auction_type: inList(['english', 'dutch', 'min-price'] as const),
+  event_type: inList([
+    'created',
+    'successful',
+    'cancelled',
+    'bid_entered',
+    'bid_withdrawn',
+    'transfer',
+    'approve'
+  ] as const)
+});
+
+export const openSeaUser = object('OpenSeaUser', {
+  address: string,
+  profile_img_url: string,
+  user: nullable(object('UserConfig', {
+    username: nullable(string)
+  }))
+})

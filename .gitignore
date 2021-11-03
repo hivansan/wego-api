@@ -22,8 +22,10 @@ public
 .vscode/*
 node_modules
 data/assets.json
+dist
 # Keep environment variables out of version control
 .env
+CREDENTIALS
 data/chunks/*
 data/links-chunks/*
 sessions/*

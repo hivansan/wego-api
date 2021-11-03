@@ -6,17 +6,14 @@ import { toResult } from './util';
 import { error, handleError, respond, ResponseVal } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Query from '../../lib/query';
+import * as Asset from '../../models/asset';
 
 import { toInt } from '../../models/util';
 import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop, concat, map, uniqBy } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
+import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
-
-import * as Stream from '@trivago/samsa';
-import * as StreamOps from 'stream-json/filters/Pick';
-import { streamValues } from 'stream-json/streamers/StreamValues';
-import { Readable, Transform } from 'stream';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -100,16 +97,27 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     )).defaultTo(error(400, 'Bad request'))
   ));
 
+  app.get('/api/collections/:slug/score', respond(req => {
+    return params.getCollection(req.params).map(({ slug }) => {
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+        .then(path(['body', 'hits', 'hits']))
+        .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => Asset.Asset[])
+        .then(assets => Stats.collection(assets.length, assets))
+        .then(objOf('body'))
+        .catch(handleError(`[/collections/score error, slug: ${slug}]`));
+    }).defaultTo(error(400, 'Bad request'));
+  }));
+
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
       return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
-        .then(({ body: { hits: { hits } } }) => hits)
+        .then(path(['body', 'hits', 'hits']))
         .then(pipe<any, any, any, any>(
           map((a: any) => a._source.traits),
           flatten,
           uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)
         ))
-        .then(body => ({ body }) as ResponseVal)
+        .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
   }));
@@ -124,6 +132,16 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       id: req.params.slug,
       body: {
         doc: { hidden: true }
+      }
+    }) as any
+  )));
+
+  app.post('/api/collections/:slug/unhide', respond(req => (
+    db.update({
+      index: 'collections',
+      id: req.params.slug,
+      body: {
+        doc: { hidden: false }
       }
     }) as any
   )));
