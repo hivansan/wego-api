@@ -1,0 +1,16 @@
+# Ubuntu SystemD service file for WeGo app
+
+[Unit]
+Description=WeGo API Backend Service
+After=network.target
+
+[Service]
+User=ec2-user ## FIX THIS TO USE A REAL APP USER WITH RESTRICTED PERMISSIONS
+EnvironmentFile=/etc/wego/env
+WorkingDirectory=/home/ec2-user/app
+ExecStart=/home/ec2-user/.nvm/versions/node/v17.0.1/bin/node server/index.js
+Restart=on-failure
+RestartSec=1s
+
+[Install]
+WantedBy=multi-user.target
