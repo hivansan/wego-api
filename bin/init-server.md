@@ -15,6 +15,7 @@ nvm install node
 node --version
 ```
 
-Finally, create `/etc/wego/env` on the server side. It needs the same values as `.env.template`, as well as a `PORT`.
+Finally, create `/etc/wego/env` on the server side. It needs the same values as `.env.template`, as well as a `NODE_PORT`,
+and optionally `NODE_HOST` and maybe also `NODE_ENV`.
 
 Also, make sure the Node version and path in `wego.service` matches the version installed (run `realpath $(which node)`).

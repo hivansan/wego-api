@@ -30,3 +30,4 @@ ssh ${REMOTE_USER}@${HOST} -i ${KEYFILE} 'bash -s' < ${SCRIPT_DIR}/depends.sh
 
 
 echo "Restarting service..."
+ssh ${REMOTE_USER}@${HOST} -i ${KEYFILE} "sudo systemctl daemon-reload; sudo systemctl restart wego"
