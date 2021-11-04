@@ -1,11 +1,11 @@
-import { curry, evolve } from 'ramda';
+import { curry, evolve, flip, identity, prop } from 'ramda';
 import { Asset } from '../models/asset';
 
 export const rankFields = [
-  ['statisticalRarity', 'statisticalRarityRank'],
-  ['singleTraitRarity', 'singleTraitRarityRank'],
-  ['avgTraitRarity', 'avgTraitRarityRank'],
-  ['rarityScore', 'rarityScoreRank']
+  ['statisticalRarity', 'statisticalRarityRank', false],
+  ['singleTraitRarity', 'singleTraitRarityRank', false],
+  ['avgTraitRarity', 'avgTraitRarityRank', false],
+  ['rarityScore', 'rarityScoreRank', true]
 ] as const;
 
 type Trait = {
@@ -20,11 +20,11 @@ export type StatMap = { [key: string]: TraitStats };
 export const traitReducer = (count: number) => (acc: any, t: Trait): TraitStats => {
   const norm = t.trait_count / count;
 
-  return {
+  return norm === 0 ? acc : {
     statisticalRarity: acc.statisticalRarity * norm,
     singleTraitRarity: Math.min(acc.singleTraitRarity, norm),
     avgTraitRarity: acc.avgTraitRarity + norm,
-    rarityScore: acc.rarityScore + 1 / norm,
+    rarityScore: acc.rarityScore + 1 / (norm || 1),
     traits: acc.traits.concat([{
       trait_type: t.trait_type,
       value: t.value,
@@ -55,18 +55,31 @@ export const statsByTraits = (traits: Trait[], count: number): TraitStats => (
  * @HACK All the vals params are any because the constraint type signagure is wrong.
  */
 export const rank = <
-  Val extends object & { [key in From]: number },
+  Val extends object & { [key in From]: number } & { id: string },
   From extends keyof Val,
   NewKey extends string
->(from: keyof Val, to: NewKey, vals: Val[]) => {
-  vals.sort((a, b) => a[from] - b[from]);
+>(from: keyof Val, to: NewKey, shouldFlip: boolean, vals: Val[]) => {
 
-  let lastRank = 1, lastVal: number = vals[0][from];
+  const sortFn = (a: Val, b: Val) => {
+    const diff = a[from] - b[from];
+    const [idA, idB] = [parseInt(a.id, 10), parseInt(b.id, 10)];
+    return diff !== 0
+      ? diff
+      : (shouldFlip ? idB - idA : idA - idB)
+  }
+
+  vals.sort((shouldFlip ? flip : identity)(sortFn));
+
+  let lastRank = 1, totalOfRank = 1, lastVal: number = vals[0][from];
 
   vals.forEach(val => {
-    if (lastVal !== val[from]) {
-      lastRank++;
+    if (lastVal === val[from]) {
+      totalOfRank++;
+    } else if (lastVal !== val[from]) {
+      lastRank += totalOfRank - 1;
+      totalOfRank = 1;
     }
+
     Object.assign(val, { [to]: lastRank });
     lastVal = val[from];
   });
@@ -85,6 +98,6 @@ export const index = (count: number) => (asset: Asset) => Object.assign(
 
 export async function collection(count: number, assets: Asset[]) {
   const collectionStats = assets.map(index(count));
-  rankFields.forEach(([from, to]) => rank(from, to, collectionStats as any));
+  rankFields.forEach(([from, to, shouldFlip]) => rank(from, to, shouldFlip, collectionStats as any));
   return collectionStats;
 }
