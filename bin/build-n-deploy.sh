@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -x
-
 # Local variables
 SCRIPT_DIR="$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 APP_DIR="${SCRIPT_DIR}/.."
@@ -30,4 +28,6 @@ ssh ${REMOTE_USER}@${HOST} -i ${KEYFILE} 'bash -s' < ${SCRIPT_DIR}/depends.sh
 
 
 echo "Restarting service..."
-ssh ${REMOTE_USER}@${HOST} -i ${KEYFILE} "sudo systemctl daemon-reload; sudo systemctl restart wego"
+REMOTE_USER=${REMOTE_USER} HOST=${HOST} KEYFILE=${KEYFILE} ${SCRIPT_DIR}/restart.sh
+
+echo "Done"
