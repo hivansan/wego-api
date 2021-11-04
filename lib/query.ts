@@ -58,6 +58,8 @@ export const search2 = curry((
   !query ? {} : { multi_match: { query, fuzziness: 6, fields } }
 ));
 
+// Example:
+// const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
 export const byTraits = curry((slug: string, traits?: { [key: string]: string | number | (string | number)[] }) => ({
   bool: {
     must: [
@@ -67,16 +69,16 @@ export const byTraits = curry((slug: string, traits?: { [key: string]: string | 
           ? {
             bool: {
               must: [
-                { match: { 'traits.trait_type': type } }
+                { match: { 'traits.trait_type.keyword': type } }
               ],
-              should: value.map(val => ({ match: { 'traits.value': val } })),
+              should: value.map(val => ({ match: { 'traits.value.keyword': val } })),
               minimum_should_match: 1
             }
           } : {
             bool: {
               must: [
-                { match: { 'traits.trait_type': type } },
-                { match: { 'traits.value': value } }
+                { match: { 'traits.trait_type.keyword': type } },
+                { match: { 'traits.value.keyword': value } }
               ]
             }
           }
@@ -84,9 +86,6 @@ export const byTraits = curry((slug: string, traits?: { [key: string]: string | 
     ]
   }
 }));
-
-// Example:
-// const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
 
 /**
  * Insert a single doc or an array of docs into the database.

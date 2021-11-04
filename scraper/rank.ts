@@ -16,7 +16,7 @@ const main = () => {
       ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
     .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length))
     .then(countInDb as any)
-    .then((x) => x.filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) === 0 && !c.ranked))
+    .then((x) => x.filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked))
     .then(async (collections) => {
       collections.length = 1;
       for (const collection of collections) {

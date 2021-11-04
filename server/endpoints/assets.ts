@@ -37,7 +37,9 @@ const params = {
         'rarityScore',
         'traitsCount',
         'currentPrice',
+        'currentPriceUSD',
         'lastSalePrice',
+        'lastSalePriceUSD',
       ] as const), null),
       Result.mapError(always(null))
     ),
@@ -93,10 +95,12 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
               results: hits.map(toResult).map((r: any) => r.value)
               // .map((a: any) => ({
               //   currentPrice: a.currentPrice,
+              //   currentPriceUSD: a.currentPriceUSD,
               //   rarityScore: a.rarityScore,
               //   rarityScoreRank: a.rarityScoreRank,
               //   tokenId: a.tokenId,
               //   lastSalePrice: a.lastSalePrice,
+              //   lastSalePriceUSD: a.lastSalePriceUSD,
               //   traitsCount: a.traitsCount,
               // })),
             },

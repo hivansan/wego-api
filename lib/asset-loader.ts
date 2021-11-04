@@ -32,16 +32,16 @@ export async function fromDb(
           return Array.isArray(value)
             ? {
               bool: {
-                must: [{ match: { 'traits.trait_type': type } }],
-                should: value.map((val) => ({ match: { 'traits.value': val } })),
+                must: [{ match: { 'traits.trait_type.keyword': type } }],
+                should: value.map((val) => ({ match: { 'traits.value.keyword': val } })),
                 minimum_should_match: 1,
               },
             }
             : {
               bool: {
                 must: [
-                  { match: { 'traits.trait_type': type } },
-                  { match: { 'traits.value': value } }
+                  { match: { 'traits.trait_type.keyword': type } },
+                  { match: { 'traits.value.keyword': value } }
                 ],
               },
             };
@@ -50,7 +50,7 @@ export async function fromDb(
     },
   };
 
-  // console.log('Query', util.inspect(q, false, null, true));
+  console.log('Query: ', JSON.stringify(q, null, 2));
   return Query.find(db, 'assets', q, { offset, sort, limit });
 }
 
