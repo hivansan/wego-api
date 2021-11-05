@@ -29,7 +29,16 @@ const params = {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
-    priceRange: nullable(range),
+    priceRange: nullable<Decoded<typeof range>>(pipe(
+      string,
+      parse(pipe<any, any, any, any, any>(
+        Result.attempt(JSON.parse),
+        parse(range),
+        /** These two are sort of a lame hack to handle failures gracefully */
+        Result.defaultTo({}),
+        Result.ok
+      ))
+    )),
     rankRange: nullable<Decoded<typeof range>>(pipe(
       string,
       parse(pipe<any, any, any, any, any>(
