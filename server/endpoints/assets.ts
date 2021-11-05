@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { array, nullable, object, string, inList, oneOf, dict, parse, number } from '@ailabs/ts-utils/dist/decoder';
+import { array, nullable, object, string, inList, oneOf, dict, parse, number, Decoded } from '@ailabs/ts-utils/dist/decoder';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
@@ -15,6 +15,9 @@ import { Asset } from '../../models/asset';
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
  * JS values into typed values.
  */
+
+const range = object('Range', { lte: number, gte: number });
+
 const params = {
 
   getAsset: object('AssetParams', {
@@ -26,6 +29,17 @@ const params = {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
+    priceRange: nullable(range),
+    rankRange: nullable<Decoded<typeof range>>(pipe(
+      string,
+      parse(pipe<any, any, any, any, any>(
+        Result.attempt(JSON.parse),
+        parse(range),
+        /** These two are sort of a lame hack to handle failures gracefully */
+        Result.defaultTo({}),
+        Result.ok
+      ))
+    )),
     sortBy: pipe(
       nullable(inList([
         // 'tokenId',
@@ -45,21 +59,22 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
-    traits: nullable<{ [key: string]: string | number | (string | number)[] }>(pipe(
-      string,
-      parse(pipe<any, any, any, any, any>(
-        Result.attempt(JSON.parse),
-        parse(dict(oneOf<string | number | (string | number)[]>([
-          string,
-          number,
-          array(string),
-          array(number)
-        ]))),
-        /** These two are sort of a lame hack to handle failures gracefully */
-        Result.defaultTo({}),
-        Result.ok
-      ))
-    ), {}),
+    traits: nullable<{ [key: string]: string | number | (string | number)[] }>(
+      pipe(
+        string,
+        parse(pipe<any, any, any, any, any>(
+          Result.attempt(JSON.parse),
+          parse(dict(oneOf<string | number | (string | number)[]>([
+            string,
+            number,
+            array(string),
+            array(number)
+          ]))),
+          /** These two are sort of a lame hack to handle failures gracefully */
+          Result.defaultTo({}),
+          Result.ok
+        ))
+      ), {}),
   }),
 };
 
@@ -86,8 +101,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits)
+      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, rankRange }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, rankRange as any)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {

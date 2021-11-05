@@ -11,12 +11,12 @@ import { sleep } from '../server/util';
 import { load } from './scraper.utils';
 
 const main = () => {
-  Query.find(db, 'collections', { match_all: {} }, { limit: 5000 })
+  Query.find(db, 'collections', { match_all: {}, _source: ['slug'] }, { limit: 5000 },)
     .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
       ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
     .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length))
     .then(countInDb as any)
-    .then((x) => x.filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked))
+    .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked) as any)
     .then(async (collections) => {
       // collections.length = 1;
       for (const collection of collections) {
