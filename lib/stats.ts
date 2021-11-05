@@ -55,14 +55,14 @@ export const statsByTraits = (traits: Trait[], count: number): TraitStats => (
  * @HACK All the vals params are any because the constraint type signagure is wrong.
  */
 export const rank = <
-  Val extends object & { [key in From]: number } & { id: string },
+  Val extends object & { [key in From]: number } & { id: string | number },
   From extends keyof Val,
   NewKey extends string
 >(from: keyof Val, to: NewKey, shouldFlip: boolean, vals: Val[]) => {
 
   const sortFn = (a: Val, b: Val) => {
     const diff = a[from] - b[from];
-    const [idA, idB] = [parseInt(a.id, 10), parseInt(b.id, 10)];
+    const [idA, idB] = [parseInt(a.id.toString(), 10), parseInt(b.id.toString(), 10)];
     return diff !== 0
       ? diff
       : (shouldFlip ? idB - idA : idA - idB)
