@@ -119,7 +119,7 @@ const sortByAddedAt = sortBy(prop('addedAt') as any);
 const filterData = pipe(
   // when(() => onlyRequested, filter(prop('requestedScore') as any)),
   filter(prop('shouldScrape') as any) as any,
-  map(pipe<any, any, any>(({ stats, ...fields }) => mergeRight(fields, stats), pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt', 'requestedScore']))),
+  map((pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt', 'requestedScore']) as any)),
   filter((c: any) => c.totalSupply),
 );
 
@@ -190,8 +190,6 @@ export const countInDb = (collections: any[]): any => {
     .then((dbResults: any[]) =>
       collections.map((c: any, i: number) => ({
         ...c,
-        updatedAt: c.updatedAt,
-        addedAt: c.addedAt,
         totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
         shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
