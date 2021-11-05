@@ -111,8 +111,8 @@ export const load = async (content: any[], index: string, update?: boolean) => {
 
   while (body.length > 0) {
     const chop = maxChop(body);
-    const result = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
-    // console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
+    const result: any = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
+    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
     // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
     ix += chop.length;
   }

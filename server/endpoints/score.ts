@@ -37,7 +37,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         .then(({ body }) =>
           AssetLoader.getCollection(db, body.slug, true)
             // Query.findOne(db, 'collections', { term: { _id: body.slug } })
-            .then(({ body }: any) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body }))
+            .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body.body }))
             .then(({ collection }) =>
               countInDb([collection]).then((counts: any[]) => {
                 // console.log('counts[0]', counts[0]);

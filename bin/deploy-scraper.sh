@@ -1,0 +1,1 @@
+ssh -t wego-scraper "cd api && git pull && npm run build"

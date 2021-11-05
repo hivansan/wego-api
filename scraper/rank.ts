@@ -18,7 +18,7 @@ const main = () => {
     .then(countInDb as any)
     .then((x) => x.filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked))
     .then(async (collections) => {
-      collections.length = 1;
+      // collections.length = 1;
       for (const collection of collections) {
         console.log('ranking collection.slug', collection.slug);
         Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, { limit: 10000 })
