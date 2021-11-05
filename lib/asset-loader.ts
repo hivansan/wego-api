@@ -18,7 +18,12 @@ export async function fromDb(
   slug?: string,
   tokenId?: string,
   traits?: { [key: string]: string | number | (string | number)[] },
+  priceRange?: { lte: number, gte: number } | null,
+  rankRange?: { lte: number, gte: number } | null,
 ) {
+  console.log(priceRange, rankRange);
+
+  // priceRange={"lte": 1, gte: 2}
 
   const q = {
     bool: {
@@ -28,6 +33,8 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
+        ...(Object.keys(priceRange as object).length ? { currentPriceUSD: priceRange } : {}) as any,
+        ...(Object.keys(rankRange as object).length ? { rarityScoreRank: rankRange } : {}) as any,
         ...Object.entries(traits || {}).map(([type, value]) => {
           return Array.isArray(value)
             ? {
