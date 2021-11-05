@@ -21,10 +21,6 @@ export async function fromDb(
   priceRange?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
 ) {
-  console.log(priceRange, rankRange);
-
-  // priceRange={"lte": 1, gte: 2}
-
   const q = {
     bool: {
       must: [
@@ -33,8 +29,6 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...(Object.keys(priceRange as object).length ? { currentPriceUSD: priceRange } : {}) as any,
-        ...(Object.keys(rankRange as object).length ? { rarityScoreRank: rankRange } : {}) as any,
         ...Object.entries(traits || {}).map(([type, value]) => {
           return Array.isArray(value)
             ? {
@@ -56,6 +50,8 @@ export async function fromDb(
       ],
     },
   };
+  Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
+  Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
 
   console.log('Query: ', JSON.stringify(q, null, 2));
   return Query.find(db, 'assets', q, { offset, sort, limit });

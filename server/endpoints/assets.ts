@@ -38,7 +38,7 @@ const params = {
         Result.defaultTo({}),
         Result.ok
       ))
-    )),
+    ), {} as any),
     rankRange: nullable<Decoded<typeof range>>(pipe(
       string,
       parse(pipe<any, any, any, any, any>(
@@ -48,7 +48,7 @@ const params = {
         Result.defaultTo({}),
         Result.ok
       ))
-    )),
+    ), {} as any),
     sortBy: pipe(
       nullable(inList([
         // 'tokenId',
