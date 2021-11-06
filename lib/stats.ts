@@ -73,13 +73,10 @@ export const rank = <
   let lastRank = 1, totalOfRank = 1, lastVal: number = vals[0][from];
 
   vals.forEach(val => {
-    if (lastVal === val[from]) {
-      totalOfRank++;
-    } else if (lastVal !== val[from]) {
-      lastRank += totalOfRank - 1;
-      totalOfRank = 1;
+    if (lastVal !== val[from]) {
+      lastRank = totalOfRank;
     }
-
+    totalOfRank ++;
     Object.assign(val, { [to]: lastRank });
     lastVal = val[from];
   });
