@@ -45,6 +45,21 @@ const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile=
 const linear: boolean = !!process.argv.find((s) => s.startsWith('--linear='))?.replace('--linear=', '');
 const onlyRequested: boolean = !!process.argv.find((s) => s.startsWith('--onlyRequested='))?.replace('--onlyRequested=', '');
 const factor: number = Number(process.argv.find((s) => s.startsWith('--factor='))?.replace('--factor=', '') || 3);
+const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 3000);
+const ignoreShouldScrape: boolean = !!process.argv.find((s) => s.startsWith('--ignoreShouldScrape='))?.replace('--ignoreShouldScrape=', '');
+
+console.log('options', {
+  exec,
+  bots,
+  errsToFile,
+  errsFromFile,
+  linear,
+  onlyRequested,
+  factor,
+  limitCollections,
+  ignoreShouldScrape,
+});
+
 
 let collectionsCounts: any = {};
 
@@ -64,7 +79,7 @@ export const saveAssetsFromUrl = async (url: string, i: number, tor?: any, torIn
       .then((body: { slug: any; }) => ({ ...body }))
       .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
       .then(tap(({ assets, slug, offset }: any) => {
-        const isLastUrlOfCollection = (+offset + 50) > +collectionsCounts[slug].supply;
+        const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug].supply;
 
         console.log('collectionsCounts', collectionsCounts[slug]);
 
@@ -118,7 +133,8 @@ const sortByAddedAt = sortBy(prop('addedAt') as any);
 
 const filterData = pipe(
   // when(() => onlyRequested, filter(prop('requestedScore') as any)),
-  filter(prop('shouldScrape') as any) as any,
+  when(() => !ignoreShouldScrape, filter(prop('shouldScrape') as any)) as any,
+  // filter(prop('shouldScrape') as any) as any,
   map((pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt', 'requestedScore']) as any)),
   filter((c: any) => c.totalSupply),
 );
@@ -133,7 +149,7 @@ const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
 const transform = pipe(
-  when((x: any) => onlyRequested && x.length, (x) => [x[0]]),
+  // when((x: any) => onlyRequested && x.length, (x) => [x[0]]),
   toLinks,
   flatten,
   dropRepeats);
@@ -179,7 +195,7 @@ const collectionData = (slug?: string) =>
   !!slug
     ? AssetLoader.getCollection(db, slug)
       .then(({ body }) => [body])
-    : Query.find(db, 'collections', onlyRequested ? { match: { requestedScore: true } } : { match_all: {} }, { limit: 5000 })
+    : Query.find(db, 'collections', onlyRequested ? { match: { requestedScore: true } } : { match_all: {} }, { limit: limitCollections, sort: [{ updatedAt: { order: 'asc', missing: '_first' } }] })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
       .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length));
@@ -203,6 +219,7 @@ const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i)
 export const saveAssets = (slug?: string) =>
   collectionData(slug)
     .then(countInDb as any)
+    .then(tap((x: any[]) => console.log('x ---------', x)) as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
     .then(tap((x: any[]) => console.log('x ---------', x)) as any)
