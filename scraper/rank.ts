@@ -9,14 +9,48 @@ import { filter, prop, tap } from 'ramda';
 import * as Stats from '../lib/stats';
 import { sleep } from '../server/util';
 import { load } from './scraper.utils';
+import * as AssetLoader from '../lib/asset-loader';
 
-const main = () => {
-  Query.find(db, 'collections', { match_all: {}, _source: ['slug'] }, { limit: 5000 },)
+const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
+
+const collectionData = (slug?: string) =>
+  Query.find(db, 'collections', slug ?
+    { term: { 'slug.keyword': slug } } :
+    {
+      "bool": {
+        "must_not": {
+          "exists": {
+            "field": "ranked"
+          }
+        },
+        "must": {
+          "exists": {
+            "field": "slug"
+          }
+        }
+      }
+    },
+    {
+      limit: 1,
+      sort: [
+        {
+          "updatedAt": {
+            "order": "desc",
+            "missing": "_last"
+          }
+        }
+      ]
+    },
+  )
     .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
       ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
-    .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length))
+
+const main = (slug?: string) => {
+  collectionData(slug)
+    .then(tap(x => console.log('x ==========', x)) as any)
+    .then(({ body }: any) => body.results.filter((c: { slug: string }) => c.slug?.length))
     .then(countInDb as any)
-    .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked) as any)
+    // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked) as any)
     .then(async (collections) => {
       // collections.length = 1;
       for (const collection of collections) {
@@ -30,6 +64,7 @@ const main = () => {
           }))
           .then(({ body }) => Stats.collection(collection.count, body.results).then(ranks => ({ assets: body.results, ranks })))
           .then((body) => body.assets.map((asset: any) => ({ ...asset, ...body.ranks.find(x => x.id === asset.tokenId) })))
+          // .then(tap((body) => console.log(body)))
           .then(tap((body) => load(body as any, 'assets', true)))
           /** @TODO if there are assets without traits, dont mark as ranked - but only if asset is unrevealed */
           .then(() => Query.update(db, 'collections', collection.slug, { ranked: true }, true).catch((e) => console.log(`[err update collection]: ${collection.slug} ${e}`)))
@@ -37,4 +72,4 @@ const main = () => {
     })
 }
 
-main()
+main(slug)

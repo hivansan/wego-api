@@ -110,11 +110,16 @@ export const load = async (content: any[], index: string, update?: boolean) => {
   // console.log(JSON.stringify(body))
 
   while (body.length > 0) {
-    const chop = maxChop(body);
-    const result: any = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
-    console.log(`result items: ${result.body?.items?.length} status code : ${result.statusCode}`);
-    // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
-    ix += chop.length;
+    try {
+      const chop = maxChop(body);
+      const result: any = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
+      console.log(`result items: ${result?.body?.items?.length} status code : ${result?.statusCode}`);
+      // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
+      ix += chop.length;
+
+    } catch (error) {
+      console.log('[error loading]', error);
+    }
   }
 };
 

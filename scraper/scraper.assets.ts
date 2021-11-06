@@ -195,7 +195,7 @@ const collectionData = (slug?: string) =>
   !!slug
     ? AssetLoader.getCollection(db, slug)
       .then(({ body }) => [body])
-    : Query.find(db, 'collections', onlyRequested ? { match: { requestedScore: true } } : { match_all: {} }, { limit: limitCollections, sort: [{ updatedAt: { order: 'asc', missing: '_first' } }] })
+    : Query.find(db, 'collections', onlyRequested ? { match: { requestedScore: true } } : { exists: { field: "slug" } }, { limit: limitCollections, sort: [{ updatedAt: { order: 'asc', missing: '_first' } }] })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
       .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length));
@@ -208,7 +208,7 @@ export const countInDb = (collections: any[]): any => {
         ...c,
         totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: dbResults[i].count < clamp(1, 10000, c.stats.count),
+        shouldScrape: dbResults[i].count < clamp(1, 10000, c?.stats?.count),
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));
