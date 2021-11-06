@@ -1,15 +1,9 @@
 =================================== prod ===================================
 scraper 
-only requested via score
-ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/dist/scraper/scraper.assets.js \
---exec=saveAssets --onlyRequested=1 --linear=true --factor=3 --errsToFile=/home/ubuntu/data/errors-to-assets.txt
+ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/scraper.assets.js --exec=saveAssets --onlyRequested=1 --linear=true --factor=1 --errsToFile=/home/ubuntu/data/errors-to-assets.txt
 
-######### all collections ##########
-ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/dist/scraper/scraper.assets.js \ 
---exec=saveAssets --limitCollections=1 --ignoreShouldScrape=1 --linear=true --factor=3 --errsToFile=/home/ubuntu/data/errors-to-assets.txt
-
-######### rank ##########
-ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/dist/scraper/rank.js
+ranker
+ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/rank.js
 
 =================================== dev ===================================
 ES_CLIENT=https://localhost:9200 npm start
