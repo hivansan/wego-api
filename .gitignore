@@ -22,6 +22,7 @@ public
 .vscode/*
 node_modules
 data/assets.json
+data/errors-to-assets.txt
 dist
 # Keep environment variables out of version control
 .env

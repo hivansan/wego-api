@@ -140,9 +140,11 @@ const main = async () => {
       //     .catch(e => console.log(e.toJSON()))
       // ).then(() => console.log('completed: ', url))
       //   .catch(e => console.log(`[e] ${e}`))
-      await
-        axios.get(`${apiUrl}/asset/${address}/${tokenId}/score`).then(() => console.log('completed: ', url))
-      // axios.get(`${apiUrl}/asset/${address}/${tokenId}`)
+      // await
+      //   axios.get(`${apiUrl}/asset/${address}/${tokenId}/score`).then(() => console.log('completed: ', url))
+      axios.get(`${apiUrl}/asset/${address}/${tokenId}`)
+        .then(({ data }) => console.log(data.slug))
+
       // .then(({ data }) => axios.delete(`${es.configuration.node}/collections/_doc/${data.slug}`).then(() => axios.get(`${apiUrl}/asset/${address}/${tokenId}/score`)))
       //   .catch(e => console.log(`[err] ${e} ${address} ${tokenId}`))
 
