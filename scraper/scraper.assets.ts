@@ -219,7 +219,10 @@ const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i)
 export const saveAssets = (slug?: string) =>
   collectionsData({ slug, sort: [{ requestedScore: { order: 'desc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } }, { "match": { "requestedScore": true } }] } }, })
     .then(tap((x: any[]) => console.log('x 1 ---------', x)) as any)
-    .then(when((x: any) => !x.length && !slug, (x) => collectionsData({ sort: [{ updatedAt: { order: 'asc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } },] } } })))
+    .then(when((x: any) => !x.length && !slug, (x) => collectionsData({
+      sort: [{ updatedAt: { order: 'asc' } }, { "stats.totalSupply": { "order": "desc" } }],
+      query: { bool: { "must": [{ "exists": { "field": "slug" } },] } }
+    })))
     .then(countInDb as any)
     .then(tap((x: any[]) => console.log('x 2 ---------', x)) as any)
     .then(filterData as any)
