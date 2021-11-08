@@ -12,26 +12,28 @@ import { load } from './scraper.utils';
 import * as AssetLoader from '../lib/asset-loader';
 
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
+const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 20);
 
 const collectionData = (slug?: string) =>
-  Query.find(db, 'collections', slug ?
-    { term: { 'slug.keyword': slug } } :
-    {
-      "bool": {
-        "must_not": {
-          "exists": {
-            "field": "ranked"
-          }
-        },
-        "must": {
-          "exists": {
-            "field": "slug"
+  Query.find(db, 'collections',
+    slug
+      ? { term: { 'slug.keyword': slug } }
+      : {
+        "bool": {
+          "must_not": {
+            "exists": {
+              "field": "ranked"
+            }
+          },
+          "must": {
+            "exists": {
+              "field": "slug"
+            }
           }
         }
-      }
-    },
+      },
     {
-      limit: 1,
+      limit: limitCollections,
       sort: [
         {
           "updatedAt": {
@@ -47,10 +49,12 @@ const collectionData = (slug?: string) =>
 
 const main = (slug?: string) => {
   collectionData(slug)
-    .then(tap(x => console.log('x ==========', x)) as any)
+    // .then(tap((x: any) => console.log('x ==========', JSON.stringify(x.body.results, null, 3))) as any)
+    // .then(tap(x => console.log('x ==========', x)) as any)
     .then(({ body }: any) => body.results.filter((c: { slug: string }) => c.slug?.length))
     .then(countInDb as any)
-    // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 && !c.ranked) as any)
+    .then(filter((c: any) => !c.shouldScrape /* && !c.ranked */) as any)
+    // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 /* && !c.ranked */) as any)
     .then(async (collections) => {
       // collections.length = 1;
       for (const collection of collections) {
@@ -72,4 +76,4 @@ const main = (slug?: string) => {
     })
 }
 
-main(slug)
+main(slug);

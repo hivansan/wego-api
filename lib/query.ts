@@ -7,7 +7,7 @@ export type Options = {
   filter?: { [key: string]: any },
   limit?: number,
   offset?: number,
-  sort?: { [key: string]: { order: 'asc' | 'desc', unmapped_type?: string } }[] | string[]
+  sort?: { [key: string]: { order: 'asc' | 'desc', unmapped_type?: string, missing?: string } }[] | string[]
   asStream?: boolean;
 };
 

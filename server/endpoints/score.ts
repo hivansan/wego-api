@@ -1,4 +1,4 @@
-import { any, curry, find, map, mergeRight, nth, objOf, path, pick, pipe, prop, propEq, tap } from 'ramda';
+import { any, curry, find, map, mergeRight, nth, objOf, path, pick, pipe, prop, propEq, tap, ifElse } from 'ramda';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
@@ -54,7 +54,17 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
               return countInDb([collection])
                 .then(nth(0))
-                .then(({ shouldScrape }: any) => shouldScrape ? Promise.reject({ status: 202, message: 'Collection is being loaded.' }) : Promise.resolve(null))
+                .then(
+                  ifElse(
+                    ({ shouldScrape }) => shouldScrape,
+                    (collection) => {
+                      console.log('collection on true', collection);
+                      Query.update(db, 'collections', collection.slug, { requestedScore: true }, true);
+                      return Promise.reject({ status: 202, message: 'Collection is being loaded.' })
+                    },
+                    () => Promise.resolve(null)
+                  )
+                )
                 .then(() => Query.find(db, 'assets', { term: { 'slug.keyword': body.slug } }, { limit: 10000 }))
                 .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
                   body: {

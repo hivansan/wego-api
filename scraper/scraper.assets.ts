@@ -191,11 +191,11 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
   }
 }
 
-const collectionData = (slug?: string) =>
+const collectionsData = ({ slug, sort, query }: any) =>
   !!slug
     ? AssetLoader.getCollection(db, slug)
       .then(({ body }) => [body])
-    : Query.find(db, 'collections', onlyRequested ? { match: { requestedScore: true } } : { exists: { field: "slug" } }, { limit: limitCollections, sort: [{ updatedAt: { order: 'asc', missing: '_first' } }] })
+    : Query.find(db, 'collections', query, { limit: limitCollections, sort, })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
       .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length));
@@ -208,7 +208,7 @@ export const countInDb = (collections: any[]): any => {
         ...c,
         totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: dbResults[i].count < clamp(1, 10000, c?.stats?.count),
+        shouldScrape: !dbResults[i].count || dbResults[i].count / clamp(1, 10000, c?.stats?.count) < 0.9,
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));
@@ -217,15 +217,17 @@ export const countInDb = (collections: any[]): any => {
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
 export const saveAssets = (slug?: string) =>
-  collectionData(slug)
+  collectionsData({ slug, sort: [{ requestedScore: { order: 'desc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } }, { "match": { "requestedScore": true } }] } }, })
+    .then(tap((x: any[]) => console.log('x 1 ---------', x)) as any)
+    .then(when((x: any) => !x.length && !slug, (x) => collectionsData({ sort: [{ updatedAt: { order: 'asc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } },] } } })))
     .then(countInDb as any)
-    .then(tap((x: any[]) => console.log('x ---------', x)) as any)
+    .then(tap((x: any[]) => console.log('x 2 ---------', x)) as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
-    .then(tap((x: any[]) => console.log('x ---------', x)) as any)
+    .then(tap((x: any[]) => console.log('x 3 ---------', x)) as any)
     .then(transform as any)
     .then(distributeToHttpClients as any)
-    .then(tap((x: any[]) => console.log('x ---------', x.length)) as any)
+    .then(tap((x: any[]) => console.log('x 4 ---------', x.length)) as any)
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
