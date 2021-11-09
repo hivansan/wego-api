@@ -37,7 +37,7 @@ export const openSeaAsset = object('OpenSeaNFT', {
   description            : nullable(string),
   image_original_url     : nullable(string),
   image_preview_url      : nullable(string),
-  token_metadata         : string,
+  token_metadata         : nullable(string),
   traits                 : nullable(array(Result.ok), []),
   
   // id: nullable(number),
