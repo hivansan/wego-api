@@ -7,7 +7,7 @@ import datasources from '../server/datasources';
 import { filter, flatten, map, pipe, prop } from 'ramda';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
-const fs: any = require('fs')
+const fs: any = require('fs');
 
 const getItem = (html: string) => '0x' + html.substr(0, 40);
 
@@ -64,7 +64,7 @@ const getAllItems = async () => {
 //   }
 // };
 
-const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
+export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
 
 // getAllItems()
 
@@ -92,18 +92,18 @@ export const load = async (content: any[], index: string, update?: boolean) => {
   const body = content.flatMap((doc: any) => [
     update
       ? {
-        update: {
-          _id: getDocId(doc, index),
-          _index: index,
+          update: {
+            _id: getDocId(doc, index),
+            _index: index,
+          },
         }
-      }
       : {
-        index: {
-          _index: index,
-          _type: '_doc',
-          _id: getDocId(doc, index),
+          index: {
+            _index: index,
+            _type: '_doc',
+            _id: getDocId(doc, index),
+          },
         },
-      },
     update ? { doc } : doc,
   ]);
 
@@ -112,11 +112,10 @@ export const load = async (content: any[], index: string, update?: boolean) => {
   while (body.length > 0) {
     try {
       const chop = maxChop(body);
-      const result: any = await client.bulk({ refresh: true, body: chop }).catch(e => console.log(`${e} ------`));
+      const result: any = await client.bulk({ refresh: true, body: chop }).catch((e) => console.log(`${e} ------`));
       console.log(`result items: ${result?.body?.items?.length} status code : ${result?.statusCode}`);
       // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
       ix += chop.length;
-
     } catch (error) {
       console.log('[error loading]', error);
     }
@@ -133,10 +132,10 @@ export const readPromise = (path: string, method: string) =>
 
 export const openseaAssetMapper = (asset: any) => {
   const count = asset.collection?.stats?.total_supply;
-  const reducer = (acc: number, t: { trait_count: number; }) => {
+  const reducer = (acc: number, t: { trait_count: number }) => {
     const norm = t.trait_count / count;
-    return norm ? acc + (1 / (norm)) : acc;
-  }
+    return norm ? acc + 1 / norm : acc;
+  };
   const rarityScore = asset?.traits?.length && count && asset.traits.reduce(reducer, 0);
 
   return {
@@ -160,9 +159,9 @@ export const openseaAssetMapper = (asset: any) => {
     lastSale: asset.last_sale,
     sellOrders: asset.sell_orders,
     numSales: asset.num_sales,
-    lastSalePrice: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) : null,
+    lastSalePrice: asset.last_sale ? +asset.last_sale.total_price / 10 ** 18 : null,
     lastSalePriceUSD: asset.last_sale ? (+asset.last_sale.total_price / 10 ** 18) * +asset.last_sale.payment_token?.usd_price : null,
-    currentPrice: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) : null,
+    currentPrice: asset.sell_orders?.length ? asset.sell_orders[0].current_price / 10 ** 18 : null,
     currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
-  }
+  };
 };
