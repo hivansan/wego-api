@@ -208,7 +208,7 @@ export const countInDb = (collections: any[]): any => {
         ...c,
         totalSupply: clamp(1, 10000, c.stats.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: !dbResults[i].count || dbResults[i].count / clamp(1, 10000, c?.stats?.count) < 0.9,
+        shouldScrape: !dbResults[i].count || (c?.stats?.count - dbResults[i].count) > 0 // / clamp(1, 10000, c?.stats?.count) < 0.9,
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));
@@ -219,7 +219,7 @@ const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i)
 export const saveAssets = (slug?: string) =>
   collectionsData({ slug, sort: [{ requestedScore: { order: 'desc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } }, { "match": { "requestedScore": true } }] } }, })
     .then(tap((x: any[]) => console.log('x 1 ---------', x)) as any)
-    .then(when((x: any) => !x.length && !slug, (x) => collectionsData({
+    .then(when((x: any) => !x.length && !onlyRequested && !slug, (x) => collectionsData({
       sort: [{ updatedAt: { order: 'asc' } }, { "stats.totalSupply": { "order": "desc" } }],
       query: { bool: { "must": [{ "exists": { "field": "slug" } },] } }
     })))

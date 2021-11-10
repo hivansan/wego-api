@@ -59,7 +59,7 @@ const main = (slug?: string) => {
       // collections.length = 1;
       for (const collection of collections) {
         console.log('ranking collection.slug', collection.slug);
-        Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, { limit: 10000 })
+        Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, { limit: 80000 })
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
             body: {
               meta: { took, timedOut, total: total.value },
