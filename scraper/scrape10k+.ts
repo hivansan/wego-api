@@ -16,38 +16,65 @@ function consecutiveArray(min: number, size: number): Array<Number> {
   return new Array(size).fill(0).map((_, ix) => ix + min);
 }
 
+//address
+
 class Collection {
   public count: number;
   public found: number;
   public maxId: number;
   public slug: string;
-  private constructor(slug: string, stats: any) {
+  public contracts: Array<any>;
+  private constructor(slug: string, data: any) {
+    const { stats, primary_asset_contracts } = data;
     this.slug = slug;
     this.count = stats.count;
+    this.contracts = primary_asset_contracts.map((x: any) => x.address);
     this.found = 0;
     this.maxId = 0;
   }
   public static async build(slug: string): Promise<Collection> {
-    let res = await axios.get(`https://api.opensea.io/api/v1/collection/${slug}/stats`);
-    return new Collection(slug, res.data.stats);
+    let res = await axios.get(`https://api.opensea.io/api/v1/collection/${slug}`);
+    return new Collection(slug, res.data.collection);
   }
-  public async fetchPacket() {
+  public async fetchPacket(contract = -1) {
     const ids: Iterable<[string, string]> = consecutiveArray(this.maxId, 20).map((id) => ['token_ids', String(id)]);
-    let params = new URLSearchParams([['collection', this.slug], ...ids]);
+    let params: URLSearchParams;
+    if (contract >= 0) params = new URLSearchParams([['asset_contract_address', this.contracts[contract]], ...ids]);
+    else params = new URLSearchParams([['collection', this.slug], ...ids]);
+
     let res = await axios.get('https://api.opensea.io/api/v1/assets?', { params });
     this.maxId += 20;
     this.found += res.data.assets.length;
     return res.data.assets.map(openseaAssetMapper);
   }
-  public async fetchAll() {
+  public async fetchWithSlug() {
     let fetchAgain = true;
     while (fetchAgain) {
+      console.log('fetching with slug');
       let packet = await this.fetchPacket();
       load(packet, 'assets');
       console.log(`fetched: ${this.found}`);
       sleep(0.3);
       if (packet.length == 0) fetchAgain = false;
     }
+  }
+  public async fetchWithContracts() {
+    console.log(this);
+    for (let i = 0; i < this.contracts.length; i++) {
+      let fetchAgain = true;
+      while (fetchAgain) {
+        console.log('fetching with contract');
+        let packet = await this.fetchPacket(i);
+        load(packet, 'assets');
+        console.log(`fetched: ${this.found}`);
+        sleep(0.3);
+        if (packet.length == 0) fetchAgain = false;
+      }
+      this.maxId = 0;
+    }
+  }
+  public async fetchAll() {
+    return this.fetchWithContracts();
   }
 }
 
