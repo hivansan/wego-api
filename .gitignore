@@ -24,6 +24,7 @@ node_modules
 data/assets.json
 data/errors-to-assets.txt
 dist
+admin
 # Keep environment variables out of version control
 .env
 CREDENTIALS

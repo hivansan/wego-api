@@ -126,24 +126,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * Admin management URLs
    */
 
-  app.post('/api/collections/:slug/hide', respond(req => (
-    db.update({
-      index: 'collections',
-      id: req.params.slug,
-      body: {
-        doc: { hidden: true }
-      }
-    }) as any
-  )));
-
-  app.post('/api/collections/:slug/unhide', respond(req => (
-    db.update({
-      index: 'collections',
-      id: req.params.slug,
-      body: {
-        doc: { hidden: false }
-      }
-    }) as any
+  app.post('/api/collections/:slug/delete', respond(({ params }) => (
+    Promise.all([
+      db.delete({ index: 'collections', id: params.slug }) as any,
+      db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
+    ]) as any
   )));
 
   app.post('/api/collections/:slug/unfeature', respond(req => (
@@ -165,4 +152,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       }
     }) as any
   )));
+};
+
+export const meta = {
+  collections: '/api/collections'
 };

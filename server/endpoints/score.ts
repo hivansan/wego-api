@@ -96,5 +96,4 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       .defaultTo(error(400, 'Bad request'))
     )
   );
-
 };
