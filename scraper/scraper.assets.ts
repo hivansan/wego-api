@@ -98,7 +98,7 @@ export const saveAssetsFromUrl = async (
           ).map(openseaAssetMapper)) as any;
 
           load(JSON.parse(content), 'assets');
-          if (isLastUrlOfCollection || assets.length < +offset) {
+          if (isLastUrlOfCollection || assets.length < (+offset || 20)) {
             Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
           }
         } else {

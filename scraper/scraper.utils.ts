@@ -165,3 +165,5 @@ export const openseaAssetMapper = (asset: any) => {
     currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
   };
 };
+
+export const consecutiveArray = (min: number, size: number): Array<Number> => new Array(size).fill(0).map((_, ix) => ix + min)

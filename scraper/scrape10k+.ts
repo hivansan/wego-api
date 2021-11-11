@@ -21,10 +21,6 @@ const MAX_IDS = 20;
 
 const baseUrl = 'https://api.opensea.io/api/v1';
 
-function consecutiveArray(min: number, size: number): Array<Number> {
-  return new Array(size).fill(0).map((_, ix) => ix + min);
-}
-
 const getUrl = ({ contractAddress, firstId }: { contractAddress: string, firstId: number }) => {
   console.log(' first id ', firstId);
   const ids = new Array(MAX_IDS).fill(0).map((_, ix) => ix + firstId);
