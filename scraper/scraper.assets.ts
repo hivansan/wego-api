@@ -21,6 +21,8 @@ import fs from 'fs';
 
 import { map, pick, pipe, toString, prop, props, sortBy, tap, flatten, dropRepeats, split, forEach, filter, mergeRight, path, clamp, ifElse, splitEvery, when } from 'ramda';
 import axios from 'axios';
+import queryString from 'query-string';
+
 
 import { sleep } from '../server/util';
 import { load, openseaAssetMapper, readPromise } from './scraper.utils';
@@ -63,9 +65,12 @@ console.log('options', {
 
 let collectionsCounts: any = {};
 
-export const saveAssetsFromUrl = async (url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number): Promise<void> => {
-  const SLEEP = (ports.length - 1) * .8;
-  await sleep(linear ? i / factor : (sleepFactor as number * SLEEP));
+export const saveAssetsFromUrl = async (
+  { url, i, tor, torInstance, sleepFactor, slug, factor, collectionData }: { url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number, slug?: string, factor: number, collectionData?: object }
+): Promise<void> => {
+  // const SLEEP = (ports.length - 1) * .8;
+  // await sleep(linear ? i / factor : (sleepFactor as number * SLEEP));
+  await sleep(i / factor);
 
   console.log(`[attempting] ${url} ${i}`);
   return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
@@ -73,29 +78,32 @@ export const saveAssetsFromUrl = async (url: string, i: number, tor?: any, torIn
     axios(url)
       .then(({ data }: any) => ({
         assets: data.assets,
-        slug: (url as any).split('&').find((s: string) => s.startsWith('collection=')).split('=')[1],
-        offset: (url as any).split('&').find((s: string) => s.startsWith('offset=')).split('=')[1],
+        slug: slug ? slug : queryString.parseUrl(url).query.collection,
+        offset: queryString.parseUrl(url).query.offset
       }))
       .then((body: { slug: any; }) => ({ ...body }))
       .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
       .then(tap(({ assets, slug, offset }: any) => {
-        const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug].supply;
+        const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
         console.log('collectionsCounts', collectionsCounts[slug]);
-
-
         if (assets?.length) {
-          const content = JSON.stringify(assets.map((c: any) => ({ ...c, collection: { ...c.collection, stats: { total_supply: collectionsCounts[slug].supply } } })).map(openseaAssetMapper)) as any;
-          // console.log(content);
+          const content = JSON.stringify(assets.map((asset: any) =>
+          ({
+            ...asset,
+            collection:
+              collectionData ? collectionData
+                : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
+          })
+          ).map(openseaAssetMapper)) as any;
 
           load(JSON.parse(content), 'assets');
-          if (isLastUrlOfCollection || assets.length < 50) {
+          if (isLastUrlOfCollection || assets.length < +offset) {
             Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
           }
         } else {
           Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
         }
-        return assets;
       }))
       .catch(async (e: any) => {
         console.log('\x1b[41m%s\x1b[0m', `[error inside PR] ${e} ${url}`);
@@ -103,9 +111,7 @@ export const saveAssetsFromUrl = async (url: string, i: number, tor?: any, torIn
         retry(e);
       })
   )
-    .then((result: any) => {
-      return result;
-    })
+    .then((result: any) => result.assets)
     .catch(async (e: any) => {
       console.log(`[error catch PR] ${e} ${url}`);
       fs.appendFile(errsToFile, `${url}\n`, (err) => {
@@ -180,13 +186,27 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
     return Promise.all(
       arrOfLinks.map((link: any, linkIndex: number) => {
         // console.log(linkIndex, ports, ports.length, linkIndex % (ports.length))
-        return saveAssetsFromUrl(link, linkIndex, tors[linkIndex % (ports.length)], torInstances[linkIndex % (ports.length)], linkIndex)
+        return saveAssetsFromUrl({
+          url: link,
+          i: linkIndex,
+          tor: tors[linkIndex % (ports.length)],
+          torInstance: torInstances[linkIndex % (ports.length)],
+          sleepFactor: linkIndex,
+          factor,
+        })
       })
     ).then(flatten)
   } else {
     return Promise.all(
       splitEvery(split, arrOfLinks)
-        .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl(link, i, tors[i], torInstances[i], linkIndex))))
+        .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl({
+          url: link,
+          i,
+          tor: tors[i],
+          torInstance: torInstances[i],
+          sleepFactor: linkIndex,
+          factor
+        }))))
     ).then(flatten)
   }
 }

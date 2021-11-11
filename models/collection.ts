@@ -20,19 +20,21 @@ export type Address = string;
 
 export type Collection = Decoded<typeof collection>;
 export const collection = object('Collection', {
-  slug            : string,
-  name            : string,
-  releaseDate     : nullable(string),                     // Date?
-  released        : nullable(boolean),
-  contractAddress : match<Address>(/^0x[a-f0-9]{40}$/),
-  imgPortrait     : nullable(url),
-  imgLarge        : nullable(url),
-  imgMain         : nullable(url),
-  twitter         : nullable(string),
-  discord         : nullable(string),
-  instagram       : nullable(string),
-  telegram        : nullable(string),
-  website         : nullable(string),
+  slug: string,
+  name: string,
+  releaseDate: nullable(string),                     // Date?
+  released: nullable(boolean),
+  // contractAddress : match<Address>(/^0x[a-f0-9]{40}$/),
+  imgPortrait: nullable(url),
+  imgLarge: nullable(url),
+  imgMain: nullable(url),
+  twitter: nullable(string),
+  discord: nullable(string),
+  instagram: nullable(string),
+  telegram: nullable(string),
+  website: nullable(string),
+  primaryAssetConctracts: nullable(array(string)),
+  contractAddresses: nullable(array(string))
   // updatedAt: date,
 });
 
@@ -42,7 +44,7 @@ export const collection = object('Collection', {
 export type CollectionStats = Decoded<typeof collectionStats>;
 export const collectionStats = object('Collection', {
   slug: string,
-  contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
+  // contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   featuredCollection: boolean,
   featuredScore: number,
 

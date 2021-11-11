@@ -92,18 +92,18 @@ export const load = async (content: any[], index: string, update?: boolean) => {
   const body = content.flatMap((doc: any) => [
     update
       ? {
-          update: {
-            _id: getDocId(doc, index),
-            _index: index,
-          },
-        }
-      : {
-          index: {
-            _index: index,
-            _type: '_doc',
-            _id: getDocId(doc, index),
-          },
+        update: {
+          _id: getDocId(doc, index),
+          _index: index,
         },
+      }
+      : {
+        index: {
+          _index: index,
+          _type: '_doc',
+          _id: getDocId(doc, index),
+        },
+      },
     update ? { doc } : doc,
   ]);
 
@@ -131,7 +131,7 @@ export const readPromise = (path: string, method: string) =>
   });
 
 export const openseaAssetMapper = (asset: any) => {
-  const count = asset.collection?.stats?.total_supply;
+  const count = asset.collection?.stats?.totalSupply;
   const reducer = (acc: number, t: { trait_count: number }) => {
     const norm = t.trait_count / count;
     return norm ? acc + 1 / norm : acc;

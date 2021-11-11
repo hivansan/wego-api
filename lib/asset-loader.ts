@@ -157,41 +157,23 @@ export async function getAsset(db: ElasticSearch.Client, contractAddress: string
 }
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
-  const params: any = {
-    collection: slug,
-    offset: 0,
-    limit: 1,
-  };
-  const queryParams = new URLSearchParams(params).toString();
-  const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
-
-  const { data } = await axios(url);
-  const [asset] = data.assets;
-
-  console.log(`[collectionFromRemote url] `, url);
-  const contractAddress = asset?.asset_contract?.address;
-  if (!asset || !asset.token_id || !contractAddress) {
-    return null;
-  }
-
   try {
-    const assetUrl = `http://api.opensea.io/api/v1/asset/${contractAddress}/${asset.token_id}/`;
-    const os = await Network.fetchNParse(assetUrl)
+    const os: any = await Network.fetchNParse(`https://api.opensea.io/api/v1/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
 
-    const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection, contractAddress });
-    const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ contractAddress, slug, stats: os.collection.stats });
+    const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection });
+    const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ slug, stats: os.collection.stats });
 
     return Object.assign(collection, { stats });
   } catch (e) {
-    console.log('err--', JSON.stringify(e));
+    console.log('err--', JSON.stringify(e), e);
     return null;
   }
 }
 
-const remoteCollectionMapper = ({ collection, contractAddress }: any): Collection.Collection => ({
-  contractAddress,
+const remoteCollectionMapper = ({ collection }: any): Collection.Collection => ({
+  contractAddresses: collection.primary_asset_contracts.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
   slug: collection.slug,
   name: collection.name,
   releaseDate: collection.created_date,
@@ -204,10 +186,11 @@ const remoteCollectionMapper = ({ collection, contractAddress }: any): Collectio
   instagram: collection.instagram_username,
   telegram: collection.telegram_url,
   website: collection.external_url,
+  primaryAssetConctracts: collection.primary_asset_contracts || null,
 });
 
-const remoteCollectionStatsMapper = ({ stats, contractAddress, slug }: any): Collection.CollectionStats => ({
-  contractAddress,
+const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.CollectionStats => ({
+  // contractAddress,
   slug,
   wegoScore: 0,
   featuredCollection: false,
