@@ -16,6 +16,7 @@ import { saveAssetsFromUrl } from './scraper.assets';
 
 const file: string = process.argv.find((s) => s.startsWith('--file='))?.replace('--file=', '') || '';
 const collection: string = process.argv.find((s) => s.startsWith('--collection='))?.replace('--collection=', '') || '';
+const startingId: number = +(process.argv.find((s) => s.startsWith('--startingId='))?.replace('--startingId=', '') || 0);
 
 const MAX_IDS = 20;
 
@@ -35,7 +36,7 @@ AssetLoader.getCollection(db, collection)
   .then(async ({ body: collectionData }) => {
     for (const contractAddress of collectionData.contractAddresses) {
       let fetchAgain = true;
-      let found = 0;
+      let found = startingId;
       while (fetchAgain) {
         try {
           console.log(`fetching with contractAddress ${contractAddress}`);
