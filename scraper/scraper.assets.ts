@@ -86,7 +86,7 @@ export const saveAssetsFromUrl = async (
       .then(tap(({ assets, slug, offset }: any) => {
         const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
-        console.log('collectionsCounts', collectionsCounts[slug]);
+        console.log('collectionsCounts, isLastUrlOfCollection', collectionsCounts[slug], isLastUrlOfCollection);
         if (assets?.length) {
           const content = JSON.stringify(assets.map((asset: any) =>
           ({
@@ -184,9 +184,8 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
 
   if (linear) {
     return Promise.all(
-      arrOfLinks.map((link: any, linkIndex: number) => {
-        // console.log(linkIndex, ports, ports.length, linkIndex % (ports.length))
-        return saveAssetsFromUrl({
+      arrOfLinks.map((link: any, linkIndex: number) =>
+        saveAssetsFromUrl({
           url: link,
           i: linkIndex,
           tor: tors[linkIndex % (ports.length)],
@@ -194,19 +193,21 @@ const distributeToHttpClients = (arrOfLinks: string[]) => {
           sleepFactor: linkIndex,
           factor,
         })
-      })
+      )
     ).then(flatten)
   } else {
     return Promise.all(
       splitEvery(split, arrOfLinks)
-        .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) => saveAssetsFromUrl({
-          url: link,
-          i,
-          tor: tors[i],
-          torInstance: torInstances[i],
-          sleepFactor: linkIndex,
-          factor
-        }))))
+        .map((chunk, i) => Promise.all(chunk.map((link: any, linkIndex: number) =>
+          saveAssetsFromUrl({
+            url: link,
+            i,
+            tor: tors[i],
+            torInstance: torInstances[i],
+            sleepFactor: linkIndex,
+            factor
+          })))
+        )
     ).then(flatten)
   }
 }
