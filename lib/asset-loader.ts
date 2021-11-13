@@ -50,8 +50,8 @@ export async function fromDb(
       ],
     },
   };
-  Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
-  Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
+  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
+  rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
 
   console.log('Query: ', JSON.stringify(q, null, 2));
   return Query.find(db, 'assets', q, { offset, sort, limit });
