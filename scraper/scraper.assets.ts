@@ -227,9 +227,9 @@ export const countInDb = (collections: any[]): any => {
     .then((dbResults: any[]) =>
       collections.map((c: any, i: number) => ({
         ...c,
-        totalSupply: clamp(1, 10000, c.stats.count), // should have
+        totalSupply: clamp(1, 10000, c.stats?.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: !dbResults[i].count || (c?.stats?.count - dbResults[i].count) > 0 // / clamp(1, 10000, c?.stats?.count) < 0.9,
+        shouldScrape: !dbResults[i].count || (c.stats?.count - dbResults[i].count) < c.stats?.count * 0.05 // / clamp(1, 10000, c?.stats?.count) < 0.9,
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));
