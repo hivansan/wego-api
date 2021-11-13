@@ -30,7 +30,7 @@ export const openSeaAsset = object('OpenSeaNFT', {
       average_price: number,
       num_reports: number,
       market_cap: number,
-      floor_price: number,
+      floor_price: nullable(number),
     })
   }),
   animation_original_url: nullable(string),
@@ -136,7 +136,7 @@ export const openSeaCollection = object('OpenSeaCollection', {
       average_price: number,
       num_reports: number,
       market_cap: number,
-      floor_price: number,
+      floor_price: nullable(number),
     })
   })
 });
