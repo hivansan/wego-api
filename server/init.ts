@@ -1,8 +1,11 @@
 import http from 'http';
+import * as Socket from './socket';
 import express from 'express';
 import cors from 'cors';
 import { json } from 'body-parser';
+
 import dotenv from 'dotenv';
+
 dotenv.config();
 export const app = express();
 
@@ -14,6 +17,7 @@ app.use(json());
 app.use('/', express.static('./public'));
 
 export const server: http.Server = http.createServer(app);
+export const socket = Socket.create({ port: 3003 });
 
 export const start = () => {
 
