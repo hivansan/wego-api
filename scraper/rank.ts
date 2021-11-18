@@ -21,15 +21,28 @@ const collectionData = (slug?: string) =>
       : {
         "bool": {
           "must_not": {
-            "exists": {
-              "field": "ranked"
+            "match": {
+              // "slug.keyword": "{{collection}}"
+              "ranked": true
+              // "ranked": true
+            }
+            // "exists": {
+            //   "field": "ranked"
+            // }
+          },
+          "must": [{
+            "range": {
+              "stats.totalSupply": {
+                "lte": 13000,
+                // "gt": 10000,
+              }
             }
           },
-          "must": {
+          {
             "exists": {
               "field": "slug"
             }
-          }
+          }]
         }
       },
     {
@@ -53,6 +66,7 @@ const main = (slug?: string) => {
     // .then(tap(x => console.log('x ==========', x)) as any)
     .then(({ body }: any) => body.results.filter((c: { slug: string }) => c.slug?.length))
     .then(countInDb as any)
+    .then(tap(x => console.log('x count in db ----------', x)) as any)
     .then(filter((c: any) => !c.shouldScrape /* && !c.ranked */) as any)
     // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 /* && !c.ranked */) as any)
     .then(async (collections) => {
@@ -71,7 +85,7 @@ const main = (slug?: string) => {
           // .then(tap((body) => console.log(body)))
           .then(tap((body) => load(body as any, 'assets', true)))
           /** @TODO if there are assets without traits, dont mark as ranked - but only if asset is unrevealed */
-          .then(() => Query.update(db, 'collections', collection.slug, { ranked: true }, true).catch((e) => console.log(`[err update collection]: ${collection.slug} ${e}`)))
+          .then(() => Query.update(db, 'collections', collection.slug, { ranked: true, updatedAt: new Date() }, true).catch((e) => console.log(`[err update collection]: ${collection.slug} ${e}`)))
       }
     })
 }

@@ -35,7 +35,9 @@ const torAxios = require('tor-axios');
 import * as AssetLoader from '../lib/asset-loader';
 
 import { db } from '../bootstrap';
-import { Asset } from '../models/asset';
+import * as Scrape10K from './scrape10k+';
+
+
 
 // add SocksPort mac: /usr/local/etc/tor/torrc linux: /etc/tor/torrc
 const ports: number[] = [9050]//, 9052, 9053, 9054, 9055, 9056, 9057, 9058, 9059, 9060, 9061, 9062, 9063, 9064, 9065, 9066, 9067, 9068, 9069, 9070, 9071, 9072, 9074, 9075, 9076, 9077, 9078, 9079, 9080, 9081, 9082, 9083, 9084, 9085, 9086, 9087, 9088, 9089, 9090, 9091, 9092, 9093, 9094, 9095, 9096, 9097, 9098, 9099, 9100];
@@ -45,10 +47,16 @@ const bots: number = +(process.argv.find((s) => s.startsWith('--bots='))?.replac
 const errsToFile: any = process.argv.find((s) => s.startsWith('--errsToFile='))?.replace('--errsToFile=', '') || './data/errors-to.txt';
 const errsFromFile: any = process.argv.find((s) => s.startsWith('--errsFromFile='))?.replace('--errsFromFile=', '') || './data/errors-from.txt';
 const linear: boolean = !!process.argv.find((s) => s.startsWith('--linear='))?.replace('--linear=', '');
+
+// only requested collections via /score endpoint
 const onlyRequested: boolean = !!process.argv.find((s) => s.startsWith('--onlyRequested='))?.replace('--onlyRequested=', '');
+
+// rate for the sleep
 const factor: number = Number(process.argv.find((s) => s.startsWith('--factor='))?.replace('--factor=', '') || 3);
 const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 3000);
+// this does the process cyclic. 
 const ignoreShouldScrape: boolean = !!process.argv.find((s) => s.startsWith('--ignoreShouldScrape='))?.replace('--ignoreShouldScrape=', '');
+const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 
 console.log('options', {
   exec,
@@ -60,6 +68,7 @@ console.log('options', {
   factor,
   limitCollections,
   ignoreShouldScrape,
+  above10k,
 });
 
 
@@ -79,14 +88,14 @@ export const saveAssetsFromUrl = async (
       .then(({ data }: any) => ({
         assets: data.assets,
         slug: slug ? slug : queryString.parseUrl(url).query.collection,
-        offset: queryString.parseUrl(url).query.offset
+        offset: queryString.parseUrl(url).query.offset,
+        limit: queryString.parseUrl(url).query.limit,
       }))
       .then((body: { slug: any; }) => ({ ...body }))
-      .then(tap(({ assets, slug, offset }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}`)))
-      .then(tap(({ assets, slug, offset }: any) => {
+      .then(tap(({ assets, slug, offset, limit }: any) => console.log(`[url] ${url} assets: ${assets.length} thread: ${i} offset: ${offset}, limit: ${limit}`)))
+      .then(tap(({ assets, slug, offset, limit }: any) => {
         const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
-        console.log('collectionsCounts, isLastUrlOfCollection', collectionsCounts[slug], isLastUrlOfCollection);
         if (assets?.length) {
           const content = JSON.stringify(assets.map((asset: any) =>
           ({
@@ -98,7 +107,7 @@ export const saveAssetsFromUrl = async (
           ).map(openseaAssetMapper)) as any;
 
           load(JSON.parse(content), 'assets');
-          if (isLastUrlOfCollection || assets.length < (+offset || 20)) {
+          if (isLastUrlOfCollection || assets.length < (+limit || 20)) {
             Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
           }
         } else {
@@ -114,14 +123,17 @@ export const saveAssetsFromUrl = async (
     .then((result: any) => result.assets)
     .catch(async (e: any) => {
       console.log(`[error catch PR] ${e} ${url}`);
+      const collection = slug ? slug : queryString.parseUrl(url).query?.collection;
+      if (collection) {
+        Query.update(db, 'collections', collection, { updatedAt: new Date(), requestedScore: false, damagedCollection: true }, true)
+          .catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
+      }
       fs.appendFile(errsToFile, `${url}\n`, (err) => {
         if (err) console.log(`[write 504 file error]`, err);
       });
     });
 
 }
-
-const topSupply = map((c) => ({ ...Object(c), totalSupply: Object(c).totalSupply > 10000 ? 10000 : Object(c).totalSupply }));
 
 /** this only saves the array of links sliced. optionally further to read from several instances */
 const saveLinkSlicedFile = (links: string[][]) => {
@@ -155,10 +167,10 @@ const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
 
 const transform = pipe(
-  // when((x: any) => onlyRequested && x.length, (x) => [x[0]]),
   toLinks,
   flatten,
-  dropRepeats);
+  dropRepeats,
+);
 
 const distributeToHttpClients = (arrOfLinks: string[]) => {
   const split = Math.ceil(arrOfLinks.length / +bots)
@@ -227,9 +239,9 @@ export const countInDb = (collections: any[]): any => {
     .then((dbResults: any[]) =>
       collections.map((c: any, i: number) => ({
         ...c,
-        totalSupply: clamp(1, 10000, c.stats?.count), // should have
+        totalSupply: c.stats?.count, // clamp(1, 10000, c.stats?.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: !dbResults[i].count || (c.stats?.count - dbResults[i].count) < c.stats?.count * 0.05 // / clamp(1, 10000, c?.stats?.count) < 0.9,
+        shouldScrape: ((c.stats?.count - dbResults[i].count) > c.stats?.count * 0.0025)
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));
@@ -238,20 +250,50 @@ export const countInDb = (collections: any[]): any => {
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
 export const saveAssets = (slug?: string) =>
-  collectionsData({ slug, sort: [{ requestedScore: { order: 'desc' } }], query: { bool: { "must": [{ "exists": { "field": "slug" } }, { "match": { "requestedScore": true } }] } }, })
-    .then(tap((x: any[]) => console.log('x 1 ---------', x)) as any)
+  collectionsData({
+    slug, sort: [{ requestedScore: { order: 'desc' } }], query: {
+      bool: {
+        "must": [
+          { "exists": { "field": "slug" } },
+          { "match": { "requestedScore": true } }, // this does first the requested score collections via /score
+          { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+        ],
+        "must_not": [{ "match": { "damagedCollection": true } }]
+      }
+    },
+  })
     .then(when((x: any) => !x.length && !onlyRequested && !slug, (x) => collectionsData({
-      sort: [{ updatedAt: { order: 'asc' } }, { "stats.totalSupply": { "order": "desc" } }],
-      query: { bool: { "must": [{ "exists": { "field": "slug" } },] } }
+      sort: [{ updatedAt: { order: 'asc', 'missing': '_first' } }, { "stats.totalSupply": { "order": "desc" } }],
+      query: {
+        bool: {
+          "must": [
+            { "exists": { "field": "slug" } },
+            { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+          ],
+          "must_not": [{ "match": { "damagedCollection": true } }]
+        }
+      }
     })))
+    .then(tap((x: any[]) => console.log('x 1 raw ---------', x)) as any)
     .then(countInDb as any)
-    .then(tap((x: any[]) => console.log('x 2 ---------', x)) as any)
+    .then(tap((x: any[]) => console.log('x 2 count in db ---------', x)) as any)
     .then(filterData as any)
     .then(tap(assignSupplies) as any)
-    .then(tap((x: any[]) => console.log('x 3 ---------', x)) as any)
-    .then(transform as any)
-    .then(distributeToHttpClients as any)
-    .then(tap((x: any[]) => console.log('x 4 ---------', x.length)) as any)
+    .then(tap((x: any[]) => console.log('x 3 filtered data ---------', x)) as any)
+    .then(
+      ifElse((collections) => above10k,
+        async (collections) => {
+          console.log(' this is a 10 k ');
+          if (collections?.length) {
+            for (const collection of collections) await Scrape10K.scrape10k(collection.slug)
+          };
+        },
+        pipe(transform, distributeToHttpClients)
+      )
+    )
+    // .then(transform as any)
+    // .then(distributeToHttpClients as any)
+    // .then(tap((x: any[]) => console.log('x 4 ---------', x.length)) as any)
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });

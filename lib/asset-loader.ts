@@ -63,6 +63,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
   ]);
 
+  // console.log('openseaNft --', openseaNft);
   const asset: Result<any, Asset.Asset> = Remote.openSeaAsset(openseaNft)
     .chain((openSea) =>
       Remote.rarible(rariNft).map((rari) =>
@@ -86,6 +87,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
       )
     )
 
+  // console.log('asset', asset);
   return asset.defaultTo(null as any);
 };
 
@@ -172,22 +174,25 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   }
 }
 
-const remoteCollectionMapper = ({ collection }: any): Collection.Collection => ({
-  contractAddresses: collection.primary_asset_contracts.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
-  slug: collection.slug,
-  name: collection.name,
-  releaseDate: collection.created_date,
-  released: true,
-  imgPortrait: collection.banner_image_url,
-  imgMain: collection.image_url,
-  imgLarge: collection.large_image_url,
-  twitter: collection.twitter_username,
-  discord: collection.discord_url,
-  instagram: collection.instagram_username,
-  telegram: collection.telegram_url,
-  website: collection.external_url,
-  primaryAssetConctracts: collection.primary_asset_contracts || null,
-});
+const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
+  // console.log('collection --', collection);
+  return {
+    contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
+    slug: collection.slug,
+    name: collection.name,
+    releaseDate: collection.created_date,
+    released: true,
+    imgPortrait: collection.banner_image_url,
+    imgMain: collection.image_url,
+    imgLarge: collection.large_image_url,
+    twitter: collection.twitter_username,
+    discord: collection.discord_url,
+    instagram: collection.instagram_username,
+    telegram: collection.telegram_url,
+    website: collection.external_url,
+    primaryAssetConctracts: collection.primary_asset_contracts || null,
+  }
+};
 
 const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.CollectionStats => ({
   // contractAddress,

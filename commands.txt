@@ -1,11 +1,13 @@
 =================================== prod ===================================
 scraper 
 ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/scraper.assets.js --exec=saveAssets --onlyRequested=1 --linear=true --factor=1 --errsToFile=/home/ubuntu/data/errors-to-assets.txt
+scraper 10k
+ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/scraper.assets.js --exec=saveAssets --onlyRequested=1 --linear=true --factor=1 --above10k=1 --limitCollections=1 --errsToFile=/home/ubuntu/data/errors-to-assets.txt
 
 ranker
 ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/rank.js
 
-10k
+10k - single collection
 ES_CLIENT=https://vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443 /usr/bin/env node /home/ubuntu/api/scraper/scrape10k+.js --collection=supducks
 
 
@@ -15,20 +17,21 @@ ES_CLIENT=https://localhost:9200 npm start
 
 
 
-
-ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/ts-node ./scraper/scraper.assets.ts \
---exec=saveAssets --onlyRequested=1 --linear=true --factor=3 --errsToFile=./data/errors-to-assets.txt
+scraper
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --linear=true --factor=3 --errsToFile=./data/errors-to-assets.txt
+scraper 10k
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --linear=true --above10k=1 --limitCollections=100 --factor=3
 
 ######### 10k ##########
 ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scraper/scrape10k+.ts --collection=ethermon
 
 ######### all collections ##########
-ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/ts-node ./scraper/scraper.assets.ts \
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/scraper.assets.ts \
 --exec=saveAssets --limitCollections=1 --ignoreShouldScrape=1 --linear=true --factor=3 --errsToFile=./data/errors-to-assets.txt
 
 
 ######### rank ##########
-ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/ts-node ./scraper/rank.ts --limitCollections=5
-ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 ./node_modules/.bin/ts-node ./scraper/rank.ts --slug=metasaurs-nft
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/rank.ts --limitCollections=5
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/rank.ts --slug=metasaurs-nft
 
 ssh -N wego-api -L 9200:vpc-wego-db-1-mz5tglq65ulqsc5p52nf7gy2ke.us-east-1.es.amazonaws.com:443
