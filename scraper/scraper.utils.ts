@@ -84,7 +84,15 @@ const getDocId = (doc: any, index: string) => {
   if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
 };
 
-export const load = async (content: any[], index: string, update?: boolean) => {
+/**
+ * Loads a document into elastic search
+ * @param {any[]} content document to be saved
+ * @param {index} index name of the index that will be saved. Recomended in plural.
+ * @param {boolean | string } [update] whether the document is an update an upsert or neither.
+ *  If it's and update use boolean true, if it is an upsert update = "upsert", else update can be lefted undefined
+ * @returns
+ */
+export const load = async (content: any[], index: string, update?: boolean | string) => {
   let ix = 0;
   if (!content.length) return;
 
@@ -104,7 +112,7 @@ export const load = async (content: any[], index: string, update?: boolean) => {
             _id: getDocId(doc, index),
           },
         },
-    update ? { doc } : doc,
+    update ? { doc, doc_as_upsert: update === 'upsert' } : doc,
   ]);
 
   // console.log(JSON.stringify(body))
@@ -131,7 +139,7 @@ export const readPromise = (path: string, method: string) =>
   });
 
 export const openseaAssetMapper = (asset: any) => {
-  const count = asset.collection?.stats?.total_supply;
+  const count = asset.collection?.stats?.totalSupply;
   const reducer = (acc: number, t: { trait_count: number }) => {
     const norm = t.trait_count / count;
     return norm ? acc + 1 / norm : acc;
@@ -165,3 +173,15 @@ export const openseaAssetMapper = (asset: any) => {
     currentPriceUSD: asset.sell_orders?.length ? (asset.sell_orders[0].current_price / 10 ** 18) * +asset.sell_orders[0].payment_token_contract?.usd_price : null,
   };
 };
+
+export const consecutiveArray = (min: number, size: number): Array<Number> => new Array(size).fill(0).map((_, ix) => ix + min);
+/**
+ * Cleans an object of null and undefined properties.
+ * Intended use: when updating an asset, we can clean an object, so we don't
+ * update with null or undefined values.
+ * @param {any} obj Object that will be clean
+ * @param {any} [filter=(v)=>v!=null] If true the value will be kept
+ * @returns {any} A new object with the same properties minus the null and
+ *  undefined ones.
+ */
+export const cleanEntries = (obj: any, filter: (v: any) => boolean = (v) => v != null) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => filter(v)));

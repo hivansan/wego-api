@@ -5,99 +5,50 @@
  */
 
 import axios from 'axios';
-import { URLSearchParams } from 'url';
+import queryString from 'query-string';
+
 import { openseaAssetMapper, load, sleep } from './scraper.utils';
 import fs from 'fs';
+import * as AssetLoader from '../lib/asset-loader';
+import { db } from '../bootstrap';
+import { tap } from 'ramda';
+import { saveAssetsFromUrl } from './scraper.assets';
 
 const file: string = process.argv.find((s) => s.startsWith('--file='))?.replace('--file=', '') || '';
-const collection: string | undefined = process.argv.find((s) => s.startsWith('--collection='))?.replace('--collection=', '');
+const collection: string = process.argv.find((s) => s.startsWith('--collection='))?.replace('--collection=', '') || '';
+const startingId: number = +(process.argv.find((s) => s.startsWith('--startingId='))?.replace('--startingId=', '') || 0);
 
-function consecutiveArray(min: number, size: number): Array<Number> {
-  return new Array(size).fill(0).map((_, ix) => ix + min);
+const MAX_IDS = 20;
+
+const baseUrl = 'https://api.opensea.io/api/v1';
+
+const getUrl = ({ contractAddress, firstId }: { contractAddress: string, firstId: number }) => {
+  console.log(' first id ', firstId);
+  const ids = new Array(MAX_IDS).fill(0).map((_, ix) => ix + firstId);
+  const params = {
+    asset_contract_address: contractAddress,
+    token_ids: ids,
+  }
+  return `${baseUrl}/assets?${queryString.stringify(params)}`
 }
 
-//address
-
-class Collection {
-  public count: number;
-  public found: number;
-  public maxId: number;
-  public slug: string;
-  public contracts: Array<any>;
-  private constructor(slug: string, data: any) {
-    const { stats, primary_asset_contracts } = data;
-    this.slug = slug;
-    this.count = stats.count;
-    this.contracts = primary_asset_contracts.map((x: any) => x.address);
-    this.found = 0;
-    this.maxId = 0;
-  }
-  public static async build(slug: string): Promise<Collection> {
-    let res = await axios.get(`https://api.opensea.io/api/v1/collection/${slug}`);
-    return new Collection(slug, res.data.collection);
-  }
-  public async fetchPacket(contract = -1) {
-    const ids: Iterable<[string, string]> = consecutiveArray(this.maxId, 20).map((id) => ['token_ids', String(id)]);
-    let params: URLSearchParams;
-    if (contract >= 0) params = new URLSearchParams([['asset_contract_address', this.contracts[contract]], ...ids]);
-    else params = new URLSearchParams([['collection', this.slug], ...ids]);
-
-    let res = await axios.get('https://api.opensea.io/api/v1/assets?', { params });
-    this.maxId += 20;
-    this.found += res.data.assets.length;
-    return res.data.assets.map(openseaAssetMapper);
-  }
-  public async fetchWithSlug() {
-    let fetchAgain = true;
-    while (fetchAgain) {
-      console.log('fetching with slug');
-      let packet = await this.fetchPacket();
-      load(packet, 'assets');
-      console.log(`fetched: ${this.found}`);
-      sleep(0.3);
-      if (packet.length == 0) fetchAgain = false;
-    }
-  }
-  public async fetchWithContracts() {
-    console.log(this);
-    for (let i = 0; i < this.contracts.length; i++) {
+AssetLoader.getCollection(db, collection)
+  .then(async ({ body: collectionData }) => {
+    for (const contractAddress of collectionData.contractAddresses) {
       let fetchAgain = true;
+      let found = startingId;
       while (fetchAgain) {
-        console.log('fetching with contract');
-        let packet = await this.fetchPacket(i);
-        load(packet, 'assets');
-        console.log(`fetched: ${this.found}`);
-        sleep(0.3);
-        if (packet.length == 0) fetchAgain = false;
-      }
-      this.maxId = 0;
-    }
-  }
-  public async fetchAll() {
-    return this.fetchWithContracts();
-  }
-}
+        try {
+          console.log(`fetching with contractAddress ${contractAddress}`);
+          const url = getUrl({ contractAddress, firstId: found + 1 })
+          const assets: any = await saveAssetsFromUrl({ url, i: 0, factor: .3, slug: collection, collectionData })
+          found += assets?.length;
+          sleep(0.4);
 
-(async () => {
-  if (collection) {
-    let c = await Collection.build(collection);
-    await c.fetchAll();
-    return;
-  }
-  let collections: Array<string> = await new Promise((res, rej) =>
-    fs.readFile(file, 'utf8', function (err, data) {
-      if (err) rej(err);
-      let obj = JSON.parse(data);
-      res(obj);
-    })
-  );
-  for (const collection of collections) {
-    try {
-      let c = await Collection.build(collection);
-      await c.fetchAll();
-    } catch (e) {
-      console.log(`couldn't fetch ${collection}`);
+          if (!assets?.length) fetchAgain = false;
+        } catch (error) {
+          console.log('error', error);
+        }
+      }
     }
-  }
-  // console.log(rawdata);
-})();
+  })
