@@ -1,5 +1,7 @@
 import * as ElasticSearch from '@elastic/elasticsearch';
 import axios from 'axios';
+import moment from 'moment';
+
 import * as Network from './network';
 import * as Asset from '../models/asset';
 import * as Collection from '../models/collection';
@@ -11,6 +13,7 @@ import { URLSearchParams } from 'url';
 import { curry, tap } from 'ramda';
 
 import { error } from '../server/util';
+import { isUnrevealed } from './stats';
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -20,7 +23,7 @@ export async function fromDb(
   traits?: { [key: string]: string | number | (string | number)[] },
   priceRange?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
-) {
+): Promise<any> {
   const q = {
     bool: {
       must: [
@@ -58,6 +61,7 @@ export async function fromDb(
 }
 
 export async function assetFromRemote(contractAddress: string, tokenId: string): Promise<Asset.Asset | null> {
+
   const [rariNft, openseaNft] = await Network.arrayFetch([
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
@@ -86,6 +90,8 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
         })
       )
     )
+  console.log(`getting asset from remote ${contractAddress}/${tokenId}`);
+
 
   // console.log('asset', asset);
   return asset.defaultTo(null as any);
@@ -144,18 +150,22 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
 }
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
-  Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+  Query.createWithIndex(db, 'assets', { ...asset, unrevealed: isUnrevealed(asset) }, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
 ));
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
+  const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => body === null || !!!body?._source?.slug
-      ? assetFromRemote(contractAddress, tokenId)
-        .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
-        .catch(e => {
-          return error(503, 'Service error');
-        })
-      : { body: body._source } as any)
+    .then(body => {
+      // console.log('unrevealed and updated -----', body, body._source.unrevealed, now.diff(moment(body._source?.updatedAt), 'minutes') > 5);
+      return body === null || !!!body?._source?.slug || (body._source.unrevealed && now.diff(moment(body._source?.updatedAt), 'minutes') > 5)
+        ? assetFromRemote(contractAddress, tokenId)
+          .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
+          .catch(e => {
+            return error(503, 'Service error');
+          })
+        : { body: body._source } as any
+    })
 }
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {

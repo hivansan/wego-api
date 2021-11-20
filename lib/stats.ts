@@ -76,7 +76,7 @@ export const rank = <
     if (lastVal !== val[from]) {
       lastRank = totalOfRank;
     }
-    totalOfRank ++;
+    totalOfRank++;
     Object.assign(val, { [to]: lastRank });
     lastVal = val[from];
   });
@@ -92,6 +92,8 @@ export const index = (count: number) => (asset: Asset) => Object.assign(
    */
   statsByTraits(asset.traits as unknown as Trait[], count)
 );
+
+export const isUnrevealed = (a: Asset): boolean => (a.description?.toLowerCase().includes('unrevealed') || a.name?.toLowerCase().includes('unrevealed')) || !a.traits?.length || a.traits.some(t => t.value === '???')
 
 export async function collection(count: number, assets: Asset[]) {
   const collectionStats = assets.map(index(count));

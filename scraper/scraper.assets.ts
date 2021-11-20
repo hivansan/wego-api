@@ -57,6 +57,7 @@ const limitCollections: number = Number(process.argv.find((s) => s.startsWith('-
 // this does the process cyclic. 
 const ignoreShouldScrape: boolean = !!process.argv.find((s) => s.startsWith('--ignoreShouldScrape='))?.replace('--ignoreShouldScrape=', '');
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
+const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
 console.log('options', {
   exec,
@@ -249,7 +250,7 @@ export const countInDb = (collections: any[]): any => {
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
-export const saveAssets = (slug?: string) =>
+export const saveAssets = () =>
   collectionsData({
     slug, sort: [{ requestedScore: { order: 'desc' } }], query: {
       bool: {
