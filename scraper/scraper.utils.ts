@@ -100,18 +100,18 @@ export const load = async (content: any[], index: string, update?: boolean | str
   const body = content.flatMap((doc: any) => [
     update
       ? {
-          update: {
-            _id: getDocId(doc, index),
-            _index: index,
-          },
-        }
-      : {
-          index: {
-            _index: index,
-            _type: '_doc',
-            _id: getDocId(doc, index),
-          },
+        update: {
+          _id: getDocId(doc, index),
+          _index: index,
         },
+      }
+      : {
+        index: {
+          _index: index,
+          _type: '_doc',
+          _id: getDocId(doc, index),
+        },
+      },
     update ? { doc, doc_as_upsert: update === 'upsert' } : doc,
   ]);
 
@@ -176,7 +176,7 @@ export const openseaAssetMapper = (asset: any) => {
 
 export const consecutiveArray = (min: number, size: number): Array<Number> => new Array(size).fill(0).map((_, ix) => ix + min);
 /**
- * Cleans an object of null and undefined properties.
+ * Cleans an object of null and undefined properties (values).
  * Intended use: when updating an asset, we can clean an object, so we don't
  * update with null or undefined values.
  * @param {any} obj Object that will be clean
@@ -184,4 +184,16 @@ export const consecutiveArray = (min: number, size: number): Array<Number> => ne
  * @returns {any} A new object with the same properties minus the null and
  *  undefined ones.
  */
+// i'd rename this to cleanObjValues
 export const cleanEntries = (obj: any, filter: (v: any) => boolean = (v) => v != null) => Object.fromEntries(Object.entries(obj).filter(([_, v]) => filter(v)));
+
+
+/**
+ * removes inner keys as 'min', 'max' and number-as.
+ */
+export const cleanTraits = (traits: object): { [k: string]: any; } =>
+  Object.fromEntries(
+    Object.entries(traits)
+      .filter(([key, value]) =>
+        !Object.entries(value).some(([key, value]) => ['min', 'max'].includes(key) || !isNaN(key as any)))
+  )

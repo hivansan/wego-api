@@ -14,6 +14,7 @@ import { curry, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
+import { cleanTraits } from '../scraper/scraper.utils';
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -129,9 +130,8 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-// this would mean that collection - and neither it's assets - would exists
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
-  Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
+  Query.createWithIndex(db, 'collections', { ...collection, traits: cleanTraits(collection.traits) }, `${collection.slug}`)
   //, console.log('hola') // this function will execute without being returned
 ));
 
@@ -200,6 +200,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     instagram: collection.instagram_username,
     telegram: collection.telegram_url,
     website: collection.external_url,
+    traits: cleanTraits(collection.traits) as any,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
   }
 };

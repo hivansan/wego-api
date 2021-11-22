@@ -250,7 +250,7 @@ export const countInDb = (collections: any[]): any => {
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
-export const saveAssets = () =>
+const saveAssets = () =>
   collectionsData({
     slug, sort: [{ requestedScore: { order: 'desc' } }], query: {
       bool: {

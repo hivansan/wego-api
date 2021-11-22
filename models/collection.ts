@@ -34,7 +34,8 @@ export const collection = object('Collection', {
   telegram: nullable(string),
   website: nullable(string),
   primaryAssetConctracts: nullable(array(string)),
-  contractAddresses: nullable(array(string))
+  contractAddresses: nullable(array(string)),
+  traits: nullable(array(Result.ok), []),
   // updatedAt: date,
 });
 

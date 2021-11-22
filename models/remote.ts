@@ -115,6 +115,7 @@ export const openSeaCollection = object('OpenSeaCollection', {
     telegram_url: nullable(string),
     external_url: nullable(string),
     primary_asset_contracts: nullable(Result.ok),
+    traits: nullable(Result.ok),
     stats: object('Stats', {
       one_day_volume: number,
       one_day_change: number,

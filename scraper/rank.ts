@@ -12,6 +12,7 @@ import { load } from './scraper.utils';
 import * as AssetLoader from '../lib/asset-loader';
 import { Asset } from '../models/asset';
 
+const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 20);
 
@@ -77,7 +78,7 @@ export const updateCollectionWithRevealedStats = (assets: any, slug: string) => 
     .catch((e) => console.log(`[err update collection]: ${slug} ${e}`));
 }
 
-const main = (slug?: string) => {
+const main = () => {
   collectionData(slug)
     // .then(tap((x: any) => console.log('x ==========', JSON.stringify(x.body.results, null, 3))) as any)
     // .then(tap(x => console.log('x ==========', x)) as any)
@@ -121,4 +122,4 @@ const main = (slug?: string) => {
   // .catch(e => console.log('e =========', e))
 }
 
-main(slug);
+if (exec) eval(`${exec}()`);
