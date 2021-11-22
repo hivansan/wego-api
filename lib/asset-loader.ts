@@ -132,7 +132,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   Query.createWithIndex(db, 'collections', { ...collection, traits: cleanTraits(collection.traits) }, `${collection.slug}`)
-  //, console.log('hola') // this function will execute without being returned
+    .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
 export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
