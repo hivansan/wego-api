@@ -1,0 +1,10 @@
+PUT /collections
+
+{
+    "properties": {
+        "traits": {
+            "type": "object",
+            "dynamic": false
+        }
+    }
+}
