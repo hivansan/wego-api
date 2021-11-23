@@ -734,49 +734,45 @@ const assets = [{
 
 const collectionTraitKeys = Object.keys(traits);
 
-const mappedMissing = collectionTraitKeys.map(key => ({
+const allTraits = collectionTraitKeys.map(key => ({
   trait_type: `${key}`,
   trait_count: assets.filter(a => !a.traits.find(t => t.trait_type == key)).length,
   value: null//'Missing trait'
 }))
 
+// const fullTraitAssets = assets.map((asset: any) => ({
+//   ...asset,
+//   traits: [
+//     ...asset.traits,
+//     ...[
+//       ...difference(collectionTraitKeys, asset.traits.map((t: any) => t.trait_type)).map((t: any) => missingTraits.find((m) => m.trait_type === t)),
+//       {
+//         trait_type: 'traitCount',
+//         trait_count: assets.filter((a: any) => a.traitsCount === asset.traitsCount).length,
+//         value: asset.traitsCount // 'Missing trait'
+//       }
+//     ]
+//   ]
+// }))
 
-assets.map(
-  asset => ({
-    ...asset,
-    traits: [
-      ...asset.traits,
-      [
-        ...R.difference(
-          collectionTraitKeys,
-          asset.traits.map(t => t.trait_type)
-        ).map((t: any) => mappedMissing.find((m) => m.trait_type === t)),
-        {
-          trait_type: 'traitCount',
-          trait_count: assets.filter(a => a.traitsCount === asset.traitsCount).length,
-          value: asset.traitsCount // 'Missing trait'
-        }
-      ]
-    ]
-  }))
 
+for (const asset of assets) {
+  const assetTraitKeys = asset.traits.map(t => t.trait_type);
+  const diff = R.difference(collectionTraitKeys, assetTraitKeys);
+  const extraTraits = [
+    ...diff.map((t: any) => allTraits.find((m) => m.trait_type === t)),
+    {
+      trait_type: 'traitCount',
+      trait_count: assets.filter(a => a.traitsCount === asset.traitsCount).length,
+      value: asset.traitsCount//'Missing trait'
+    }];
+  asset.traits = [...asset.traits as any, ...extraTraits as any];
+}
 // for (const asset of assets) {
 //   const assetTraitKeys = asset.traits.map(t => t.trait_type);
 //   const diff = R.difference(collectionTraitKeys, assetTraitKeys);
 //   const missingTraits = [
-//     ...diff.map((t: any) => mappedMissing.find((m) => m.trait_type === t)),
-//     {
-//       trait_type: 'traitCount',
-//       trait_count: assets.filter(a => a.traitsCount === asset.traitsCount).length,
-//       value: asset.traitsCount//'Missing trait'
-//     }];
-//   asset.traits = [...asset.traits as any, ...missingTraits as any];
-// }
-// for (const asset of assets) {
-//   const assetTraitKeys = asset.traits.map(t => t.trait_type);
-//   const diff = R.difference(collectionTraitKeys, assetTraitKeys);
-//   const missingTraits = [
-//     ...diff.map((t: any) => mappedMissing.find((m) => m.trait_type === t)),
+//     ...diff.map((t: any) => missingTraits.find((m) => m.trait_type === t)),
 //     {
 //       trait_type: 'traitCount',
 //       trait_count: assets.filter(a => a.traitsCount === asset.traitsCount).length,

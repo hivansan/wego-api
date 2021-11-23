@@ -88,6 +88,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits: openSea.traits,
           collection: { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug }) },
+          traitsCount: openSea.traits?.length || 0
         })
       )
     )
@@ -131,7 +132,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
-  Query.createWithIndex(db, 'collections', { ...collection, traits: cleanTraits(collection.traits) }, `${collection.slug}`)
+  Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
     .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
@@ -142,7 +143,15 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
-            : ({ body: indexCollection(db)({ ...body, addedAt: +new Date(), requestedScore: !!requestedScore }) } as any)
+            : ({
+              body: indexCollection(db)({
+                ...body,
+                addedAt: +new Date(),
+                updatedAt: +new Date(),
+                requestedScore: !!requestedScore,
+                traits: cleanTraits(body.traits)
+              })
+            } as any)
         ))
         : { body: body._source }
     )
