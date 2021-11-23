@@ -12,7 +12,7 @@ import { load } from './scraper.utils';
 import * as AssetLoader from '../lib/asset-loader';
 import { Asset } from '../models/asset';
 
-const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='))?.replace('--exec=', '');
+const execrank: string | undefined = process.argv.find((s) => s.startsWith('--execrank='))?.replace('--execrank=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 20);
 
@@ -22,16 +22,10 @@ const collectionData = (slug?: string) =>
       ? { term: { 'slug.keyword': slug } }
       : {
         "bool": {
-          "must_not": {
-            "match": {
-              // "slug.keyword": "{{collection}}"
-              "ranked": true
-              // "ranked": true
-            }
-            // "exists": {
-            //   "field": "ranked"
-            // }
-          },
+          "must_not": [
+            { "match": { "ranked": true } },
+            // { "match": { "unrevealed": true } }
+          ],
           "must": [{
             "range": {
               "stats.totalSupply": {
@@ -78,7 +72,7 @@ export const updateCollectionWithRevealedStats = (assets: any, slug: string) => 
     .catch((e) => console.log(`[err update collection]: ${slug} ${e}`));
 }
 
-const main = () => {
+const run = () => {
   collectionData(slug)
     // .then(tap((x: any) => console.log('x ==========', JSON.stringify(x.body.results, null, 3))) as any)
     // .then(tap(x => console.log('x ==========', x)) as any)
@@ -87,12 +81,12 @@ const main = () => {
     // .then(tap(x => console.log('x count in db ----------', x)) as any)
     .then(filter((c: any) => !c.shouldScrape /* && !c.ranked */) as any)
     // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 /* && !c.ranked */) as any)
-    .then(map(pick(['slug', 'count']) as any) as any)
-    // .then(tap(x => console.log('x filtered ----------', x)) as any)
+    .then(map(pick(['slug', 'count', 'traits']) as any) as any)
+    .then(tap(x => console.log('x filtered ----------', x)) as any)
     .then(async (collections) => {
       // collections.length = 1;
       for (const collection of collections) {
-        // console.log('ranking collection.slug', collection.slug);
+        console.log('ranking collection.slug', collection.slug);
         Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, { limit: 80000 })
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
             body: {
@@ -100,7 +94,8 @@ const main = () => {
               results: hits.map(toResult).map(prop('value'))
             }
           }))
-          .then(({ body }) => Stats.collection(collection.count, body.results).then(ranks => ({ assets: body.results, ranks })))
+          .then(({ body }) => Stats.collection(collection.count, body.results, collection.traits).then(ranks => ({ assets: body.results, ranks })))
+          // .then(tap(x => console.log('x ==========', x)) as any)
           .then((body) =>
             body.assets.map((asset: Asset) => ({
               ...asset,
@@ -112,7 +107,7 @@ const main = () => {
           /** @TODO if there are assets without traits, dont mark as ranked - but only if asset is unrevealed */
           .then(assets => updateCollectionWithRevealedStats(assets, collection.slug))
           .catch(e => {
-            // console.log('e =========', e);
+            console.log('[error ranker]', e);
             // Query.update(db, 'collections', collection.slug, { unrevealed: true, updatedAt: new Date() }, true)
             //   .catch((e) => console.log(`[err update collection]: ${collection.slug} ${e}`))
           })
@@ -122,4 +117,4 @@ const main = () => {
   // .catch(e => console.log('e =========', e))
 }
 
-if (exec) eval(`${exec}()`);
+if (execrank) eval(`${execrank}()`);

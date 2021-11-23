@@ -47,13 +47,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             )
             // .then(tap((x) => console.log('x ---------', x)) as any)
             .then(({ collection }) => {
-              body.collection = collection;
+              console.log('[score collection]', collection);
+              console.log('[score body]', body);
 
-              if (body.statisticalRarityRank && body.traits?.length && !Stats.isUnrevealed(body)) { return { body }; }
-              if (body.unrevealed) return Promise.reject({ status: 202, message: 'Asset has not being revealed.' });
-
-              const count = body.collection?.stats?.count || null;
-              // const mappedTraits = body.traits?.map(Asset.mapTraits(count)) || [];
+              if (body.statisticalRarityRank && body.traits?.length && !Stats.isUnrevealed(body)) { return { body: { ...body, collection } }; }
+              if (body.unrevealed || Stats.isUnrevealed(body)) return Promise.reject({ status: 202, message: 'Asset has not being revealed.' });
 
               return countInDb([collection])
                 .then(nth(0))
@@ -75,7 +73,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     results: hits.map(toResult).map(prop('value'))
                   }
                 }))
-                .then(({ body }: any) => Stats.collection(body.collection?.stats?.count, body.results, body.collection.traits)
+                .then(({ body }: any) => Stats.collection(body.collection?.stats?.count, body.results, collection?.traits)
                   .then(ranks => ({ assets: body.results, ranks }))
                 )
                 .then((body: { assets: any[]; ranks: any[]; }) =>
@@ -88,9 +86,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                 .then(tap((body) => load(body as any, 'assets', true)))
                 // .then(tap(x => { console.log(' collection ', collection) }))
                 .then(tap((assets) => Rank.updateCollectionWithRevealedStats(assets, collection.slug)))
-
                 .then(find(propEq('id', tokenId)))
-                .then((body: any) => ({ body }))
+                .then((body: any) => ({ body: { ...body, collection } }))
             })
         ).catch(handleError('[/score error]'))
     })

@@ -87,14 +87,15 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenMetadata: openSea.token_metadata,
           rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits: openSea.traits,
-          collection: { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug }) },
+          collection: {
+            ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }),
+            stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })
+          },
           traitsCount: openSea.traits?.length || 0
         })
       )
     )
-  console.log(`getting asset from remote ${contractAddress}/${tokenId}`);
-
-
+  // console.log(`getting asset from remote ${contractAddress}/${tokenId}`);
   // console.log('asset', asset);
   return asset.defaultTo(null as any);
 };
@@ -147,7 +148,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
               body: indexCollection(db)({
                 ...body,
                 addedAt: +new Date(),
-                updatedAt: +new Date(),
+                updatedAt: new Date(),
                 requestedScore: !!requestedScore,
                 traits: cleanTraits(body.traits)
               })
@@ -194,7 +195,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
 }
 
 const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
-  // console.log('collection --', collection);
+  // console.log('[remote collection mapper collection]', collection);
   return {
     contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
     slug: collection.slug,
@@ -209,7 +210,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     instagram: collection.instagram_username,
     telegram: collection.telegram_url,
     website: collection.external_url,
-    traits: cleanTraits(collection.traits) as any,
+    traits: collection.traits ? cleanTraits(collection.traits) as any : null,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
   }
 };
