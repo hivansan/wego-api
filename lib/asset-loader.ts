@@ -1,5 +1,7 @@
 import * as ElasticSearch from '@elastic/elasticsearch';
 import axios from 'axios';
+import moment from 'moment';
+
 import * as Network from './network';
 import * as Asset from '../models/asset';
 import * as Collection from '../models/collection';
@@ -11,6 +13,8 @@ import { URLSearchParams } from 'url';
 import { curry, tap } from 'ramda';
 
 import { error } from '../server/util';
+import { isUnrevealed } from './stats';
+import { cleanTraits } from '../scraper/scraper.utils';
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -20,7 +24,7 @@ export async function fromDb(
   traits?: { [key: string]: string | number | (string | number)[] },
   priceRange?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
-) {
+): Promise<any> {
   const q = {
     bool: {
       must: [
@@ -58,11 +62,13 @@ export async function fromDb(
 }
 
 export async function assetFromRemote(contractAddress: string, tokenId: string): Promise<Asset.Asset | null> {
+
   const [rariNft, openseaNft] = await Network.arrayFetch([
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
     `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
   ]);
 
+  // console.log('openseaNft --', openseaNft);
   const asset: Result<any, Asset.Asset> = Remote.openSeaAsset(openseaNft)
     .chain((openSea) =>
       Remote.rarible(rariNft).map((rari) =>
@@ -81,11 +87,16 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenMetadata: openSea.token_metadata,
           rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits: openSea.traits,
-          collection: { ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }), stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug }) },
+          collection: {
+            ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }),
+            stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })
+          },
+          traitsCount: openSea.traits?.length || 0
         })
       )
     )
-
+  // console.log(`getting asset from remote ${contractAddress}/${tokenId}`);
+  // console.log('asset', asset);
   return asset.defaultTo(null as any);
 };
 
@@ -121,10 +132,9 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-// this would mean that collection - and neither it's assets - would exists
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
-  //, console.log('hola') // this function will execute without being returned
+    .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
 export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
@@ -134,7 +144,15 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
-            : ({ body: indexCollection(db)({ ...body, addedAt: +new Date(), requestedScore: !!requestedScore }) } as any)
+            : ({
+              body: indexCollection(db)({
+                ...body,
+                addedAt: +new Date(),
+                updatedAt: new Date(),
+                requestedScore: !!requestedScore,
+                traits: cleanTraits(body.traits)
+              })
+            } as any)
         ))
         : { body: body._source }
     )
@@ -142,18 +160,22 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
 }
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
-  Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+  Query.createWithIndex(db, 'assets', { ...asset, unrevealed: isUnrevealed(asset) }, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
 ));
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
+  const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => body === null || !!!body?._source?.slug
-      ? assetFromRemote(contractAddress, tokenId)
-        .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
-        .catch(e => {
-          return error(503, 'Service error');
-        })
-      : { body: body._source } as any)
+    .then(body => {
+      // console.log('unrevealed and updated -----', body, body._source.unrevealed, now.diff(moment(body._source?.updatedAt), 'minutes') > 5);
+      return body === null || !!!body?._source?.slug || (body._source.unrevealed && now.diff(moment(body._source?.updatedAt), 'minutes') > 5)
+        ? assetFromRemote(contractAddress, tokenId)
+          .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
+          .catch(e => {
+            return error(503, 'Service error');
+          })
+        : { body: body._source } as any
+    })
 }
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
@@ -161,33 +183,38 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     const os: any = await Network.fetchNParse(`https://api.opensea.io/api/v1/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
-
+    console.log('[os collection]', os);
     const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection });
+    console.log('[os collection]', os);
     const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ slug, stats: os.collection.stats });
 
     return Object.assign(collection, { stats });
   } catch (e) {
-    console.log('err--', JSON.stringify(e), e);
+    console.log('[collection from remote err]', slug, JSON.stringify(e), e);
     return null;
   }
 }
 
-const remoteCollectionMapper = ({ collection }: any): Collection.Collection => ({
-  contractAddresses: collection.primary_asset_contracts.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
-  slug: collection.slug,
-  name: collection.name,
-  releaseDate: collection.created_date,
-  released: true,
-  imgPortrait: collection.banner_image_url,
-  imgMain: collection.image_url,
-  imgLarge: collection.large_image_url,
-  twitter: collection.twitter_username,
-  discord: collection.discord_url,
-  instagram: collection.instagram_username,
-  telegram: collection.telegram_url,
-  website: collection.external_url,
-  primaryAssetConctracts: collection.primary_asset_contracts || null,
-});
+const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
+  console.log('[remote collection mapper collection]', collection);
+  return {
+    contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
+    slug: collection.slug,
+    name: collection.name,
+    releaseDate: collection.created_date,
+    released: true,
+    imgPortrait: collection.banner_image_url,
+    imgMain: collection.image_url,
+    imgLarge: collection.large_image_url,
+    twitter: collection.twitter_username,
+    discord: collection.discord_url,
+    instagram: collection.instagram_username,
+    telegram: collection.telegram_url,
+    website: collection.external_url,
+    traits: collection.traits ? cleanTraits(collection.traits) as any : null,
+    primaryAssetConctracts: collection.primary_asset_contracts || null,
+  }
+};
 
 const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.CollectionStats => ({
   // contractAddress,
@@ -247,7 +274,7 @@ export async function assetsFromRemote(
     // if (!assets?.length) return null;
     return assets;
   } catch (e) {
-    console.log('err--', JSON.stringify(e));
+    console.log('[assetsFromRemote err]', JSON.stringify(e));
     return null;
   }
 }

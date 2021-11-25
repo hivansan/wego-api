@@ -110,7 +110,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(pipe<any, any, any, any>(
           map((a: any) => a._source.traits),

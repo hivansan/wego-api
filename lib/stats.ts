@@ -1,4 +1,4 @@
-import { curry, evolve, flip, identity, prop } from 'ramda';
+import { difference, curry, evolve, flip, identity, prop, pick, uniq, uniqBy } from 'ramda';
 import { Asset } from '../models/asset';
 
 export const rankFields = [
@@ -76,7 +76,7 @@ export const rank = <
     if (lastVal !== val[from]) {
       lastRank = totalOfRank;
     }
-    totalOfRank ++;
+    totalOfRank++;
     Object.assign(val, { [to]: lastRank });
     lastVal = val[from];
   });
@@ -93,7 +93,35 @@ export const index = (count: number) => (asset: Asset) => Object.assign(
   statsByTraits(asset.traits as unknown as Trait[], count)
 );
 
-export async function collection(count: number, assets: Asset[]) {
+export const isUnrevealed = (a: Asset): boolean => (a.description?.toLowerCase().includes('unrevealed') || a.name?.toLowerCase().includes('unrevealed')) || !a.traits?.length || a.traits.some(t => t.value === '???')
+
+export async function collection(count: number, assets: Asset[], collectionTraits: object) {
+  // console.log('collectionTraits --', collectionTraits);
+
+  const collectionTraitKeys = Object.keys(collectionTraits);
+  const allTraits = collectionTraitKeys.map(key => ({
+    trait_type: `${key}`,
+    trait_count: assets.filter((a: any) => !a.traits.find((t: any) => t.trait_type === key && t.value)).length,
+    value: null
+  }));
+
+  for (const asset of assets) {
+    const assetTraitKeys = asset.traits
+      .filter((t: any) => t.value && t.trait_type !== 'traitCount')
+      .map(prop('trait_type') as any);
+
+    asset.traitsCount = assetTraitKeys.length;
+    const diff = difference(collectionTraitKeys, assetTraitKeys);
+    const extraTraits = [
+      ...diff.map((t: any) => allTraits.find((m) => m.trait_type === t)),
+      {
+        trait_type: 'traitCount',
+        trait_count: (assets).filter((a: Asset) => a.traitsCount === assetTraitKeys.length).length,
+        value: assetTraitKeys.length
+      }];
+    asset.traits = uniqBy(prop('trait_type'))([...extraTraits, ...asset.traits] as any) as any;
+  }
+
   const collectionStats = assets.map(index(count));
   rankFields.forEach(([from, to, shouldFlip]) => rank(from, to, shouldFlip, collectionStats as any));
   return collectionStats;

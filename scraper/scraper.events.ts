@@ -1,11 +1,19 @@
+import { ConfigurationServicePlaceholders } from 'aws-sdk/lib/config_service_placeholders';
 import axios from 'axios';
 import { filter } from 'ramda';
 import { sleep } from '../server/util';
 import { openseaAssetMapper, cleanEntries, load } from './scraper.utils';
 const promiseRetry = require('promise-retry');
+const dotenv = require('dotenv');
+dotenv.config();
 
 //  "... permitted: 'created', 'successful', 'cancelled', 'offer_entered', 'bid_entered', 'bid_withdrawn', 'transfer', 'approve', 'custom', 'payout'"
 // this one will not work: payout
+
+const limit: number = Number(process.argv.find((s) => s.startsWith('--limit='))?.replace('--limit=', '') || 300);
+const tokenId: number = Number(process.argv.find((s) => s.startsWith('--tokenId='))?.replace('--tokenId=', ''));
+const contractAddress: string | undefined = process.argv.find((s) => s.startsWith('--contractAddress='))?.replace('--contractAddress=', '');
+const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
 function bigMax(...nums: (string | number)[]) {
   return nums
@@ -58,7 +66,7 @@ const eventTypes = {
    * @returns {any}
    */
   cancelled(event: any, asset: any) {
-    asset.topBid = null;
+    // asset.topBid = null;
     return asset;
   },
 
@@ -102,6 +110,7 @@ const eventTypes = {
    */
   transfer(event: any, asset: any) {
     //changed owner
+    asset.owner = event.asset.owner;
     return asset;
   },
 
@@ -137,29 +146,35 @@ const eventTypes = {
 
 async function getEvents(step = 0) {
   if (step > 33) throw new Error('step must be less than or equal to 33');
-  let res = await axios.get(`https://api.opensea.io/api/v1/events?limit=300&offset=${step * 300}`);
+
+  let res = await axios.get(`https://api.opensea.io/api/v1/events?offset=${step * limit}&limit=${limit}`, {
+    headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY },
+  });
   return res.data;
 }
 
-function updateEvents(events: any) {
+function updateEvents(events: any, step: number) {
   //handle bundle
   const filters = [(asset: any) => asset.permalink.indexOf('/matic/') < 0, (asset: any) => asset.asset_contract.schema_name === 'ERC721'];
   const checkFilter = (asset: any) => filters.reduce((acc, filter) => filter(asset) && acc, true);
   //events = events.filter((event: any) => filters.reduce((acc, filter) => filter(event) && acc, true));
   events = events.flatMap((event: any) => {
     const handler = eventTypes.getHandler(event.event_type);
-    if (event.asset_bundle) {
-      const assets = [];
-      for (const asset of event.asset_bundle.assets) {
-        if (!checkFilter(asset)) continue;
-        assets.push(event, cleanEntries(openseaAssetMapper(asset)));
-      }
-      return assets;
-    }
-    if (!checkFilter(event.asset)) return [];
-    return handler(event, cleanEntries(openseaAssetMapper(event.asset)));
+    console.log(event.event_type, handler(event, cleanEntries(openseaAssetMapper(event.asset))));
+    // const handler = eventTypes.getHandler(event.event_type);
+    // if (event.asset_bundle) {
+    //   const assets = [];
+    //   for (const asset of event.asset_bundle.assets) {
+    //     if (!checkFilter(asset)) continue;
+    //     assets.push(event, cleanEntries(openseaAssetMapper(asset)));
+    //   }
+    //   return assets;
+    // }
+    // if (!checkFilter(event.asset)) return [];
+    // return handler(event, cleanEntries(openseaAssetMapper(event.asset)));
   });
-  return load(events, 'assets', 'upsert');
+  // return load(events, 'assets', 'upsert');
+  return;
 }
 
 (async () => {
@@ -167,9 +182,9 @@ function updateEvents(events: any) {
   do {
     getEvents(step).then((events: any) => {
       step++;
-      if (events.asset_events.length > 0) return updateEvents(events.asset_events);
+      if (events.asset_events.length > 0) return updateEvents(events.asset_events, step);
       return;
     });
-    await sleep(0.3);
-  } while (step <= 33);
+    await sleep(1);
+  } while (step < 1);
 })();
