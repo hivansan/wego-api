@@ -5,7 +5,7 @@ import * as Query from '../lib/query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
 import { countInDb } from './scraper.assets';
-import { filter, map, pick, prop, tap } from 'ramda';
+import { filter, map, pick, prop, tap, complement } from 'ramda';
 import * as Stats from '../lib/stats';
 import { sleep } from '../server/util';
 import { load } from './scraper.utils';
@@ -57,16 +57,18 @@ const collectionData = (slug?: string) =>
       ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
 
 export const updateCollectionWithRevealedStats = (assets: any, slug: string) => {
-  const unrevealed = assets.filter((a: Asset) => Stats.isUnrevealed(a));
-  const revealed = assets.filter((a: Asset) => a.traits?.length || a.traits.some(t => t.value !== '???'));
+  const unrevealed = assets.filter(Stats.isUnrevealed);
+  const revealed = assets.filter(complement(Stats.isUnrevealed));
   console.log(`count: ${assets.length}, unrevealed ${unrevealed.length} revealed ${revealed.length}`);
-  const ranked: boolean = !!(assets.length - revealed);
+  const ranked: boolean = !!((assets.length - revealed.length) / assets.length < .0025);
   const updateFields = {
     revealedAssets: revealed.length,
     unrevealedAssets: unrevealed.length,
     ranked,
     updatedAt: new Date(),
   }
+
+  console.log('[updateFields]', updateFields);
 
   return Query.update(db, 'collections', slug, updateFields, true)
     .catch((e) => console.log(`[err update collection]: ${slug} ${e}`));
