@@ -64,6 +64,7 @@ export const updateCollectionWithRevealedStats = (assets: any, slug: string) => 
   const updateFields = {
     revealedAssets: revealed.length,
     unrevealedAssets: unrevealed.length,
+    revealedPercentage: (assets.length - unrevealed.length) / assets.length,
     ranked,
     updatedAt: new Date(),
   }
