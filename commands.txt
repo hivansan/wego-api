@@ -27,7 +27,7 @@ ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scra
 
 ######### all collections ##########
 ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/scraper.assets.ts \
---exec=saveAssets --limitCollections=1 --ignoreShouldScrape=1 --linear=true --factor=3 --errsToFile=./data/errors-to-assets.txt
+--exec=saveAssets --limitCollections=1 --forceScrape=1 --linear=true --factor=3 --errsToFile=./data/errors-to-assets.txt
 
 
 ######### rank ##########

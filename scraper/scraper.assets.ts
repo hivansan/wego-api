@@ -55,7 +55,7 @@ const onlyRequested: boolean = !!process.argv.find((s) => s.startsWith('--onlyRe
 const factor: number = Number(process.argv.find((s) => s.startsWith('--factor='))?.replace('--factor=', '') || 3);
 const limitCollections: number = Number(process.argv.find((s) => s.startsWith('--limitCollections='))?.replace('--limitCollections=', '') || 3000);
 // this does the process cyclic. 
-const ignoreShouldScrape: boolean = !!process.argv.find((s) => s.startsWith('--ignoreShouldScrape='))?.replace('--ignoreShouldScrape=', '');
+const forceScrape: boolean = !!process.argv.find((s) => s.startsWith('--forceScrape='))?.replace('--forceScrape=', '');
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
@@ -68,7 +68,7 @@ console.log('options', {
   onlyRequested,
   factor,
   limitCollections,
-  ignoreShouldScrape,
+  forceScrape,
   above10k,
 });
 
@@ -152,7 +152,7 @@ const sortByAddedAt = sortBy(prop('addedAt') as any);
 
 const filterData = pipe(
   // when(() => onlyRequested, filter(prop('requestedScore') as any)),
-  when(() => !ignoreShouldScrape, filter(prop('shouldScrape') as any)) as any,
+  when(() => !forceScrape, filter(prop('shouldScrape') as any)) as any,
   // filter(prop('shouldScrape') as any) as any,
   map((pick(['slug', 'totalSupply', 'addedAt', 'count', 'loading', 'updatedAt', 'requestedScore']) as any)),
   filter((c: any) => c.totalSupply),
