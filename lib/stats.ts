@@ -93,7 +93,15 @@ export const index = (count: number) => (asset: Asset) => Object.assign(
   statsByTraits(asset.traits as unknown as Trait[], count)
 );
 
-export const isUnrevealed = (a: Asset): boolean => (a.description?.toLowerCase().includes('unrevealed') || a.name?.toLowerCase().includes('unrevealed')) || !a.traits?.length || !a.traitsCount || a.traits.some(t => t.value === '???')
+export const isUnrevealed = (a: Asset): boolean =>
+  (
+    a.description?.toLowerCase().includes('unrevealed') ||
+    a.name?.toLowerCase().includes('unrevealed')
+  ) ||
+  !a.traits?.length ||
+  !a.traitsCount ||
+  a.traits.some(t => t.value === '???') ||
+  !a.traits.filter((t: any) => t.trait_type !== 'traitCount' && t.value !== null).length
 
 export async function collection(count: number, assets: Asset[], collectionTraits: object) {
   // console.log('collectionTraits --', collectionTraits);

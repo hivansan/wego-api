@@ -98,21 +98,23 @@ export const saveAssetsFromUrl = async (
         const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
         if (assets?.length) {
-          const content = JSON.stringify(assets.map((asset: any) =>
-          ({
-            ...asset,
-            collection:
-              collectionData ? collectionData
+          const content = JSON.stringify(
+            assets.map((asset: any) =>
+            ({
+              ...asset,
+              collection: collectionData
+                ? collectionData
                 : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
-          })
-          ).map(openseaAssetMapper)) as any;
+            })
+            ).map(openseaAssetMapper)
+          ) as any;
 
           load(JSON.parse(content), 'assets');
           if (isLastUrlOfCollection || assets.length < (+limit || 20)) {
-            Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
+            Query.update(db, 'collections', slug, { lastScrapedAt: new Date(), updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
           }
         } else {
-          Query.update(db, 'collections', slug, { updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
+          Query.update(db, 'collections', slug, { lastScrapedAt: new Date(), updatedAt: new Date(), requestedScore: false }, true).catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
         }
       }))
       .catch(async (e: any) => {
@@ -126,7 +128,7 @@ export const saveAssetsFromUrl = async (
       console.log(`[error catch PR] ${e} ${url}`);
       const collection = slug ? slug : queryString.parseUrl(url).query?.collection;
       if (collection) {
-        Query.update(db, 'collections', collection, { updatedAt: new Date(), requestedScore: false, damagedCollection: true }, true)
+        Query.update(db, 'collections', collection, { lastScrapedAt: new Date(), updatedAt: new Date(), requestedScore: false, damagedCollection: true }, true)
           .catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
       }
       fs.appendFile(errsToFile, `${url}\n`, (err) => {
@@ -259,19 +261,28 @@ const saveAssets = () =>
           { "match": { "requestedScore": true } }, // this does first the requested score collections via /score
           { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
         ],
-        "must_not": [{ "match": { "damagedCollection": true } }]
+        "must_not": [{ "match": { "deleted": true } }]
       }
     },
   })
     .then(when((x: any) => !x.length && !onlyRequested && !slug, (x) => collectionsData({
-      sort: [{ updatedAt: { order: 'asc', 'missing': '_first' } }, { "stats.totalSupply": { "order": "desc" } }],
+      "sort": [
+        { "lastScrapedAt": { "order": "asc", "missing": "_first" } },
+        { "requestedScore": { "order": "desc" } },
+        { "revealedPercentage": { "order": "asc" } },
+        { "stats.totalSupply": { "order": "desc" } }
+      ],
       query: {
-        bool: {
-          "must": [
-            { "exists": { "field": "slug" } },
-            { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+        "bool": {
+          "must_not": [
+            { "match": { "deleted": true } },
+            { "match": { "ranked": true } }
           ],
-          "must_not": [{ "match": { "damagedCollection": true } }]
+          "must": [
+            { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+            { "range": { "revealedPercentage": { "lt": 1 } } },
+            { "exists": { "field": "slug" } }
+          ]
         }
       }
     })))
@@ -282,7 +293,8 @@ const saveAssets = () =>
     .then(tap(assignSupplies) as any)
     .then(tap((x: any[]) => console.log('x 3 filtered data ---------', x)) as any)
     .then(
-      ifElse((collections) => above10k,
+      ifElse(
+        (collections) => above10k,
         async (collections) => {
           console.log(' this is a 10 k ');
           if (collections?.length) {

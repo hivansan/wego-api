@@ -45,7 +45,7 @@ const collectionData = (slug?: string) =>
       limit: limitCollections,
       sort: [
         {
-          "updatedAt": {
+          "lastScrapedAt": {
             "order": "desc",
             "missing": "_last"
           }
@@ -66,7 +66,7 @@ export const updateCollectionWithRevealedStats = (assets: any, slug: string) => 
     unrevealedAssets: unrevealed.length,
     revealedPercentage: (assets.length - unrevealed.length) / assets.length,
     ranked,
-    updatedAt: new Date(),
+    lastRankedAt: new Date(),
   }
 
   console.log('[updateFields]', updateFields);
