@@ -21,22 +21,22 @@ const collectionData = (slug?: string) =>
     slug
       ? { term: { 'slug.keyword': slug } }
       : {
-        "bool": {
-          "must_not": [
-            { "match": { "ranked": true } },
-            // { "match": { "unrevealed": true } }
+        'bool': {
+          'must_not': [
+            { 'match': { 'ranked': true } },
+            // { 'match': { 'unrevealed': true } }
           ],
-          "must": [{
-            "range": {
-              "stats.totalSupply": {
-                "lte": 13000,
-                // "gt": 10000,
+          'must': [{
+            'range': {
+              'stats.totalSupply': {
+                'lte': 13000,
+                // 'gt': 10000,
               }
             }
           },
           {
-            "exists": {
-              "field": "slug"
+            'exists': {
+              'field': 'slug'
             }
           }]
         }
@@ -45,9 +45,9 @@ const collectionData = (slug?: string) =>
       limit: limitCollections,
       sort: [
         {
-          "lastScrapedAt": {
-            "order": "desc",
-            "missing": "_last"
+          'lastScrapedAt': {
+            'order': 'desc',
+            'missing': '_last'
           }
         }
       ]
@@ -90,7 +90,10 @@ const run = () => {
       // collections.length = 1;
       for (const collection of collections) {
         console.log('ranking collection.slug', collection.slug);
-        Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, { limit: 80000 })
+        Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, {
+          limit: 13000,
+          source: ['tokenId', 'updatedAt', 'traits', 'traitsCount',]
+        })
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
             body: {
               meta: { took, timedOut, total: total.value },

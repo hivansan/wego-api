@@ -9,6 +9,7 @@ export type Options = {
   offset?: number,
   sort?: { [key: string]: { order: 'asc' | 'desc', unmapped_type?: string, missing?: string } }[] | string[]
   asStream?: boolean;
+  source?: string[]
 };
 
 export const stream = ({ body }: { body: Readable }) => body.setEncoding('utf8').pipe(parser());
@@ -17,7 +18,7 @@ export const find = curry((
   db: ElasticSearch.Client,
   index: string,
   query: any,
-  { limit, offset, sort, asStream }: Options
+  { limit, offset, sort, asStream, source }: Options
 ): Promise<any> => db.search({
   index: index ? index : ['assets', 'collections'],
   from: offset || 0,
@@ -25,7 +26,8 @@ export const find = curry((
   // sort: sort || ([] as any[]),
   body: {
     ...(query && Object.keys(query).length ? { query } : {}),
-    sort
+    sort,
+    _source: source
   },
 }, { asStream }));
 
