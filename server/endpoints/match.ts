@@ -55,3 +55,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => (
     }).defaultTo(queryError)
   )))
 );
+
+export const meta = {
+  match: '/api/match/:contract/:token'
+}

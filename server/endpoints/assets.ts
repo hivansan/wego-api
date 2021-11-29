@@ -137,3 +137,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity)
   ));
 };
+
+export const meta = {
+  assets: '/api/assets'
+};
