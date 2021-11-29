@@ -12,6 +12,8 @@ KEYFILE="${KEYFILE:-${SCRIPT_DIR}/../../keys/wego-api.pem}"
 
 # DO THE THING (https://www.youtube.com/watch?v=ojhTu9aAa_Y)
 
+echo "Starting. Make sure you have run `yarn build:all` first."
+
 echo "Building app..."
 npm run build
 cp ./*.json ${DIST_DIR}

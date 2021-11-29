@@ -59,3 +59,6 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
 };
 
+export const meta = {
+  search: '/api/search'
+}
