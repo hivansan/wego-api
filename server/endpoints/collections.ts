@@ -99,10 +99,15 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/score', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => Asset.Asset[])
-        .then(assets => Stats.collection(assets.length, assets))
+        .then(assets => ({
+          assets,
+          collection: AssetLoader.getCollection(db, slug, true)
+            .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body.body }))
+        }))
+        .then(({ assets }) => Stats.collection(assets.length, assets, {}))
         .then(objOf('body'))
         .catch(handleError(`[/collections/score error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
