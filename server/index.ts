@@ -3,12 +3,21 @@ import path from 'path';
 import { toLower } from 'ramda';
 
 import express from 'express';
-import { app, start, HOST } from './init';
+import { app, start, socket, HOST } from './init';
 import { respond } from './util';
 import * as Auth from './auth';
 import { db } from '../bootstrap';
+import { MarketEvents, MarketEvent } from '../lib/market-events';
 
 const admins = JSON.parse(fs.readFileSync('./admins.json').toString()).map(toLower);
+const events = new MarketEvents({ autoStart: true, history: 600, interval: 2 });
+
+events.stream.on('data', (e: MarketEvent) => {
+  /**
+   * @TODO ADD DB INDEX AND SAVE EVENT
+   */
+  socket.broadcast(e);
+});
 
 Auth.init(app, {
   callbackURL: `${HOST}/auth/google/callback`
@@ -54,5 +63,6 @@ app.use('/', express.static('./public'));
  * Serve the index page, React will handle it.
  */
 app.get('*', (_, res) => res.sendFile(path.resolve(__dirname + '/../public/index.html')));
+
 
 start();

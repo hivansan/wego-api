@@ -8,13 +8,16 @@ import * as Collection from '../models/collection';
 import * as Remote from '../models/remote';
 import * as Query from './query';
 import Result from '@ailabs/ts-utils/dist/result';
+import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { curry, tap } from 'ramda';
+import { mergeAll, pipe, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
 import { cleanTraits } from '../scraper/scraper.utils';
+
+const BASE_URL = 'https://api.opensea.io/api/v1';
 
 export async function fromDb(
   db: ElasticSearch.Client,
@@ -65,7 +68,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
 
   const [rariNft, openseaNft] = await Network.arrayFetch([
     `http://api.rarible.com/protocol/v0.1/ethereum/nft/items/${contractAddress}:${tokenId}`,
-    `https://api.opensea.io/api/v1/asset/${contractAddress}/${tokenId}/`,
+    `${BASE_URL}/asset/${contractAddress}/${tokenId}/`,
   ]);
 
   // console.log('openseaNft --', openseaNft);
@@ -117,7 +120,7 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
           limit,
         });
         const query = new URLSearchParams(params as any).toString();
-        return axios(`https://api.opensea.io/api/v1/assets?${query}`)
+        return axios(`${BASE_URL}/assets?${query}`)
       }
     );
 
@@ -130,6 +133,21 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   } catch (error) {
     throw error;
   }
+}
+
+export async function events(args: { limit?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
+  const limit = args.limit || 50;
+
+  const query = new URLSearchParams(mergeAll([
+    { limit },
+    args.before ? { occurred_before: args.before } : {},
+    args.after ? { occurred_after: args.after } : {},
+  ]) as { [key: string]: any });
+
+  return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`)
+    .then(prop('asset_events') as any)
+    .then(array(Remote.openSeaEvent))
+    .then(Result.toPromise)
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
@@ -180,7 +198,7 @@ export async function getAsset(db: ElasticSearch.Client, contractAddress: string
 
 export async function collectionFromRemote(slug: string): Promise<Collection.Collection & { stats: Collection.CollectionStats } | null> {
   try {
-    const os: any = await Network.fetchNParse(`https://api.opensea.io/api/v1/collection/${slug}?format=json`)
+    const os: any = await Network.fetchNParse(`${BASE_URL}/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
     console.log('[os collection]', os);
@@ -264,7 +282,7 @@ export async function assetsFromRemote(
     if (!!sortDirection) params.order_direction = sortDirection;
 
     const queryParams = new URLSearchParams(params).toString();
-    const url = `https://api.opensea.io/api/v1/assets?${queryParams}`;
+    const url = `${BASE_URL}/assets?${queryParams}`;
 
     console.log('[assets from remote url]', url);
 

@@ -1,5 +1,5 @@
 import { array, boolean, Decoded, inList, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
-import { match } from './util';
+import { match, toDate } from './util';
 import Result from '@ailabs/ts-utils/dist/result';
 
 export type Address = string;
@@ -142,22 +142,31 @@ export const openSeaCollection = object('OpenSeaCollection', {
   })
 });
 
+export type OpenSeaEvent = Decoded<typeof openSeaEvent>;
 export const openSeaEvent = object('OpenSeaEvent', {
   asset: object('EventAsset', {
+    id: number,
     token_id: string,
+    num_sales: number,
+    name: nullable(string),
     asset_contract: object('EventContract', {
       address: string
     }),
     collection: object('EventCollection', {
       name: string,
       slug: string,
-    })
+    }),
+    owner: nullable(object('EventAssetOwner', {
+      name: nullable(string),
+    }))
   }),
-  auction_type: inList(['english', 'dutch', 'min-price'] as const),
+  created_date: toDate,
+  auction_type: inList(['english', 'dutch', 'min-price', null] as const),
   event_type: inList([
     'created',
     'successful',
     'cancelled',
+    'offer_entered',
     'bid_entered',
     'bid_withdrawn',
     'transfer',
