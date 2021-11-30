@@ -14,13 +14,11 @@ export const HOST = process.env.NODE_HOST || `http://localhost:${PORT}`;
 
 app.use(cors());
 app.use(json());
-app.use('/', express.static('./public'));
 
 export const server: http.Server = http.createServer(app);
 export const socket = Socket.create({ port: 3003 });
 
 export const start = () => {
-
   app.listen(PORT, () => {
     app.emit('started');
     console.log('Web server listening at port %s', PORT);

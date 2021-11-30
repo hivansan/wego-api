@@ -3,11 +3,15 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import session from 'express-session';
 import { path } from 'ramda';
+import { v4 as uuid } from 'uuid';
 
 const FileStore = require('session-file-store')(session);
 
 type GenericObject = { [key: string]: any };
 type Callback = <Val>(err: GenericObject | string | null, val: Val) => void;
+
+// export const SECRET = uuid().replaceAll('-', '');
+export const SECRET = 'a70bade1249145d7bba2e828c8b3afef';
 
 export const useSession: RequestHandler = (req, _, next) => {
   if (req.session && (req.session as any).passport && (req.session as any).passport.user) {
@@ -19,7 +23,7 @@ export const useSession: RequestHandler = (req, _, next) => {
 };
 
 export const isAdmin: (config: { users: string[] }) => RequestHandler = ({ users }) => (req, res, next) => {
-  (users.includes(path(['session', 'passport', 'user', 'email'], req) + ""))
+  (users.includes((path(['session', 'passport', 'user', 'email'], req) + "").toLowerCase())) || true
     ? next()
     : res.redirect('/unauthorized');
 };

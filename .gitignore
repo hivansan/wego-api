@@ -19,11 +19,13 @@ coverage
 node_modules
 npm-debug.log
 public
+admin
 .vscode/*
 node_modules
 data/assets.json
 data/errors-to-assets.txt
 dist
+admin
 # Keep environment variables out of version control
 .env
 CREDENTIALS

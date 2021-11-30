@@ -99,10 +99,15 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/score', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => Asset.Asset[])
-        .then(assets => Stats.collection(assets.length, assets))
+        .then(assets => ({
+          assets,
+          collection: AssetLoader.getCollection(db, slug, true)
+            .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : ({ collection: body.body }))
+        }))
+        .then(({ assets }) => Stats.collection(assets.length, assets, {}))
         .then(objOf('body'))
         .catch(handleError(`[/collections/score error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
@@ -110,7 +115,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(pipe<any, any, any, any>(
           map((a: any) => a._source.traits),
@@ -126,24 +131,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * Admin management URLs
    */
 
-  app.post('/api/collections/:slug/hide', respond(req => (
-    db.update({
-      index: 'collections',
-      id: req.params.slug,
-      body: {
-        doc: { hidden: true }
-      }
-    }) as any
-  )));
-
-  app.post('/api/collections/:slug/unhide', respond(req => (
-    db.update({
-      index: 'collections',
-      id: req.params.slug,
-      body: {
-        doc: { hidden: false }
-      }
-    }) as any
+  app.post('/api/collections/:slug/delete', respond(({ params }) => (
+    Promise.all([
+      db.delete({ index: 'collections', id: params.slug }) as any,
+      db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
+    ]) as any
   )));
 
   app.post('/api/collections/:slug/unfeature', respond(req => (
@@ -165,4 +157,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       }
     }) as any
   )));
+};
+
+export const meta = {
+  collections: '/api/collections'
 };

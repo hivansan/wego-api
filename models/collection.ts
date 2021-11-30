@@ -34,7 +34,8 @@ export const collection = object('Collection', {
   telegram: nullable(string),
   website: nullable(string),
   primaryAssetConctracts: nullable(array(string)),
-  contractAddresses: nullable(array(string))
+  contractAddresses: nullable(array(string)),
+  traits: nullable(array(Result.ok), []),
   // updatedAt: date,
 });
 
@@ -42,14 +43,12 @@ export const collection = object('Collection', {
  * Stats about the collection that are subject to change
  */
 export type CollectionStats = Decoded<typeof collectionStats>;
-export const collectionStats = object('Collection', {
+export const collectionStats = object('CollectionStats', {
   slug: string,
   // contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
   featuredCollection: boolean,
   featuredScore: number,
-
   wegoScore: number,
-
   oneDayVolume: number,
   oneDayChange: number,
   oneDaySales: number,
@@ -64,15 +63,13 @@ export const collectionStats = object('Collection', {
   thirtyDayAveragePrice: number,
   totalVolume: number,
   totalSales: number,
-  // description: "total minted items"
-  totalSupply: number,
-  // description: "max of items that can be minted"
-  count: number,
+  totalSupply: number, // total minted items
+  count: number, // max of items that can be minted
   numOwners: number,
   averagePrice: number,
   numReports: number,
   marketCap: number,
-  floorPrice: number,
+  floorPrice: nullable(number),
 
   /**
    * What's the difference between this and total volume?

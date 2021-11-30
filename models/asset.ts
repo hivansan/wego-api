@@ -42,6 +42,7 @@ export const asset = object('Asset', {
   updatedAt: nullable(toDate),
   tokenMetadata: nullable(string),
   collection: nullable(Object),
+  traitsCount: nullable(number),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {
