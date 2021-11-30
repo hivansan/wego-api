@@ -4,8 +4,6 @@ export type Client = WebSocket & { data: any };
 
 export const create = (config: { server: http.Server } | { port: number }) => {
 
-  console.log("INITING SOCKET SERVER");
-
   const server = Object.assign(new WebSocketServer(config), {
 
     handlers: [] as ({ predicate: (msg: any) => boolean, handler: (client: Client, msg: any) => any })[],
