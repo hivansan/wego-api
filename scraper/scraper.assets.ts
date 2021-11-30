@@ -70,6 +70,7 @@ console.log('options', {
   limitCollections,
   forceScrape,
   above10k,
+  slug,
 });
 
 
@@ -231,7 +232,7 @@ const collectionsData = ({ slug, sort, query }: any) =>
   !!slug
     ? AssetLoader.getCollection(db, slug)
       .then(({ body }) => [body])
-    : Query.find(db, 'collections', query, { limit: limitCollections, sort, })
+    : Query.find(db, 'collections', query, { limit: slug ? 1 : limitCollections, sort, })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any }) => r.value) } }))
       .then(({ body }) => body.results.filter((c: { slug: string | any[] }) => c.slug?.length));
@@ -280,7 +281,7 @@ const saveAssets = () =>
           ],
           "must": [
             { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
-            { "range": { "revealedPercentage": { "lt": 1 } } },
+            // { "range": { "revealedPercentage": { "lt": 1 } } },
             { "exists": { "field": "slug" } }
           ]
         }

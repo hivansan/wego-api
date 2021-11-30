@@ -5,5 +5,5 @@ DIST_DIR="${SCRIPT_DIR}/../dist"
 
 # ssh -t wego-scraper "cd api && git pull && npm run build"
 npm run build 
-rsync -azP ${DIST_DIR}/ wego-scraper:/home/ubuntu/api/
-rsync -azP ${DIST_DIR}/ wego-scraper-10k:/home/ubuntu/api/
+rsync -azP ${DIST_DIR}/ wego-scraper:/home/ubuntu/api/ --exclude public
+rsync -azP ${DIST_DIR}/ wego-scraper-10k:/home/ubuntu/api/ --exclude public

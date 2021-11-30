@@ -24,13 +24,11 @@ const collectionData = (slug?: string) =>
         'bool': {
           'must_not': [
             { 'match': { 'ranked': true } },
-            // { 'match': { 'unrevealed': true } }
           ],
           'must': [{
             'range': {
               'stats.totalSupply': {
                 'lte': 13000,
-                // 'gt': 10000,
               }
             }
           },
