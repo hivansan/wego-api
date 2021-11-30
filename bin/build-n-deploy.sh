@@ -12,11 +12,13 @@ KEYFILE="${KEYFILE:-${SCRIPT_DIR}/../../keys/wego-api.pem}"
 
 # DO THE THING (https://www.youtube.com/watch?v=ojhTu9aAa_Y)
 
-echo "Starting. Make sure you have run `yarn build:all` first."
+echo "Starting. Make sure you have run 'yarn build:all' from './app' first."
 
-echo "Building app..."
+echo "Building API..."
 npm run build
 cp ./*.json ${DIST_DIR}
+cp -R ./admin ${DIST_DIR}
+
 
 echo "Syncing to remote..."
 rsync -azP -e "ssh -i ${KEYFILE}" \
