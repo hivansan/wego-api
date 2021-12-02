@@ -245,7 +245,7 @@ export const countInDb = (collections: any[]): any => {
         ...c,
         totalSupply: c.stats?.count, // clamp(1, 10000, c.stats?.count), // should have
         count: dbResults[i].count,  // has
-        shouldScrape: ((c.stats?.count - dbResults[i].count) > c.stats?.count * 0.0025)
+        shouldScrape: ((c.stats?.count - dbResults[i].count) > c.stats?.count * 0.003)
       }))
     )
     .catch((e) => console.log(`[err], ${e}`));

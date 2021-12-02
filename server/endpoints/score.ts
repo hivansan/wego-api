@@ -47,8 +47,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
             )
             // .then(tap((x) => console.log('x ---------', x)) as any)
             .then(({ collection }) => {
-              console.log('[score collection]', collection);
-              console.log('[score body]', body);
+              // console.log('[score collection]', collection);
+              // console.log('[score body]', body);
 
               // script sum += _statScoreRequests
               Query.update(db, 'collections', collection.slug, { scoreRequests: (collection.scoreRequests ?? 0) + 1 }, true);

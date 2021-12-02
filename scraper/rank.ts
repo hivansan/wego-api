@@ -24,6 +24,7 @@ const collectionData = (slug?: string) =>
         'bool': {
           'must_not': [
             { 'match': { 'ranked': true } },
+            { 'match': { 'deleted': true } },
           ],
           'must': [{
             'range': {
@@ -58,7 +59,7 @@ export const updateCollectionWithRevealedStats = (assets: any, slug: string) => 
   const unrevealed = assets.filter(Stats.isUnrevealed);
   const revealed = assets.filter(complement(Stats.isUnrevealed));
   console.log(`count: ${assets.length}, unrevealed ${unrevealed.length} revealed ${revealed.length}`);
-  const ranked: boolean = !!((assets.length - revealed.length) / assets.length < .0025);
+  const ranked: boolean = !!((assets.length - revealed.length) / assets.length < .003);
   const updateFields = {
     revealedAssets: revealed.length,
     unrevealedAssets: unrevealed.length,
@@ -80,7 +81,7 @@ const run = () => {
     .then(({ body }: any) => body.results.filter((c: { slug: string }) => c.slug?.length))
     .then(countInDb as any)
     // .then(tap(x => console.log('x count in db ----------', x)) as any)
-    .then(filter((c: any) => !c.shouldScrape /* && !c.ranked */) as any)
+    // .then(filter((c: any) => !c.shouldScrape /* && !c.ranked */) as any)
     // .then(filter((c: any) => c.totalSupply > 0 && (c.totalSupply - c.count) <= 0 /* && !c.ranked */) as any)
     .then(map(pick(['slug', 'count', 'traits']) as any) as any)
     .then(tap(x => console.log('x filtered ----------', x)) as any)
