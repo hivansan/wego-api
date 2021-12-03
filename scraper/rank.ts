@@ -91,7 +91,7 @@ const run = () => {
         console.log('ranking collection.slug', collection.slug);
         Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, {
           limit: 13000,
-          source: ['tokenId', 'updatedAt', 'traits', 'traitsCount',]
+          source: ['tokenId', 'updatedAt', 'traits', 'traitsCount', 'contractAddress']
         })
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
             body: {
