@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "build": "tsc -p ./tsconfig.json; mkdir -p dist/public; cp -R public/ dist/public",
     "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha -r ts-node/register 'tests/**/*.ts'",
-    "start": "NODE_PORT=3000 nodemon -r dotenv/config server/index.ts --ignore data --ignore slugs/ --ignore sessions/"
+    "start": "NODE_PORT=3000 nodemon -r dotenv/config server/index.ts --ignore data --ignore slugs/ --ignore sessions/",
+    "start-dev": "ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 NODE_PORT=3000 nodemon -r dotenv/config server/index.ts --ignore data --ignore slugs/ --ignore sessions/"
   },
   "dependencies": {
     "@ailabs/ts-utils": "1.4.0",

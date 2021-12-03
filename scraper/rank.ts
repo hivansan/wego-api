@@ -26,18 +26,10 @@ const collectionData = (slug?: string) =>
             { 'match': { 'ranked': true } },
             { 'match': { 'deleted': true } },
           ],
-          'must': [{
-            'range': {
-              'stats.totalSupply': {
-                'lte': 13000,
-              }
-            }
-          },
-          {
-            'exists': {
-              'field': 'slug'
-            }
-          }]
+          'must': [
+            { 'range': { 'stats.totalSupply': { 'lte': 13000, } } },
+            { 'exists': { 'field': 'slug' } }
+          ]
         }
       },
     {

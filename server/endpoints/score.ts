@@ -76,7 +76,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     results: hits.map(toResult).map(prop('value'))
                   }
                 }))
-                .then(({ body }: any) => Stats.collection(body.collection?.stats?.count, body.results, collection?.traits)
+                .then(({ body }: any) => Stats.collection(collection.stats.count || body.results.length, body.results, collection.traits)
                   .then(ranks => ({ assets: body.results, ranks }))
                 )
                 .then((body: { assets: any[]; ranks: any[]; }) =>

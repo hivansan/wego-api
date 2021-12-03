@@ -94,6 +94,8 @@ const getDocId = (doc: any, index: string) => {
  */
 export const load = async (content: any[], index: string, update?: boolean | string) => {
   let ix = 0;
+  // console.log('content', content);
+
   if (!content.length) return;
 
   console.log(`loading ${content.length} ${index}...`, typeof content);
@@ -122,6 +124,7 @@ export const load = async (content: any[], index: string, update?: boolean | str
       const chop = maxChop(body);
       const result: any = await client.bulk({ refresh: true, body: chop }).catch((e) => console.log(`${e} ------`));
       console.log(`result items: ${result?.body?.items?.length} status code : ${result?.statusCode}`);
+      // console.log(JSON.stringify(result.body.items, null, 3));
       // console.log(`${(ix / 2 + result.body?.items?.length).toLocaleString()} objects done. ${body.length / 2} left.`);
       ix += chop.length;
     } catch (error) {

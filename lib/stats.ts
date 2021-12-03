@@ -105,6 +105,7 @@ export const isUnrevealed = (a: Asset): boolean =>
 
 export async function collection(count: number, assets: Asset[], collectionTraits: object) {
   // console.log('collectionTraits --', collectionTraits);
+  // console.log('count, asset, collectiontraits', count, assets, collectionTraits);
 
   const collectionTraitKeys = Object.keys(collectionTraits);
   const allTraits = collectionTraitKeys.map(key => ({
