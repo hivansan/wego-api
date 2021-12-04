@@ -11,15 +11,15 @@ const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 
 /**
  * Example call:
  *
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/traits.json --index=asset_traits`
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/collections.json --index=collections`
+ * `npx ts-node ./bin/load.ts --file=./data/top-100.json --index=assets`
+ * `npx ts-node ./bin/load.ts --file=./data/initial-collections.json --index=collections`
+ * `npx ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
+ * `npx ts-node ./bin/load.ts --file=./data/traits.json --index=asset_traits`
+ * `npx ts-node ./bin/load.ts --file=./data/collections.json --index=collections`
  *
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
+ * `npx ts-node ./bin/load.ts --file=./data/assets.json --index=assets`
  *
- * `./node_modules/.bin/ts-node ./bin/load.ts --file=./data/traits.json --index=traits`
+ * `npx ts-node ./bin/load.ts --file=./data/traits.json --index=traits`
  *
  * stage:
  * /home/ubuntu/api/current/node_modules/.bin/ts-node /home/ubuntu/api/current/bin/load.ts --file=/home/ubuntu/api/current/data/initial-collections.json --index=collections

@@ -128,7 +128,7 @@ export async function collection(count: number, assets: Asset[], collectionTrait
         trait_count: (assets).filter((a: Asset) => a.traitsCount === assetTraitKeys.length).length,
         value: assetTraitKeys.length
       }];
-    asset.traits = uniqBy(prop('trait_type'))([...extraTraits, ...asset.traits] as any) as any;
+    asset.traits = uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)([...extraTraits, ...asset.traits] as any) as any;
   }
 
   const collectionStats = assets.map(index(count));
