@@ -1,10 +1,15 @@
-import { ConfigurationServicePlaceholders } from 'aws-sdk/lib/config_service_placeholders';
+// import { ConfigurationServicePlaceholders } from 'aws-sdk/lib/config_service_placeholders';
 import axios from 'axios';
-import { filter } from 'ramda';
+import queryString from 'query-string';
+// import { filter } from 'ramda';
 import { sleep } from '../server/util';
 import { openseaAssetMapper, cleanEntries, load } from './scraper.utils';
-const promiseRetry = require('promise-retry');
+
+// import response from '../tmp/asset.events.json';
+// const promiseRetry = require('promise-retry');
+
 const dotenv = require('dotenv');
+const BASE_URL = 'https://api.opensea.io/api/v1';
 dotenv.config();
 
 //  "... permitted: 'created', 'successful', 'cancelled', 'offer_entered', 'bid_entered', 'bid_withdrawn', 'transfer', 'approve', 'custom', 'payout'"
@@ -14,6 +19,7 @@ const limit: number = Number(process.argv.find((s) => s.startsWith('--limit='))?
 const tokenId: number = Number(process.argv.find((s) => s.startsWith('--tokenId='))?.replace('--tokenId=', ''));
 const contractAddress: string | undefined = process.argv.find((s) => s.startsWith('--contractAddress='))?.replace('--contractAddress=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
+const eventType: string | undefined = process.argv.find((s) => s.startsWith('--eventType='))?.replace('--eventType=', '');
 
 function bigMax(...nums: (string | number)[]) {
   return nums
@@ -146,45 +152,55 @@ const eventTypes = {
 
 async function getEvents(step = 0) {
   if (step > 33) throw new Error('step must be less than or equal to 33');
+  try {
+    const params: { offset: number; limit: number, collection_slug?: string, asset_contract_address?: string, event_type?: string } = { offset: step * limit, limit, };
+    if (slug) params.collection_slug = slug;
+    if (contractAddress) params.asset_contract_address = contractAddress;
+    if (eventType) params.event_type = eventType;
+    console.log('params', params);
 
-  let res = await axios.get(`https://api.opensea.io/api/v1/events?offset=${step * limit}&limit=${limit}`, {
-    headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY },
-  });
-  return res.data;
+    const { data } = await axios.get(`${BASE_URL}/events?${queryString.stringify(params)}`, {
+      headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY },
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
 }
 
-function updateEvents(events: any, step: number) {
-  //handle bundle
-  const filters = [(asset: any) => asset.permalink.indexOf('/matic/') < 0, (asset: any) => asset.asset_contract.schema_name === 'ERC721'];
-  const checkFilter = (asset: any) => filters.reduce((acc, filter) => filter(asset) && acc, true);
-  //events = events.filter((event: any) => filters.reduce((acc, filter) => filter(event) && acc, true));
-  events = events.flatMap((event: any) => {
+const filters = [(asset: any) => asset.permalink.indexOf('/matic/') < 0, (asset: any) => asset.asset_contract.schema_name === 'ERC721'];
+const checkFilter = (asset: any) => filters.reduce((acc, filter) => filter(asset) && acc, true);
+
+const getAssetsFromEvents = (events: any) =>
+  events.flatMap((event: any) => {
     const handler = eventTypes.getHandler(event.event_type);
-    console.log(event.event_type, handler(event, cleanEntries(openseaAssetMapper(event.asset))));
-    // const handler = eventTypes.getHandler(event.event_type);
-    // if (event.asset_bundle) {
-    //   const assets = [];
-    //   for (const asset of event.asset_bundle.assets) {
-    //     if (!checkFilter(asset)) continue;
-    //     assets.push(event, cleanEntries(openseaAssetMapper(asset)));
-    //   }
-    //   return assets;
-    // }
-    // if (!checkFilter(event.asset)) return [];
-    // return handler(event, cleanEntries(openseaAssetMapper(event.asset)));
+    if (event.asset_bundle?.assets?.length) return event.asset_bundle.assets.filter(checkFilter).map(openseaAssetMapper);
+    if (!checkFilter(event.asset)) return [];
+    return handler(event, cleanEntries(openseaAssetMapper(event.asset)));
   });
-  // return load(events, 'assets', 'upsert');
-  return;
-}
 
+/* UNCOMMENT IN PRODUCTION */
 (async () => {
   let step = 0;
   do {
-    getEvents(step).then((events: any) => {
-      step++;
-      if (events.asset_events.length > 0) return updateEvents(events.asset_events, step);
-      return;
-    });
+    getEvents(step)
+      .then((events: any) => {
+        step++;
+        if (events.asset_events.length) {
+          const assets = getAssetsFromEvents(events.asset_events);
+          console.log(JSON.stringify(assets, null, 2));
+          // return load(assets, 'assets', 'upsert');
+        }
+        return;
+      });
     await sleep(1);
-  } while (step < 1);
+  } while (step < 33);
 })();
+
+// for testing a file
+// (async () => {
+//   const assets = getAssetsFromEvents(response.asset_events)
+//     .map(({ traitsCount, ...rest }) => rest);
+//   console.log('assets', assets);
+//   return load(assets, 'assets', 'upsert'); // UNCOMMENT IN PRODUCTION
+// })();
