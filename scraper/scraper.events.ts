@@ -16,7 +16,7 @@ dotenv.config();
 // this one will not work: payout
 
 const limit: number = Number(process.argv.find((s) => s.startsWith('--limit='))?.replace('--limit=', '') || 300);
-const tokenId: number = Number(process.argv.find((s) => s.startsWith('--tokenId='))?.replace('--tokenId=', ''));
+const tokenId: string | undefined = process.argv.find((s) => s.startsWith('--tokenId='))?.replace('--tokenId=', '');
 const contractAddress: string | undefined = process.argv.find((s) => s.startsWith('--contractAddress='))?.replace('--contractAddress=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 const eventType: string | undefined = process.argv.find((s) => s.startsWith('--eventType='))?.replace('--eventType=', '');
@@ -152,18 +152,28 @@ const eventTypes = {
 
 async function getEvents(step = 0) {
   if (step > 33) throw new Error('step must be less than or equal to 33');
-  try {
-    const params: { offset: number; limit: number, collection_slug?: string, asset_contract_address?: string, event_type?: string } = { offset: step * limit, limit, };
-    if (slug) params.collection_slug = slug;
-    if (contractAddress) params.asset_contract_address = contractAddress;
-    if (eventType) params.event_type = eventType;
-    console.log('params', params);
+  const params: {
+    offset: number;
+    limit: number;
+    collection_slug?: string;
+    asset_contract_address?: string;
+    event_type?: string;
+    token_id?: string
+  } = { offset: step * limit, limit, };
 
-    const { data } = await axios.get(`${BASE_URL}/events?${queryString.stringify(params)}`, {
+  if (slug) params.collection_slug = slug;
+  if (contractAddress) params.asset_contract_address = contractAddress;
+  if (eventType) params.event_type = eventType;
+  if (tokenId) params.token_id = tokenId;
+  console.log('params', params);
+  const url = `${BASE_URL}/events?${queryString.stringify(params)}`;
+  try {
+    const { data } = await axios.get(url, {
       headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY },
     });
     return data;
   } catch (error) {
+    console.log(`[url error] ${url}`);
     throw error;
   }
 }
@@ -187,12 +197,14 @@ const getAssetsFromEvents = (events: any) =>
       .then((events: any) => {
         step++;
         if (events.asset_events.length) {
-          const assets = getAssetsFromEvents(events.asset_events);
-          console.log(JSON.stringify(assets, null, 2));
-          // return load(assets, 'assets', 'upsert');
+          const assets = getAssetsFromEvents(events.asset_events).map(({ traitsCount, ...rest }) => rest);
+          // console.log(JSON.stringify(assets, null, 2));
+          load(assets, 'assets', 'upsert');
+        } else {
+          step = 33;
         }
-        return;
-      });
+      })
+      .catch(e => console.log(`[event scraper error] ${e}`));
     await sleep(1);
   } while (step < 33);
 })();
