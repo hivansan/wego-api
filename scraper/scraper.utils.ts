@@ -161,7 +161,7 @@ export const openseaAssetMapper = (asset: any) => {
     imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
     animationUrl: asset.animation_url,
     traits: asset.traits,
-    traitsCount: asset.traits?.length || 0,
+    traitsCount: asset.traits?.length,
     rarityScore,
     tokenMetadata: asset.token_metadata,
     updatedAt: new Date(),

@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
-export async function fetchNParse<T = unknown>(url: string): Promise<T> {
-  return fetch(url).then((res: any) => res.json());
+export async function fetchNParse<T = unknown>(url: string, options?: any): Promise<T> {
+  return fetch(url, options).then((res: any) => res.json());
 }
 
 export async function arrayFetch<T = unknown>(urls: string[]): Promise<T[]> {

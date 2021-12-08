@@ -59,7 +59,7 @@ const forceScrape: boolean = !!process.argv.find((s) => s.startsWith('--forceScr
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
-console.log('options', {
+console.log('[scraper assets options]', {
   exec,
   bots,
   errsToFile,

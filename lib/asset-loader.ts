@@ -11,11 +11,14 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { mergeAll, pipe, prop, tap } from 'ramda';
+import { filter, mergeAll, pipe, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
 import { cleanTraits } from '../scraper/scraper.utils';
+
+import dotenv from 'dotenv';
+dotenv.config();
 
 const BASE_URL = 'https://api.opensea.io/api/v1';
 
@@ -140,12 +143,16 @@ export async function events(args: { limit?: number, before?: number, after?: nu
 
   const query = new URLSearchParams(mergeAll([
     { limit },
+    { event_type: 'successful' },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
-  return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`)
+  return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`,
+    { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } })
     .then(prop('asset_events') as any)
+    .then(filter((a: any) => a.asset) as any)
+    // .then(tap(c => console.log(c)) as any)
     .then(array(Remote.openSeaEvent))
     .then(Result.toPromise)
 }

@@ -148,20 +148,47 @@ export const openSeaEvent = object('OpenSeaEvent', {
     id: number,
     token_id: string,
     num_sales: number,
+    token_metadata: nullable(string),
+    top_bid: nullable(number),
     name: nullable(string),
     asset_contract: object('EventContract', {
-      address: string
+      address: string,
+      schema_name: string,
+      created_date: string,
     }),
     collection: object('EventCollection', {
       name: string,
       slug: string,
     }),
-    owner: nullable(object('EventAssetOwner', {
-      name: nullable(string),
+    owner: nullable(object('openSeaUser', {
+      address: string,
+      profile_img_url: string,
+      user: nullable(object('UserConfig', {
+        username: nullable(string)
+      }))
     }))
   }),
   created_date: toDate,
-  auction_type: inList(['english', 'dutch', 'min-price', null] as const),
+  auction_type: nullable(inList(['english', 'dutch', 'min-price', null] as const)),
+  total_price: nullable(string),
+  bid_amount: nullable(string),
+  payment_token: nullable(object('openSeaPaymentToken', {
+    id: number,
+    symbol: string,
+    address: string,
+    image_url: string,
+    name: string,
+    decimals: number,
+    eth_price: string,
+    usd_price: string,
+  })),
+  // winner_account: nullable(object('openSeaUser', {
+  //   address: string,
+  //   profile_img_url: string,
+  //   user: nullable(object('UserConfig', {
+  //     username: nullable(string)
+  //   }))
+  // })),
   event_type: inList([
     'created',
     'successful',

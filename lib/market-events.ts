@@ -3,6 +3,8 @@ import { Readable } from 'stream';
 import util from 'util';
 import { OpenSeaEvent } from '../models/remote';
 import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
+import { eventTypes } from '../scraper/event.utils';
+import { cleanEntries, openseaAssetMapper } from '../scraper/scraper.utils';
 
 export type Config = {
   /**
@@ -43,15 +45,17 @@ export class MarketEvents {
   protected lastTimestamp: number = 0;
 
   static fromRaw(raw: OpenSeaEvent): MarketEvent {
+    const handler = eventTypes.getHandler(raw.event_type);
     return {
       type: raw.event_type,
       time: raw.created_date,
-      asset: {
-        id: raw.asset.id,
-        tokenId: raw.asset.token_id,
-        numSales: raw.asset.num_sales,
-        name: raw.asset.name || null,
-      },
+      asset: handler(raw, cleanEntries(openseaAssetMapper(raw.asset))),
+      // {
+      //   id: raw.asset.id,
+      //   tokenId: raw.asset.token_id,
+      //   numSales: raw.asset.num_sales,
+      //   name: raw.asset.name || null,
+      // },
       collection: {
         name: raw.asset.collection.name,
         slug: raw.asset.collection.slug
@@ -64,7 +68,7 @@ export class MarketEvents {
     this.stream = new Readable({ objectMode: true, read() { } });
 
     if (config.history > 0) {
-      this.load({ limit: 200, after: Math.floor(Date.now() / 1000) - config.history });
+      this.load({ limit: 300, after: Math.floor(Date.now() / 1000) - config.history });
     }
 
     if (config.autoStart) {
@@ -97,7 +101,7 @@ export class MarketEvents {
       if (!this.lastTimestamp) {
         return;
       }
-      this.load({ limit: 200, after: this.lastTimestamp });
+      this.load({ limit: 300, after: this.lastTimestamp });
     }, this.config.interval * 1000);
   }
 
