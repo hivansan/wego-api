@@ -10,7 +10,7 @@ import { db } from '../bootstrap';
 import { MarketEvents, MarketEvent } from '../lib/market-events';
 
 const admins = JSON.parse(fs.readFileSync('./admins.json').toString()).map(toLower);
-const events = new MarketEvents({ autoStart: true, history: 600, interval: 2 });
+const events = new MarketEvents({ autoStart: true, history: 600, interval: 3 });
 
 events.stream.on('data', (e: MarketEvent) => {
   /**

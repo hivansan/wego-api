@@ -24,17 +24,19 @@ export const eventTypes = {
     asset.lastSalePrice = String(salePrice);
     asset.lastSalePriceUSD = asset.lastSalePrice * event.payment_token?.usd_price;
     asset.topBid = null;
-    asset.currentPrice = event.total_price / 10 ** event.payment_token.decimals;
-    asset.currentPriceUSD = asset.currentPrice * event.payment_token.usd_price;
+    if (event.payment_token) {
+      asset.currentPrice = event.total_price / 10 ** event.payment_token.decimals;
+      asset.currentPriceUSD = asset.currentPrice * event.payment_token.usd_price;
+    }
 
     asset.lastSale = {
       asset: event.asset && {
         token_id: event.asset.token_id,
-        decimals: event.payment_token.decimals,
+        decimals: event.payment_token?.decimals ?? 0,
       },
       asset_bundle: event.asset_bundle,
       event_type: event.event_type,
-      // event_timestamp: event.transaction.timestamp,
+      event_timestamp: event.created_date,
       auction_type: event.auction_type,
       total_price: event.total_price,
       payment_token: event.payment_token,

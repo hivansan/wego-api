@@ -143,15 +143,18 @@ export async function events(args: { limit?: number, before?: number, after?: nu
 
   const query = new URLSearchParams(mergeAll([
     { limit },
-    { event_type: 'successful' },
+    // { event_type: 'successful' },
+    // { collection_slug: 'official-dormant-dragons' },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
+  console.log('[market events query]', query.toString());
+
   return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`,
     { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } })
     .then(prop('asset_events') as any)
-    .then(filter((a: any) => a.asset) as any)
+    .then(filter((event: any) => event.asset && event.asset.permalink.indexOf('/matic/') < 0 && event.asset.asset_contract.schema_name === 'ERC721') as any)
     // .then(tap(c => console.log(c)) as any)
     .then(array(Remote.openSeaEvent))
     .then(Result.toPromise)

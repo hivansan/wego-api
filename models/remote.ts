@@ -39,35 +39,6 @@ export const openSeaAsset = object('OpenSeaNFT', {
   image_preview_url: nullable(string),
   token_metadata: nullable(string),
   traits: nullable(array(Result.ok), []),
-
-  // id: nullable(number),
-  // token_id: nullable(string),
-  // num_sales: nullable(number),
-  // background_color: nullable(Object),
-  // image_url: nullable(string),
-
-  // image_thumbnail_url: nullable(string),
-
-  // animation_url: nullable(Object),
-
-
-  // external_link: nullable(Object),
-  // asset_contract: nullable(Object),
-  // permalink: nullable(string),
-
-  // decimals: nullable(number),
-
-  // owner: nullable(Object),
-  // sell_orders: nullable(Object),
-  // creator: nullable(Object),
-
-  // last_sale: nullable(Object),
-  // top_bid: nullable(Object),
-  // listing_date: nullable(Object),
-  // is_presale: nullable(boolean),
-  // transfer_fee_payment_token: nullable(Object),
-  // transfer_fee: nullable(Object),
-
 });
 
 export const rarible = object('RaribleNFT', {
@@ -168,7 +139,7 @@ export const openSeaEvent = object('OpenSeaEvent', {
       }))
     }))
   }),
-  created_date: toDate,
+  created_date: Result.ok,// toDate,
   auction_type: nullable(inList(['english', 'dutch', 'min-price', null] as const)),
   total_price: nullable(string),
   bid_amount: nullable(string),
