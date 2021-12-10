@@ -13,6 +13,7 @@ import { toResult } from './util';
 import { countInDb } from '../../scraper/scraper.assets';
 import { load } from '../../scraper/scraper.utils';
 import * as Rank from '../../scraper/rank';
+import moment from 'moment';
 
 const params = {
   getAsset: object('AssetParams', {
@@ -52,6 +53,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
               // script sum += _statScoreRequests
               Query.update(db, 'collections', collection.slug, { scoreRequests: (collection.scoreRequests ?? 0) + 1 }, true);
+              Query.update(db, 'assets', `${contractAddress}:${tokenId}`, { scoreRequests: (body.scoreRequests ?? 0) + 1, lastScoreRequestedAt: new Date() }, true);
 
               if (body.statisticalRarityRank && body.traits?.length && !Stats.isUnrevealed(body)) { return { body: { ...body, collection } }; }
               if (body.unrevealed || Stats.isUnrevealed(body)) return Promise.reject({ status: 202, message: 'Asset has not being revealed.' });
