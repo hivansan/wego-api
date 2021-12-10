@@ -39,35 +39,6 @@ export const openSeaAsset = object('OpenSeaNFT', {
   image_preview_url: nullable(string),
   token_metadata: nullable(string),
   traits: nullable(array(Result.ok), []),
-
-  // id: nullable(number),
-  // token_id: nullable(string),
-  // num_sales: nullable(number),
-  // background_color: nullable(Object),
-  // image_url: nullable(string),
-
-  // image_thumbnail_url: nullable(string),
-
-  // animation_url: nullable(Object),
-
-
-  // external_link: nullable(Object),
-  // asset_contract: nullable(Object),
-  // permalink: nullable(string),
-
-  // decimals: nullable(number),
-
-  // owner: nullable(Object),
-  // sell_orders: nullable(Object),
-  // creator: nullable(Object),
-
-  // last_sale: nullable(Object),
-  // top_bid: nullable(Object),
-  // listing_date: nullable(Object),
-  // is_presale: nullable(boolean),
-  // transfer_fee_payment_token: nullable(Object),
-  // transfer_fee: nullable(Object),
-
 });
 
 export const rarible = object('RaribleNFT', {
@@ -148,20 +119,47 @@ export const openSeaEvent = object('OpenSeaEvent', {
     id: number,
     token_id: string,
     num_sales: number,
+    token_metadata: nullable(string),
+    top_bid: nullable(number),
     name: nullable(string),
     asset_contract: object('EventContract', {
-      address: string
+      address: string,
+      schema_name: string,
+      created_date: string,
     }),
     collection: object('EventCollection', {
       name: string,
       slug: string,
     }),
-    owner: nullable(object('EventAssetOwner', {
-      name: nullable(string),
+    owner: nullable(object('openSeaUser', {
+      address: string,
+      profile_img_url: string,
+      user: nullable(object('UserConfig', {
+        username: nullable(string)
+      }))
     }))
   }),
-  created_date: toDate,
-  auction_type: inList(['english', 'dutch', 'min-price', null] as const),
+  created_date: Result.ok,// toDate,
+  auction_type: nullable(inList(['english', 'dutch', 'min-price', null] as const)),
+  total_price: nullable(string),
+  bid_amount: nullable(string),
+  payment_token: nullable(object('openSeaPaymentToken', {
+    id: number,
+    symbol: string,
+    address: string,
+    image_url: string,
+    name: string,
+    decimals: number,
+    eth_price: string,
+    usd_price: string,
+  })),
+  // winner_account: nullable(object('openSeaUser', {
+  //   address: string,
+  //   profile_img_url: string,
+  //   user: nullable(object('UserConfig', {
+  //     username: nullable(string)
+  //   }))
+  // })),
   event_type: inList([
     'created',
     'successful',

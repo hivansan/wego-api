@@ -59,7 +59,7 @@ const forceScrape: boolean = !!process.argv.find((s) => s.startsWith('--forceScr
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
-console.log('options', {
+console.log('[scraper assets options]', {
   exec,
   bots,
   errsToFile,
@@ -260,7 +260,7 @@ const saveAssets = () =>
         "must": [
           { "exists": { "field": "slug" } },
           { "match": { "requestedScore": true } }, // this does first the requested score collections via /score
-          { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+          { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000, "gt": 1 } } },
         ],
         "must_not": [{ "match": { "deleted": true } }]
       }
@@ -280,7 +280,7 @@ const saveAssets = () =>
             { "match": { "ranked": true } }
           ],
           "must": [
-            { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000 } } },
+            { "range": { "stats.totalSupply": above10k ? { "lte": 13000, "gt": 10000 } : { "lte": 10000, "gt": 1 } } },
             // { "range": { "revealedPercentage": { "lt": 1 } } },
             { "exists": { "field": "slug" } }
           ]

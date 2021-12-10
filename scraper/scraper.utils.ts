@@ -1,10 +1,6 @@
 import axios from 'axios';
-
-// import nftAddresses from '../data/nft-addresses';
-import qs from 'qs';
 import { Client } from '@elastic/elasticsearch';
 import datasources from '../server/datasources';
-import { filter, flatten, map, pipe, prop } from 'ramda';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 const fs: any = require('fs');
@@ -17,16 +13,12 @@ const getList = async (page: number) => {
   console.log('page', `${page}/${pages}`);
   let url = `https://etherscan.io/tokens-nft?ps=100`;
   if (page) url += `&p=${page}`;
-  let res = await axios.get(url);
+  const res = await axios.get(url);
   let html = res.data;
-
   let strings = html.split('/token/0x');
   strings.shift();
-  // return console.log(strings);
   let items: string[] = [];
   for (const str of strings) items.push(getItem(str));
-  // items = [...new Set(items)];
-  // console.log(items);
   return items;
 };
 
@@ -37,36 +29,9 @@ const getAllItems = async () => {
     items = [...items, ...(await getList(i + 1))];
   }
   items = [...new Set(items)];
-
-  console.log(JSON.stringify(items));
-  // console.log(items);
 };
 
-// export const postItems = async (adresses: any, method: string) => {
-//   const items = adresses ? adresses : nftAddresses;
-//   for (const address of items) {
-//     const data = method === 'getTokenIdJSON' ? qs.stringify({ address, tokenId: 1 }) : qs.stringify({ address });
-
-//     try {
-//       await sleep(0.2);
-
-//       const res = axios('http://localhost:3000/api/Scrapers/' + method, {
-//         method: 'post',
-//         headers: {
-//           'Content-Type': 'application/x-www-form-urlencoded',
-//           Accept: 'application/json',
-//         },
-//         data,
-//       });
-//     } catch (error) {
-//       console.log(error);
-//     }
-//   }
-// };
-
 export const sleep = (s: number) => new Promise((resolve) => setTimeout(resolve, s * 1000));
-
-// getAllItems()
 
 export const maxChop = (array: any[], step = 1_000) => {
   if (step % 2 != 0) throw new Error('step must be divisible by 2');
@@ -161,7 +126,7 @@ export const openseaAssetMapper = (asset: any) => {
     imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
     animationUrl: asset.animation_url,
     traits: asset.traits,
-    traitsCount: asset.traits?.length || 0,
+    traitsCount: asset.traits?.length,
     rarityScore,
     tokenMetadata: asset.token_metadata,
     updatedAt: new Date(),
