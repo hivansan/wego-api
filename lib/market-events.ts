@@ -3,6 +3,10 @@ import { Readable } from 'stream';
 import util from 'util';
 import { OpenSeaEvent } from '../models/remote';
 import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
+import { eventTypes } from '../scraper/event.utils';
+import { cleanEntries, load, openseaAssetMapper } from '../scraper/scraper.utils';
+import moment from 'moment';
+import { forEach, map, path, tap } from 'ramda';
 
 export type Config = {
   /**
@@ -42,21 +46,17 @@ export class MarketEvents {
 
   protected lastTimestamp: number = 0;
 
-  static fromRaw(raw: OpenSeaEvent): MarketEvent {
+  static fromRaw(event: OpenSeaEvent): MarketEvent {
+    const handler = eventTypes.getHandler(event.event_type);
     return {
-      type: raw.event_type,
-      time: raw.created_date,
-      asset: {
-        id: raw.asset.id,
-        tokenId: raw.asset.token_id,
-        numSales: raw.asset.num_sales,
-        name: raw.asset.name || null,
-      },
+      type: event.event_type,
+      time: event.created_date,
+      asset: handler(event, cleanEntries(openseaAssetMapper(event.asset))),
       collection: {
-        name: raw.asset.collection.name,
-        slug: raw.asset.collection.slug
+        name: event.asset.collection.name,
+        slug: event.asset.collection.slug
       },
-      auctionType: raw.auction_type,
+      auctionType: event.auction_type,
     }
   }
 
@@ -64,7 +64,7 @@ export class MarketEvents {
     this.stream = new Readable({ objectMode: true, read() { } });
 
     if (config.history > 0) {
-      this.load({ limit: 200, after: Math.floor(Date.now() / 1000) - config.history });
+      this.load({ limit: 300, after: moment().unix() - config.history });
     }
 
     if (config.autoStart) {
@@ -75,7 +75,9 @@ export class MarketEvents {
   private load(args: Partial<{ limit: number, before: number, after: number }>) {
     AssetLoader
       .events(args)
-      .then(events => events.map(MarketEvents.fromRaw).forEach(this.push.bind(this)))
+      .then(events => events.map(MarketEvents.fromRaw))
+      .then(tap(events => { load(events.map(e => e.asset), 'assets', 'upsert') }))
+      .then(forEach(this.push.bind(this)))
       .catch(e => {
         console.error(
           'Failed to load market events',
@@ -85,7 +87,7 @@ export class MarketEvents {
   }
 
   private push(e: MarketEvent) {
-    this.lastTimestamp = Math.max(this.lastTimestamp, Math.floor(e.time.getTime() / 1000));
+    this.lastTimestamp = Math.max(this.lastTimestamp, moment(e.time).unix());
     this.stream.push(e);
   }
 
@@ -97,7 +99,7 @@ export class MarketEvents {
       if (!this.lastTimestamp) {
         return;
       }
-      this.load({ limit: 200, after: this.lastTimestamp });
+      this.load({ limit: 300, after: this.lastTimestamp });
     }, this.config.interval * 1000);
   }
 
