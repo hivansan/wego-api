@@ -101,7 +101,7 @@ export const isUnrevealed = (a: Asset): boolean =>
   !a.traits?.length ||
   !a.traitsCount ||
   a.traits.some(t => t.value === '???') ||
-  !a.traits.filter((t: any) => t.trait_type !== 'traitCount' && t.value !== null).length
+  !(a.traits || []).filter((t: any) => t.trait_type !== 'traitCount' && t.value !== null).length
 
 export async function collection(count: number, assets: Asset[], collectionTraits: object) {
   // console.log('collectionTraits --', collectionTraits);
@@ -110,12 +110,12 @@ export async function collection(count: number, assets: Asset[], collectionTrait
   const collectionTraitKeys = Object.keys(collectionTraits);
   const allTraits = collectionTraitKeys.map(key => ({
     trait_type: `${key}`,
-    trait_count: assets.filter((a: any) => !a.traits.find((t: any) => t.trait_type === key && t.value)).length,
+    trait_count: (assets || []).filter((a: any) => !a.traits.find((t: any) => t.trait_type === key && t.value)).length,
     value: null
   }));
 
   for (const asset of assets) {
-    const assetTraitKeys = asset.traits
+    const assetTraitKeys = (asset.traits || [])
       .filter((t: any) => t.value && t.trait_type !== 'traitCount')
       .map(prop('trait_type') as any);
 
@@ -125,7 +125,7 @@ export async function collection(count: number, assets: Asset[], collectionTrait
       ...diff.map((t: any) => allTraits.find((m) => m.trait_type === t)),
       {
         trait_type: 'traitCount',
-        trait_count: (assets).filter((a: Asset) => a.traitsCount === assetTraitKeys.length).length,
+        trait_count: (assets || []).filter((a: Asset) => a.traitsCount === assetTraitKeys.length).length,
         value: assetTraitKeys.length
       }];
     asset.traits = uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)([...extraTraits, ...asset.traits] as any) as any;
