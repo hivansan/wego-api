@@ -9,7 +9,7 @@ import * as Query from '../../lib/query';
 import * as Asset from '../../models/asset';
 
 import { toInt } from '../../models/util';
-import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop, concat, map, uniqBy } from 'ramda';
+import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop, concat, map, uniqBy, filter } from 'ramda';
 import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
@@ -117,7 +117,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params.getCollection(req.params).map(({ slug }) => {
       return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
-        .then(pipe<any, any, any, any>(
+        .then(pipe<any, any, any, any, any>(
+          filter((a: any) => a._source.traits?.length),
           map((a: any) => a._source.traits),
           flatten,
           uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)
