@@ -10,14 +10,15 @@ import { db } from '../bootstrap';
 import { MarketEvents, MarketEvent } from '../lib/market-events';
 
 const admins = JSON.parse(fs.readFileSync('./admins.json').toString()).map(toLower);
-const events = new MarketEvents({ autoStart: true, history: 600, interval: 3 });
-
-events.stream.on('data', (e: MarketEvent) => {
-  /**
-   * @TODO ADD DB INDEX AND SAVE EVENT
-   */
-  socket.broadcast(e);
-});
+if (process.env.NODE_ENV === 'production') {
+  const events = new MarketEvents({ autoStart: true, history: 600, interval: 3 });
+  events.stream.on('data', (e: MarketEvent) => {
+    /**
+     * @TODO ADD DB INDEX AND SAVE EVENT
+     */
+    socket.broadcast(e);
+  });
+}
 
 Auth.init(app, {
   callbackURL: `${HOST}/auth/google/callback`

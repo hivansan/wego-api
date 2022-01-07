@@ -47,7 +47,7 @@ export const scrape10k = (collection: string) => {
             const url = getUrl({ contractAddress, firstId: found + 1 })
             const assets: any = await saveAssetsFromUrl({ url, i: 0, factor: .3, slug: collection, collectionData })
             found += assets?.length;
-            sleep(0.4);
+            await sleep(0.4);
 
             if (!assets?.length) fetchAgain = false;
           } catch (error) {
