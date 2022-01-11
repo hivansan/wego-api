@@ -21,7 +21,8 @@ const searchFields = [
   'traits.trait_type^4',
   'traits.value^4',
   'description^2',
-  'collection.description'
+  'collection.description',
+  'contractAddresses'
 ];
 
 const searchQuery = object('Search', {
