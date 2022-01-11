@@ -15,7 +15,6 @@
   "dependencies": {
     "@ailabs/ts-utils": "1.4.0",
     "@elastic/elasticsearch": "7.13.0",
-    "@trivago/samsa": "^0.4.2-beta.1",
     "@types/cors": "2.8.12",
     "aws-sdk": "2.734.0",
     "axios": "0.19.2",
