@@ -38,23 +38,11 @@ const params = {
   })
 };
 
-type CollectionQuery = Decoded<typeof params.listCollections>;
-
-const searchQuery = object('Search', {
-  q: nullable(string),
-});
-
-type Trait = { trait_type: string, value: any };
-
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-  const index = tap((collection: any) => (
-    Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
-  ));
-
   app.get('/api/collections', respond(req => {
     const searchFields = [
       'name^4',
-      'contractAddress^3',
+      'contractAddresses^3',
       'descriptionˆ2',
     ];
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
