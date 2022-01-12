@@ -17,9 +17,10 @@ import * as Query from '../../lib/query';
  * show up in the search.
  */
 const searchFields = [
-  'name^4',
-  'traits.trait_type^4',
-  'traits.value^4',
+  'name^6',
+  'tokenId^6',
+  'traits.trait_type^3',
+  'traits.value^3',
   'description^2',
   'collection.description',
   'contractAddresses'
