@@ -101,20 +101,40 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     }).defaultTo(error(400, 'Bad request'));
   }));
 
-  app.get('/api/collections/:slug/traits', respond(req => {
-    return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
-        .then(path(['body', 'hits', 'hits']))
-        .then(pipe<any, any, any, any, any>(
-          filter((a: any) => a._source.traits?.length),
-          map((a: any) => a._source.traits),
-          flatten,
-          uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)
-        ))
-        .then(pipe(objOf('results'), objOf('body')))
-        .catch(handleError(`[/traits error, slug: ${slug}]`));
-    }).defaultTo(error(400, 'Bad request'));
-  }));
+  app.get('/api/collections/:slug/traits', respond((req) => {
+      const body = {
+        bool: {
+          must: [{ match: { slug: req.params.slug } }],
+        },
+      };
+      return Query.find(db, 'collections', body, {
+        source: ['traits'],
+      })
+        .then(({body: { hits: { hits },},}: any) => ({
+            body: {
+              results: hits.flatMap((hit) => {
+                return Object.keys(hit._source.traits).flatMap((k) => {
+                  console.log(Object.entries(hit._source.traits[k]));
+                  return Object.entries(hit._source.traits[k]).map((entry) => {
+                    return {
+                      trait_type: k,
+                      value: entry[0].split(" ").map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(" "),
+                      display_type: null,
+                      max_value: null,
+                      trait_count: entry[1],
+                      order: null,
+                    };
+                  });
+                });
+              }),
+            },
+          })
+        )
+        .catch((e: { meta: { body: { error: any } } }) => {
+          return error(404, 'Not found');
+        });
+    })
+  );
 
   /**
    * Admin management URLs
