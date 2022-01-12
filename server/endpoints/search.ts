@@ -28,7 +28,7 @@ const searchFields = [
 const searchQuery = object('Search', {
   q: nullable(string, ''),
   page: nullable(toInt, 1),
-  tab: nullable(inList(['collections', 'assets']), '˝'),
+  tab: nullable(inList(['collections', 'assets']), ''),
   /**
    * Default to 10 results, limit max result size to 50.
    */
