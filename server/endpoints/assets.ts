@@ -88,11 +88,6 @@ const params = {
 };
 
 export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
-
-  const index = tap((asset: Asset) => (
-    Query.createWithIndex(db, 'assets', asset, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
-  ));
-
   /**
    * this should always look first directly into Opensea and upsert it to our db.
    */

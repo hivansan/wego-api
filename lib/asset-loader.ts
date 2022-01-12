@@ -167,8 +167,9 @@ const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
 
 export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
   return Query.findOne(db, 'collections', { term: { _id: slug } })
-    .then((body) =>
-      body === null
+    .then((body) => {
+      const now = moment();
+      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'hours') > 3)
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
@@ -183,7 +184,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
             } as any)
         ))
         : { body: body._source }
-    )
+    })
     .catch(e => Promise.reject(error(503, 'Service error')));
 }
 
