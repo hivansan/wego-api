@@ -46,19 +46,21 @@ export const search = curry((
   fields: string[],
   query: string | null,
   { filter, ...opts }: Options
-) => (
-  find(db, index, mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {}), opts)
-));
+) => {
+  console.log(filter);
+  const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
+  const q = {
+    bool: {
+      must_not: [{
+        match: { deleted: true }
+      }]
+    }
+  };
+  if (Object.keys(queryObj).length) q.bool['must'] = queryObj;
+  return find(db, index, q, opts);
 
-/**
- * @HACK Example of query composition without actually doing the query
- */
-export const search2 = curry((
-  fields: string[],
-  query: string | null,
-) => (
-  !query ? {} : { multi_match: { query, fuzziness: 6, fields } }
-));
+});
+
 
 // Example:
 // const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
