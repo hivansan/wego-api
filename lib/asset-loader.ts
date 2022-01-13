@@ -17,6 +17,7 @@ import { error } from '../server/util';
 import { isUnrevealed } from './stats';
 import { cleanTraits } from '../scraper/scraper.utils';
 
+import { MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -212,9 +213,9 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     const os: any = await Network.fetchNParse(`${BASE_URL}/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
-    console.log('[os collection]', os);
+
+    // console.log('[os collection]', os);
     const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection });
-    console.log('[os collection]', os);
     const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ slug, stats: os.collection.stats });
 
     return Object.assign(collection, { stats });
@@ -225,7 +226,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
 }
 
 const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
-  console.log('[remote collection mapper collection]', collection);
+  // console.log('[remote collection mapper collection]', collection);
   return {
     contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
     slug: collection.slug,
@@ -242,6 +243,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     website: collection.external_url,
     traits: collection.traits ? cleanTraits(collection.traits) as any : null,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
+    deleted: collection?.stats?.total_volume < MIN_TOTAL_VOLUME_COLLECTIONS_ETH
   }
 };
 

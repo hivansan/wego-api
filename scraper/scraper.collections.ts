@@ -7,6 +7,9 @@
  * save collections from scraped opensea.io/rankings
  * `./node_modules/.bin/ts-node ./scraper/scraper.collections.ts --dir=./data/slugs --errsToFile=./data/errors-to.txt`
  * `./node_modules/.bin/ts-node ./scraper/scraper.collections.ts --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=./data/errors-to.txt`
+ * 
+ * 
+ * ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scraper/scraper.collections.ts
  */
 
 import { sleep } from '../server/util';
@@ -89,4 +92,64 @@ const loadCollections = () => {
     })
 }
 
-loadCollections();
+
+const main = () => {
+  const q = { match_all: {} };
+  // this query is just for testing
+  const query = {
+    bool: {
+      must: [
+        {
+          range: {
+            "stats.totalVolume": {
+              gte: 50
+            }
+          }
+        }
+      ]
+    }
+  }
+  Query.find(db, 'collections', q, { limit: 5000, source: ['slug', 'stats.totalVolume'] })
+    .then(
+      ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
+        ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any; }) => r.value), }, })
+    )
+    .then(async (fromDB) => {
+
+      const collections = fromDB.body.results
+      for (const collection of collections) {
+        await sleep(0.3);
+        AssetLoader.collectionFromRemote(collection.slug)
+          // colection from remote
+          .then(async (collectionFR) => {
+            if (collectionFR !== null) {
+              console.log(`${collection.slug}, deleted: ${collectionFR.deleted} \t\t actual Volume: ${collection.stats.totalVolume} os: ${collectionFR.stats.totalVolume}`);
+
+              try {
+                if (collection.stats.totalVolume === collectionFR.stats.totalVolume) return;
+                console.log(`updating ${collection.slug}`);
+                await Query.update(db, 'collections', collection.slug, collectionFR, true)
+                console.log(`[success updated collection] ${collectionFR.slug}`)
+                await Query.updateByQuery(db, 'assets', { match: { 'slug.keyword': collection.slug } }, { source: `ctx._source['deleted'] = ${collectionFR.deleted}` }, false)
+                console.log(`[success updated assets] ${collectionFR.slug}`)
+              } catch (error) {
+                console.log(error);
+              }
+              // .then(u => console.log('[success updated assets by query]', collectionFR.slug))
+              // .catch((e) =>
+              //   console.log(`[e updating assets by query]`, e)
+              // );
+              // .then(u => {
+
+              //   console.log(`[success updated collection] ${u.body._id}`)
+              // })
+              // .catch((e) =>
+              //   console.log(`[e updating collection]`, e)
+              // );
+            }
+          });
+      }
+    });
+}
+
+if (require.main === module) main();

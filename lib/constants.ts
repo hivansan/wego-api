@@ -30,3 +30,5 @@ export const COLLECTION_SORTS = [
   'marketCap',
   'id'
 ] as const;
+
+export const MIN_TOTAL_VOLUME_COLLECTIONS_ETH = 50;

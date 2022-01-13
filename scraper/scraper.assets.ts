@@ -127,7 +127,7 @@ export const saveAssetsFromUrl = async (
     .then((result: any) => result.assets)
     .catch(async (e: any) => {
       console.log(`[error catch PR] ${e} ${url}`);
-      const collection = slug ? slug : queryString.parseUrl(url).query?.collection;
+      const collection = slug ? slug : queryString.parseUrl(url).query?.collection as string;
       if (collection) {
         Query.update(db, 'collections', collection, { lastScrapedAt: new Date(), updatedAt: new Date(), requestedScore: false, damagedCollection: true }, true)
           .catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
@@ -327,4 +327,5 @@ const fromFile = () =>
     .then(distributeToHttpClients)
     .catch((e) => console.log(`[err] ${e}`));
 
-if (exec) eval(`${exec}()`);
+
+if (require.main === module) if (exec) eval(`${exec}()`);

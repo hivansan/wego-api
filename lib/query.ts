@@ -47,7 +47,7 @@ export const search = curry((
   query: string | null,
   { filter, ...opts }: Options
 ) => {
-  console.log(filter);
+  // console.log(filter);
   const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
   const q = {
     bool: {
@@ -114,14 +114,22 @@ export const createWithIndex = curry(<Doc>(db: ElasticSearch.Client, index: stri
 export const update = curry(<Doc>(
   db: ElasticSearch.Client,
   index: string,
-  idOrQuery: string | { [key: string]: any },
+  id: string, // | { [key: string]: any },
   doc: Doc,
   docAsUpsert: boolean,
 ) => (
-  typeof idOrQuery === 'string'
-    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
-    : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } }))
-);
+  db.update({ refresh: true, index, id, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
+));
+
+export const updateByQuery = curry(<Doc>(
+  db: ElasticSearch.Client,
+  index: string,
+  query: object,
+  script: object,
+  refresh: boolean,
+) => (
+  db.updateByQuery({ refresh, index, body: { query, script } })
+));
 
 export type CountOptions = {
   q?: string,
