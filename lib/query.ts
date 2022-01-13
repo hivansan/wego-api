@@ -47,7 +47,7 @@ export const search = curry((
   query: string | null,
   { filter, ...opts }: Options
 ) => {
-  console.log(filter);
+  // console.log(filter);
   const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
   const q = {
     bool: {
