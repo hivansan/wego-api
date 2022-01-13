@@ -102,38 +102,35 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   }));
 
   app.get('/api/collections/:slug/traits', respond((req) => {
-      const body = {
-        bool: {
-          must: [{ match: { slug: req.params.slug } }],
-        },
-      };
-      return Query.find(db, 'collections', body, {
-        source: ['traits'],
-      })
-        .then(({body: { hits: { hits },},}: any) => ({
-            body: {
-              results: hits.flatMap((hit) => {
-                return Object.keys(hit._source.traits).flatMap((k) => {
-                  console.log(Object.entries(hit._source.traits[k]));
-                  return Object.entries(hit._source.traits[k]).map((entry) => {
-                    return {
-                      trait_type: k,
-                      value: entry[0].split(" ").map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(" "),
-                      display_type: null,
-                      max_value: null,
-                      trait_count: entry[1],
-                      order: null,
-                    };
-                  });
-                });
-              }),
-            },
-          })
-        )
-        .catch((e: { meta: { body: { error: any } } }) => {
-          return error(404, 'Not found');
-        });
+    const query = { match: { 'slug.keyword': req.params.slug } }
+    return Query.find(db, 'collections', query, {
+      source: ['traits'],
     })
+      .then(
+        ({ body: { hits: { hits }, }, }: any) => ({
+          body: {
+            results: hits.flatMap((hit) => {
+              return Object.keys(hit._source.traits).flatMap((k) => {
+                console.log(Object.entries(hit._source.traits[k]));
+                return Object.entries(hit._source.traits[k]).map((entry) => {
+                  return {
+                    trait_type: k,
+                    value: entry[0].split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" "),
+                    display_type: null,
+                    max_value: null,
+                    trait_count: entry[1],
+                    order: null,
+                  };
+                });
+              });
+            }),
+          },
+        })
+      )
+      .catch((e: { meta: { body: { error: any } } }) => {
+        return error(404, 'Not found');
+      });
+  })
   );
 
   /**
