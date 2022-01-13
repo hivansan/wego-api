@@ -36,6 +36,7 @@ export const collection = object('Collection', {
   primaryAssetConctracts: nullable(array(string)),
   contractAddresses: nullable(array(string)),
   traits: nullable(array(Result.ok), []),
+  deleted: nullable(boolean)
   // updatedAt: date,
 });
 
