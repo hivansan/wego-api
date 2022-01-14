@@ -30,6 +30,7 @@ export async function fromDb(
   tokenId?: string,
   traits?: { [key: string]: string | number | (string | number)[] },
   priceRange?: { lte: number, gte: number } | null,
+  priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
 ): Promise<any> {
   const q = {
@@ -66,7 +67,8 @@ export async function fromDb(
       ],
     },
   };
-  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
+  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPrice: priceRange } } as any) : null;
+  priceRangeUSD && Object.keys(priceRangeUSD as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any) : null;
   rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
 
   console.log('Query: ', JSON.stringify(q));
