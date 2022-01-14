@@ -73,6 +73,7 @@ const params = {
         'currentPriceUSD',
         'lastSalePrice',
         'lastSalePriceUSD',
+        'lastSale.created_date',
       ] as const), null),
       Result.mapError(always(null))
     ),
