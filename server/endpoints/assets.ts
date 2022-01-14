@@ -68,7 +68,7 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
-    traits: nullable<{ [key: string]: string | number | (string | number)[] }>(
+    traits: nullable<{ [key: string]: string | number | (string | number | any)[] }>(
       pipe(
         string,
         parse(pipe<any, any, any, any, any>(
@@ -77,7 +77,8 @@ const params = {
             string,
             number,
             array(string),
-            array(number)
+            array(number),
+            array(Result.ok)
           ]))),
           /** These two are sort of a lame hack to handle failures gracefully */
           Result.defaultTo({}),
