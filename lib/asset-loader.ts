@@ -30,6 +30,7 @@ export async function fromDb(
   tokenId?: string,
   traits?: { [key: string]: string | number | (string | number)[] },
   priceRange?: { lte: number, gte: number } | null,
+  priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
 ): Promise<any> {
   const q = {
@@ -40,13 +41,18 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...Object.entries(traits || {}).map(([type, value]) => {
-          return Array.isArray(value)
+        ...Object.entries(traits || {}).map(([type, value]) =>
+          Array.isArray(value)
             ? {
               bool: {
-                must: [{ match: { 'traits.trait_type.keyword': type } }],
-                should: value.map((val) => ({ match: { 'traits.value.keyword': val } })),
-                minimum_should_match: 1,
+                must: [
+                  { match: { 'traits.trait_type.keyword': type } },
+                  ...(typeof value[0] === 'object'
+                    ? value.flatMap((val) => Object.keys(val).map(v => ({ range: { 'traits.value.keyword': { [v]: val[v] } } })))
+                    : [])
+                ],
+                should: typeof value[0] === 'string' ? value.map((val) => ({ match: { 'traits.value.keyword': val } })) : [],
+                minimum_should_match: typeof value[0] === 'string' ? 1 : 0,
               },
             }
             : {
@@ -56,12 +62,13 @@ export async function fromDb(
                   { match: { 'traits.value.keyword': value } }
                 ],
               },
-            };
-        }),
+            }
+        ),
       ],
     },
   };
-  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
+  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPrice: priceRange } } as any) : null;
+  priceRangeUSD && Object.keys(priceRangeUSD as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any) : null;
   rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
 
   console.log('Query: ', JSON.stringify(q));
