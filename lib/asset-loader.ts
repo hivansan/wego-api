@@ -17,7 +17,7 @@ import { error } from '../server/util';
 import { isUnrevealed } from './stats';
 import { cleanTraits } from '../scraper/scraper.utils';
 
-import { MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
+import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -170,7 +170,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
   return Query.findOne(db, 'collections', { term: { _id: slug } })
     .then((body) => {
       const now = moment();
-      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'hours') > 3)
+      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'minutes') > 3)
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
@@ -243,7 +243,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     website: collection.external_url,
     traits: collection.traits ? cleanTraits(collection.traits) as any : null,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
-    deleted: collection?.stats?.total_volume < MIN_TOTAL_VOLUME_COLLECTIONS_ETH
+    deleted: collection?.stats?.total_volume < MIN_TOTAL_VOLUME_COLLECTIONS_ETH || collection?.stats?.total_supply > MAX_TOTAL_SUPPLY
   }
 };
 

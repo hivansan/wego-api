@@ -32,3 +32,4 @@ export const COLLECTION_SORTS = [
 ] as const;
 
 export const MIN_TOTAL_VOLUME_COLLECTIONS_ETH = 50;
+export const MAX_TOTAL_SUPPLY = 25000;
