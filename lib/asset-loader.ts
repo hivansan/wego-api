@@ -177,7 +177,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
   return Query.findOne(db, 'collections', { term: { _id: slug } })
     .then((body) => {
       const now = moment();
-      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'minutes') > 3)
+      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'hours') > 3)
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
