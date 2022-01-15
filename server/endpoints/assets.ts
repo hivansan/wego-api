@@ -26,6 +26,7 @@ const params = {
   }),
 
   getAssets: object('AssetsParams', {
+    query: nullable(string, undefined),
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
@@ -117,8 +118,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, priceRangeUSD, rankRange }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange as any)
+      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, priceRangeUSD, rankRange }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, query)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {

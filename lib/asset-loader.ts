@@ -32,8 +32,18 @@ export async function fromDb(
   priceRange?: { lte: number, gte: number } | null,
   priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
+  query?: string,
 ): Promise<any> {
-  const q = {
+
+  const searchFields = [
+    'name^6',
+    'tokenId^6',
+    'traits.trait_type^3',
+    'traits.value^3',
+    'description^2',
+  ];
+
+  const q: any = {
     bool: {
       must: [
         slug ? { term: { 'slug.keyword': slug } } : null,
@@ -70,6 +80,8 @@ export async function fromDb(
   priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPrice: priceRange } } as any) : null;
   priceRangeUSD && Object.keys(priceRangeUSD as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any) : null;
   rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
+
+  if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
   console.log('Query: ', JSON.stringify(q));
   return Query.find(db, 'assets', q, { offset, sort, limit });
