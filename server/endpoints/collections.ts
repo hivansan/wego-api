@@ -14,6 +14,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
+import * as Traits from '../../lib/traits';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -87,7 +88,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/score', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 1, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => Asset.Asset[])
         .then(assets => ({
@@ -101,37 +102,20 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     }).defaultTo(error(400, 'Bad request'));
   }));
 
-  app.get('/api/collections/:slug/traits', respond((req) => {
-    const query = { match: { 'slug.keyword': req.params.slug } }
-    return Query.find(db, 'collections', query, {
-      source: ['traits'],
-    })
-      .then(
-        ({ body: { hits: { hits }, }, }: any) => ({
-          body: {
-            results: hits.flatMap((hit) => {
-              return Object.keys(hit._source.traits).flatMap((k) => {
-                console.log(Object.entries(hit._source.traits[k]));
-                return Object.entries(hit._source.traits[k]).map((entry) => {
-                  return {
-                    trait_type: k,
-                    value: entry[0].split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" "),
-                    display_type: null,
-                    max_value: null,
-                    trait_count: entry[1],
-                    order: null,
-                  };
-                });
-              });
-            }),
-          },
-        })
-      )
-      .catch((e: { meta: { body: { error: any } } }) => {
-        return error(404, 'Not found');
-      });
-  })
-  );
+  app.get('/api/collections/:slug/traits', respond(req => {
+    return params.getCollection(req.params).map(({ slug }) => {
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
+        .then(path(['body', 'hits', 'hits']))
+        .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
+        .then(traits => ({
+          traits
+        }))
+        .then(({ traits }) => Traits.traits(traits, AssetLoader.getCollection(db, slug, true)
+          .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : body)))
+        .then(pipe(objOf('results'), objOf('body')))
+        .catch(handleError(`[/collections/traits error, slug: ${slug}]`));
+    }).defaultTo(error(400, 'Bad request'));
+  }));
 
   /**
    * Admin management URLs
