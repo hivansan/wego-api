@@ -50,6 +50,16 @@ const params = {
         Result.ok
       ))
     ), {} as any),
+    traitsCountRange: nullable<Decoded<typeof range>>(pipe(
+      string,
+      parse(pipe<any, any, any, any, any>(
+        Result.attempt(JSON.parse),
+        parse(range),
+        /** These two are sort of a lame hack to handle failures gracefully */
+        Result.defaultTo({}),
+        Result.ok
+      ))
+    ), {} as any),
     rankRange: nullable<Decoded<typeof range>>(pipe(
       string,
       parse(pipe<any, any, any, any, any>(
@@ -118,8 +128,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, priceRangeUSD, rankRange }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, query)
+      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
