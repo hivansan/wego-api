@@ -3,7 +3,7 @@ function capitalize(value) {
 }
 
 function filterByTraitValue(assets, value) {
-  const assetFilter = assets.filter(asset => asset.traits.indexOf(value) != -1).flatMap(asset => asset.price);
+  const assetFilter = assets.filter(asset => (asset.traits.indexOf(value) != -1 && asset.price != 0)).flatMap(asset => asset.price);
   return { min: Math.min(...assetFilter), max: Math.max(...assetFilter) }
 }
 
@@ -20,6 +20,7 @@ export async function traits(assets: any[], collection: Promise<any>) {
     const traits = Object.entries(collectionTraits[traitType]).map(((trait: any) => { return { traitValue: trait[0], traitCount: trait[1] } }));
     return traits.map(trait => {
       const prices: any = filterByTraitValue(assetsCustom, capitalize(trait.traitValue));
+      console.log(prices);
       return {
         trait_type: traitType,
         value: capitalize(trait.traitValue),
