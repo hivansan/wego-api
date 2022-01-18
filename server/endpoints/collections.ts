@@ -56,12 +56,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       });
 
     console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
+    const sortBy = sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : [];
+    sortBy.unshift({ [`stats.featuredCollection`]: { order: 'desc' } });
 
-    // sort ? [{ [fromSort[sort]]: { order: 'desc' } }] : []
     return Query.search(db, 'collections', searchFields, q || '', {
       limit,
       offset: Math.max((page - 1) * limit, 0),
-      sort: sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : []
+      sort: sortBy
     })
       .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
         body: {
@@ -119,12 +120,12 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * Admin management URLs
    */
 
-  app.post('/api/collections/:slug/delete', respond(({ params }) => (
-    Promise.all([
-      db.delete({ index: 'collections', id: params.slug }) as any,
-      db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
-    ]) as any
-  )));
+  // app.post('/api/collections/:slug/delete', respond(({ params }) => (
+  //   Promise.all([
+  //     db.delete({ index: 'collections', id: params.slug }) as any,
+  //     db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
+  //   ]) as any
+  // )));
 
   app.post('/api/collections/:slug/unfeature', respond(req => (
     db.update({

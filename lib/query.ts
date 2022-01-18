@@ -46,19 +46,21 @@ export const search = curry((
   fields: string[],
   query: string | null,
   { filter, ...opts }: Options
-) => (
-  find(db, index, mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {}), opts)
-));
+) => {
+  // console.log(filter);
+  const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
+  const q = {
+    bool: {
+      must_not: [{
+        match: { deleted: true }
+      }]
+    }
+  };
+  if (Object.keys(queryObj).length) q.bool['must'] = queryObj;
+  return find(db, index, q, opts);
 
-/**
- * @HACK Example of query composition without actually doing the query
- */
-export const search2 = curry((
-  fields: string[],
-  query: string | null,
-) => (
-  !query ? {} : { multi_match: { query, fuzziness: 6, fields } }
-));
+});
+
 
 // Example:
 // const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
@@ -112,14 +114,22 @@ export const createWithIndex = curry(<Doc>(db: ElasticSearch.Client, index: stri
 export const update = curry(<Doc>(
   db: ElasticSearch.Client,
   index: string,
-  idOrQuery: string | { [key: string]: any },
+  id: string, // | { [key: string]: any },
   doc: Doc,
   docAsUpsert: boolean,
 ) => (
-  typeof idOrQuery === 'string'
-    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
-    : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } }))
-);
+  db.update({ refresh: true, index, id, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
+));
+
+export const updateByQuery = curry(<Doc>(
+  db: ElasticSearch.Client,
+  index: string,
+  query: object,
+  script: object,
+  refresh: boolean,
+) => (
+  db.updateByQuery({ refresh, index, body: { query, script } })
+));
 
 export type CountOptions = {
   q?: string,

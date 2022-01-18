@@ -9,9 +9,6 @@ import { prop, tap } from 'ramda';
 import { load } from '../scraper/scraper.utils';
 
 
-
-
-
 const baseUrl = '/Users/ivanflores/Downloads/COMPLETE-JSONS';
 const contractAddress = '0x4848a07744e46bb3ea93ad4933075a4fa47b1162';
 
@@ -35,11 +32,15 @@ const main = async () => {
   for (const fileName of jsonDir) {
     const filePath = baseUrl + '/' + fileName;
     // console.log('fileName', fileName, filePath);
-    let fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    try {
 
-    const jsonTraits = fileContent.attributes.map(t => ({ ...t, tmpKey: `${t.trait_type}${t.value}` }));
-
-    for (const t of jsonTraits) traitsCount[t.tmpKey] = traitsCount[t.tmpKey] ? ++traitsCount[t.tmpKey] : 1;
+      let fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      const jsonTraits = fileContent.attributes.map(t => ({ ...t, tmpKey: `${t.trait_type}${t.value}` }));
+      for (const t of jsonTraits) traitsCount[t.tmpKey] = traitsCount[t.tmpKey] ? ++traitsCount[t.tmpKey] : 1;
+    } catch (error) {
+      console.log('this is not a json ---------------------------', fileName);
+      console.log(error);
+    }
 
 
   }

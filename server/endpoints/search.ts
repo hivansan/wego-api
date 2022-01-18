@@ -17,18 +17,20 @@ import * as Query from '../../lib/query';
  * show up in the search.
  */
 const searchFields = [
-  'name^4',
-  'traits.trait_type^4',
-  'traits.value^4',
+  'name^6',
+  'tokenId^6',
+  'traits.trait_type^3',
+  'traits.value^3',
   'description^2',
   'collection.description',
-  'contractAddresses'
+  'contractAddresses',
+  'contractAddress'
 ];
 
 const searchQuery = object('Search', {
   q: nullable(string, ''),
   page: nullable(toInt, 1),
-  tab: nullable(inList(['collections', 'assets']), '˝'),
+  tab: nullable(inList(['collections', 'assets']), ''),
   /**
    * Default to 10 results, limit max result size to 50.
    */

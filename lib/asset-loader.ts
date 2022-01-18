@@ -17,6 +17,7 @@ import { error } from '../server/util';
 import { isUnrevealed } from './stats';
 import { cleanTraits } from '../scraper/scraper.utils';
 
+import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -29,9 +30,22 @@ export async function fromDb(
   tokenId?: string,
   traits?: { [key: string]: string | number | (string | number)[] },
   priceRange?: { lte: number, gte: number } | null,
+  priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
+  traitsCountRange?: { lte: number, gte: number } | null,
+  query?: string,
+  buyNow?: string,
 ): Promise<any> {
-  const q = {
+
+  const searchFields = [
+    'name^6',
+    'tokenId^6',
+    'traits.trait_type^3',
+    'traits.value^3',
+    'description^2',
+  ];
+
+  const q: any = {
     bool: {
       must: [
         slug ? { term: { 'slug.keyword': slug } } : null,
@@ -39,13 +53,18 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...Object.entries(traits || {}).map(([type, value]) => {
-          return Array.isArray(value)
+        ...Object.entries(traits || {}).map(([type, value]) =>
+          Array.isArray(value)
             ? {
               bool: {
-                must: [{ match: { 'traits.trait_type.keyword': type } }],
-                should: value.map((val) => ({ match: { 'traits.value.keyword': val } })),
-                minimum_should_match: 1,
+                must: [
+                  { match: { 'traits.trait_type.keyword': type } },
+                  ...(typeof value[0] === 'object'
+                    ? value.flatMap((val) => Object.keys(val).map(v => ({ range: { 'traits.value.keyword': { [v]: val[v] } } })))
+                    : [])
+                ],
+                should: typeof value[0] === 'string' ? value.map((val) => ({ match: { 'traits.value.keyword': val } })) : [],
+                minimum_should_match: typeof value[0] === 'string' ? 1 : 0,
               },
             }
             : {
@@ -55,15 +74,22 @@ export async function fromDb(
                   { match: { 'traits.value.keyword': value } }
                 ],
               },
-            };
-        }),
+            }
+        ),
       ],
     },
   };
-  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
-  rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
+
+  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } } as any);
+  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any);
+  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any);
+  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } } as any);
+  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } } as any);
+
+  if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
   console.log('Query: ', JSON.stringify(q));
+  console.log('sort:  ', sort);
   return Query.find(db, 'assets', q, { offset, sort, limit });
 }
 
@@ -212,9 +238,9 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     const os: any = await Network.fetchNParse(`${BASE_URL}/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
-    console.log('[os collection]', os);
+
+    // console.log('[os collection]', os);
     const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection });
-    console.log('[os collection]', os);
     const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ slug, stats: os.collection.stats });
 
     return Object.assign(collection, { stats });
@@ -225,7 +251,7 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
 }
 
 const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
-  console.log('[remote collection mapper collection]', collection);
+  // console.log('[remote collection mapper collection]', collection);
   return {
     contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
     slug: collection.slug,
@@ -242,6 +268,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     website: collection.external_url,
     traits: collection.traits ? cleanTraits(collection.traits) as any : null,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
+    deleted: collection?.stats?.total_volume < MIN_TOTAL_VOLUME_COLLECTIONS_ETH || collection?.stats?.total_supply > MAX_TOTAL_SUPPLY
   }
 };
 
@@ -249,7 +276,7 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   // contractAddress,
   slug,
   wegoScore: 0,
-  featuredCollection: false,
+  // featuredCollection: false,
   featuredScore: 0,
   oneDayVolume: stats.one_day_volume,
   oneDayChange: stats.one_day_change,
