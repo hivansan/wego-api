@@ -47,7 +47,7 @@ export type CollectionStats = Decoded<typeof collectionStats>;
 export const collectionStats = object('CollectionStats', {
   slug: string,
   // contractAddress: match<Address>(/^0x[a-f0-9]{40}$/),
-  featuredCollection: boolean,
+  // featuredCollection: boolean,
   featuredScore: number,
   wegoScore: number,
   oneDayVolume: number,

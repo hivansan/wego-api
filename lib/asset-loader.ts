@@ -272,7 +272,7 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   // contractAddress,
   slug,
   wegoScore: 0,
-  featuredCollection: false,
+  // featuredCollection: false,
   featuredScore: 0,
   oneDayVolume: stats.one_day_volume,
   oneDayChange: stats.one_day_change,
