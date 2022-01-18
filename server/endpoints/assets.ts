@@ -1,6 +1,6 @@
 import { Express } from 'express';
 import * as ElasticSearch from '@elastic/elasticsearch';
-import { array, nullable, object, string, inList, oneOf, dict, parse, number, Decoded } from '@ailabs/ts-utils/dist/decoder';
+import { array, nullable, object, string, inList, oneOf, dict, parse, number, Decoded, boolean } from '@ailabs/ts-utils/dist/decoder';
 import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
@@ -30,6 +30,7 @@ const params = {
     slug: nullable(string, undefined),
     limit: nullable(pipe(toInt, Result.map(clamp(1, 20))), 10),
     offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
+    buyNow: nullable(string, undefined),
     priceRange: nullable<Decoded<typeof range>>(pipe(
       string,
       parse(pipe<any, any, any, any, any>(
@@ -128,8 +129,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query)
+      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, buyNow, priceRangeUSD, rankRange, traitsCountRange }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query, buyNow)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
