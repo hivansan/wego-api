@@ -11,7 +11,7 @@ export async function traits(assets: any[], collection: Promise<any>) {
   const assetsCustom = assets.map(asset => {
     return {
       token: asset.tokenId,
-      price: asset.currentPrice ? asset.currentPrice : asset.lastSalePrice ? asset.lastSalePrice : 0,
+      price: asset.currentPrice ?? 0,
       traits: asset.traits.map(trait => trait.value)
     }
   });
