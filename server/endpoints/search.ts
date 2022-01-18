@@ -19,8 +19,9 @@ import * as Query from '../../lib/query';
 const searchFields = [
   'name^6',
   'tokenId^6',
-  'traits.trait_type^3',
-  'traits.value^3',
+// Traits are flattened fields and fuzziness is not supported
+//  'traits.trait_type^3',
+//  'traits.value^3',
   'description^2',
   'collection.description',
   'contractAddresses'

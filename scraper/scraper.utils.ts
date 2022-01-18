@@ -74,8 +74,8 @@ export const load = async (content: any[], index: string, update?: boolean | str
       }
       : {
         index: {
-          _index: index,
-          _type: '_doc',
+          _index: index,/* ES 8 does not support mapping types anymore
+          _type: '_doc',*/
           _id: getDocId(doc, index),
         },
       },
