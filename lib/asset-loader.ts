@@ -32,7 +32,9 @@ export async function fromDb(
   priceRange?: { lte: number, gte: number } | null,
   priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
+  traitsCountRange?: { lte: number, gte: number } | null,
   query?: string,
+  buyNow?: string,
 ): Promise<any> {
 
   const searchFields = [
@@ -77,13 +79,17 @@ export async function fromDb(
       ],
     },
   };
-  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPrice: priceRange } } as any) : null;
-  priceRangeUSD && Object.keys(priceRangeUSD as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any) : null;
-  rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
+
+  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } } as any);
+  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any);
+  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any);
+  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } } as any);
+  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } } as any);
 
   if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
   console.log('Query: ', JSON.stringify(q));
+  console.log('sort:  ', sort);
   return Query.find(db, 'assets', q, { offset, sort, limit });
 }
 
@@ -270,7 +276,7 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   // contractAddress,
   slug,
   wegoScore: 0,
-  featuredCollection: false,
+  // featuredCollection: false,
   featuredScore: 0,
   oneDayVolume: stats.one_day_volume,
   oneDayChange: stats.one_day_change,
