@@ -107,9 +107,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
-        .then(traits => ({
-          traits
-        }))
+        .then(objOf('traits'))
         .then(({ traits }) => Traits.traits(traits, AssetLoader.getCollection(db, slug, true)
           .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : body)))
         .then(pipe(objOf('results'), objOf('body')))
