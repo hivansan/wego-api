@@ -56,20 +56,20 @@ export async function fromDb(
             ? {
               bool: {
                 must: [
-                  { match: { 'traits.trait_type.keyword': type } },
+                  { match: { 'traits.trait_type': type } },
                   ...(typeof value[0] === 'object'
-                    ? value.flatMap((val) => Object.keys(val).map(v => ({ range: { 'traits.value.keyword': { [v]: val[v] } } })))
+                    ? value.flatMap((val) => Object.keys(val).map(v => ({ range: { 'traits.value': { [v]: val[v] } } })))
                     : [])
                 ],
-                should: typeof value[0] === 'string' ? value.map((val) => ({ match: { 'traits.value.keyword': val } })) : [],
+                should: typeof value[0] === 'string' ? value.map((val) => ({ match: { 'traits.value': val } })) : [],
                 minimum_should_match: typeof value[0] === 'string' ? 1 : 0,
               },
             }
             : {
               bool: {
                 must: [
-                  { match: { 'traits.trait_type.keyword': type } },
-                  { match: { 'traits.value.keyword': value } }
+                  { match: { 'traits.trait_type': type } },
+                  { match: { 'traits.value': value } }
                 ],
               },
             }
