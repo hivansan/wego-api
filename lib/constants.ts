@@ -28,7 +28,8 @@ export const COLLECTION_SORTS = [
   'averagePrice',
   'numReports',
   'marketCap',
-  'id'
+  'id',
+  'featuredCollection',
 ] as const;
 
 export const MIN_TOTAL_VOLUME_COLLECTIONS_ETH = 50;

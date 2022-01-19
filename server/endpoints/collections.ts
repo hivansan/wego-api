@@ -56,7 +56,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
     console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
     const sortBy = sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : [];
-    sortBy.unshift({ [`stats.featuredCollection`]: { order: 'desc' } });
+    // sortBy.unshift({ [`stats.featuredCollection`]: { order: 'desc' } });
 
     return Query.search(db, 'collections', searchFields, q || '', {
       limit,
