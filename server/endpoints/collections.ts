@@ -117,6 +117,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     }).defaultTo(error(400, 'Bad request'));
   }));
 
+  app.get('/api/collections/:slug/count', respond(req => {
+    return params.getCollection(req.params).map(({ slug }) => {
+      return Query.count(db, 'assets', { term: { 'slug.keyword': slug } }, {})
+        .then(pipe(objOf('body')))
+        .catch(handleError(`[/collections error, slug: ${slug}]`));
+    }).defaultTo(error(400, 'Bad request'));
+  }));
+
   /**
    * Admin management URLs
    */
