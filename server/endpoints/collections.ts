@@ -103,7 +103,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 10000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(pipe<any, any, any, any, any>(
           filter((a: any) => a._source.traits?.length),
@@ -113,6 +113,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
         ))
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
+    }).defaultTo(error(400, 'Bad request'));
+  }));
+
+  app.get('/api/collections/:slug/count', respond(req => {
+    return params.getCollection(req.params).map(({ slug }) => {
+      return Query.count(db, 'assets', { term: { 'slug.keyword': slug } }, {})
+        .then(pipe(objOf('body')))
+        .catch(handleError(`[/collections error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
   }));
 
