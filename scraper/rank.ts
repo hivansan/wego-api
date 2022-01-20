@@ -11,6 +11,7 @@ import { sleep } from '../server/util';
 import { load } from './scraper.utils';
 import * as AssetLoader from '../lib/asset-loader';
 import { Asset } from '../models/asset';
+import { flattenTraits } from '../models/util';
 
 const execrank: string | undefined = process.argv.find((s) => s.startsWith('--execrank='))?.replace('--execrank=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
@@ -98,6 +99,7 @@ const run = () => {
               ...asset,
               ...body.ranks.find(x => x.id === asset.tokenId),
               unrevealed: Stats.isUnrevealed(asset),
+              traitsFlat: flattenTraits(asset.traits as any[]),
             }))
           )
           .then(tap((body) => load(body as any, 'assets', true)))
@@ -114,4 +116,4 @@ const run = () => {
   // .catch(e => console.log('e =========', e))
 }
 
-if (execrank) eval(`${execrank}()`);
+if (require.main === module) if (execrank) eval(`${execrank}()`);

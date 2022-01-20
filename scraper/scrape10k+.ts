@@ -3,8 +3,6 @@
  * npx ts-node scraper/scrape10k+.ts --file=scraper/collections-above-10k.json
  * npx ts-node scraper/scrape10k+.ts --collection=hyperdragons
  */
-
-import axios from 'axios';
 import queryString from 'query-string';
 
 import { openseaAssetMapper, load, sleep } from './scraper.utils';

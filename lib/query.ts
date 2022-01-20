@@ -19,17 +19,23 @@ export const find = curry((
   index: string,
   query: any,
   { limit, offset, sort, asStream, source }: Options
-): Promise<any> => db.search({
-  index: index ? index : ['assets', 'collections'],
-  from: offset || 0,
-  size: limit,
-  // sort: sort || ([] as any[]),
-  body: {
-    ...(query && Object.keys(query).length ? { query } : {}),
-    sort,
-    _source: source
-  },
-}, { asStream }));
+): Promise<any> => {
+
+  console.log('query:', query);
+
+
+  return db.search({
+    index: index ? index : ['assets', 'collections'],
+    from: offset || 0,
+    size: limit,
+    // sort: sort || ([] as any[]),
+    body: {
+      ...(query && Object.keys(query).length ? { query } : {}),
+      sort,
+      _source: source
+    },
+  }, { asStream })
+});
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (
   find(db, index, query, { limit: 1 }).then(({ body: { hits: { hits: toMatch } } }) => (

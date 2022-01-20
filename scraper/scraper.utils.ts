@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { Client } from '@elastic/elasticsearch';
 import datasources from '../server/datasources';
+import { flattenTraits } from '../models/util';
 const { es } = datasources;
 const client = new Client({ node: es.configuration.node, requestTimeout: 1000 * 60 * 60 });
 const fs: any = require('fs');
@@ -126,6 +127,7 @@ export const openseaAssetMapper = (asset: any) => {
     imageSmall: asset.image_preview_url, // rariMeta.image.url.PREVIEW,
     animationUrl: asset.animation_url,
     traits: asset.traits,
+    traitsFlat: Array.isArray(asset.traits) ? flattenTraits(asset.traits) : [],
     traitsCount: asset.traits?.length,
     rarityScore,
     tokenMetadata: asset.token_metadata,

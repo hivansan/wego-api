@@ -2,7 +2,7 @@ import { any, curry, find, map, mergeRight, nth, objOf, path, pick, pipe, prop, 
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
 import { object, string } from '@ailabs/ts-utils/dist/decoder';
-import { match } from '../../models/util';
+import { flattenTraits, match } from '../../models/util';
 import { debugStr, error, handleError, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import * as Stats from '../../lib/stats';
@@ -87,6 +87,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
                     ...asset,
                     ...body.ranks.find(x => x.id === asset.tokenId),
                     unrevealed: Stats.isUnrevealed(asset),
+                    traitsFlat: flattenTraits(asset.traits as any[]),
                   }))
                 )
                 .then(tap((body) => load(body as any, 'assets', true)))
