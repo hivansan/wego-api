@@ -57,7 +57,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
     console.log(`[/api/collectionsparams] -`, page, limit, sort, q);
     const sortBy = sort ? [{ [`stats.${sort}`]: { order: sortOrder } }] : [];
-    sortBy.unshift({ [`stats.featuredCollection`]: { order: 'desc' } });
+    // sortBy.unshift({ [`stats.featuredCollection`]: { order: 'desc' } });
 
     return Query.search(db, 'collections', searchFields, q || '', {
       limit,
@@ -113,6 +113,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : body)))
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/collections/traits error, slug: ${slug}]`));
+    }).defaultTo(error(400, 'Bad request'));
+  }));
+
+  app.get('/api/collections/:slug/count', respond(req => {
+    return params.getCollection(req.params).map(({ slug }) => {
+      return Query.count(db, 'assets', { term: { 'slug.keyword': slug } }, {})
+        .then(pipe(objOf('body')))
+        .catch(handleError(`[/collections error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
   }));
 

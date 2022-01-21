@@ -91,7 +91,7 @@ const params = {
     ),
     sortDirection: nullable(inList(['asc', 'desc'] as const), 'desc'),
     q: nullable(string, null),
-    traits: nullable<{ [key: string]: string | number | (string | number | any)[] }>(
+    traits: nullable<{ [key: string]: (string | number | object | any)[] }>(
       pipe(
         string,
         parse(pipe<any, any, any, any, any>(

@@ -86,7 +86,7 @@ export const saveAssetsFromUrl = async (
   console.log(`[attempting] ${url} ${i}`);
   return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
     // torInstance.get(url)
-    axios(url)
+    axios(url, { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY }, })
       .then(({ data }: any) => ({
         assets: data.assets,
         slug: slug ? slug : queryString.parseUrl(url).query.collection,
