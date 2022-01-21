@@ -173,15 +173,17 @@ export async function events(args: { limit?: number, before?: number, after?: nu
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
-  Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
+  Query.update(db, 'collections', `${collection.slug}`, collection, true)
+    // Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
     .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
 export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
   return Query.findOne(db, 'collections', { term: { _id: slug } })
-    .then((body) => {
+    .then(body => body === null ? null : body._source)
+    .then((collectionDB) => {
       const now = moment();
-      return body === null || (body._source.updatedAt && now.diff(moment(body._source?.updatedAt), 'hours') > 3)
+      return collectionDB === null || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
         ? collectionFromRemote(slug).then((body) => (
           body === null
             ? null
@@ -193,9 +195,9 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
                 requestedScore: !!requestedScore,
                 traits: cleanTraits(body.traits)
               })
-            } as any)
+            })
         ))
-        : { body: body._source }
+        : { body: collectionDB }
     })
     .catch(e => Promise.reject(error(503, 'Service error')));
 }
