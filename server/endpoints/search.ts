@@ -19,8 +19,8 @@ import * as Query from '../../lib/query';
 const searchFields = [
   'name^6',
   'tokenId^6',
-  'traits.trait_type^3',
-  'traits.value^3',
+  // 'traits.trait_type^3',
+  // 'traits.value^3',
   'description^2',
   'collection.description',
   'contractAddresses',
@@ -30,7 +30,7 @@ const searchFields = [
 const searchQuery = object('Search', {
   q: nullable(string, ''),
   page: nullable(toInt, 1),
-  tab: nullable(inList(['collections', 'assets']), ''),
+  tab: nullable(inList(['collections', 'assets']), 'collections,assets'),
   /**
    * Default to 10 results, limit max result size to 50.
    */
@@ -45,7 +45,7 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/search', respond(req => (
     searchQuery(req.query).map(({ q, page, limit, tab: index }) =>
-      Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0) })
+      Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0), sort: [{ 'stats.featuredCollection': { order: 'desc' } }] },)
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
