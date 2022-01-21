@@ -15,7 +15,7 @@ import { filter, mergeAll, pipe, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
-import { cleanTraits } from '../scraper/scraper.utils';
+import { cleanTraits, consecutiveArray } from '../scraper/scraper.utils';
 
 import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
 import dotenv from 'dotenv';
@@ -28,7 +28,7 @@ export async function fromDb(
   { offset, limit, sort }: Query.Options,
   slug?: string,
   tokenId?: string,
-  traits?: { [key: string]: string | number | (string | number)[] },
+  traits?: { [key: string]: (string | number | object | any)[] },
   priceRange?: { lte: number, gte: number } | null,
   priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
@@ -53,29 +53,15 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...Object.entries(traits || {}).map(([type, value]) =>
-          Array.isArray(value)
-            ? {
-              bool: {
-                must: [
-                  { match: { 'traits.trait_type.keyword': type } },
-                  ...(typeof value[0] === 'object'
-                    ? value.flatMap((val) => Object.keys(val).map(v => ({ range: { 'traits.value.keyword': { [v]: val[v] } } })))
-                    : [])
-                ],
-                should: typeof value[0] === 'string' ? value.map((val) => ({ match: { 'traits.value.keyword': val } })) : [],
-                minimum_should_match: typeof value[0] === 'string' ? 1 : 0,
-              },
-            }
-            : {
-              bool: {
-                must: [
-                  { match: { 'traits.trait_type.keyword': type } },
-                  { match: { 'traits.value.keyword': value } }
-                ],
-              },
-            }
-        ),
+        ...Object.entries(traits || {}).map(([type, value]) => ({
+          bool: {
+            should: typeof value[0] === 'string' || value[0] === null
+              ? value.map((val) => ({ match: { 'traitsFlat.keyword': `${type}:${val}` } }))
+              : consecutiveArray(value[0]['gte'], value[0]['lte'] - value[0]['gte'] + 1)
+                .map(val => ({ match: { 'traitsFlat.keyword': `${type}:${val}` } })),
+            minimum_should_match: typeof value[0] === 'string' || value[0] === null ? 1 : 0,
+          },
+        })),
       ],
     },
   };
