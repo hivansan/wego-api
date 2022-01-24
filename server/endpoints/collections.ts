@@ -14,6 +14,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
+import * as TraitsLoader from '../../lib/traits';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -106,12 +107,9 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     return params.getCollection(req.params).map(({ slug }) => {
       return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
-        .then(pipe<any, any, any, any, any>(
-          filter((a: any) => a._source.traits?.length),
-          map((a: any) => a._source.traits),
-          flatten,
-          uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)
-        ))
+        .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
+        .then(objOf('assets'))
+        .then(({ assets }) => TraitsLoader.test(assets))
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
