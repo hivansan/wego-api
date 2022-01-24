@@ -55,7 +55,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     const searchFields = [
       'name^4',
       'contractAddress^3',
-      'descriptionˆ2',
+      'description^2',
     ];
     const { page, limit, sort, q, sortOrder } = params.listCollections(req.query)
       .defaultTo({
