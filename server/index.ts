@@ -34,7 +34,7 @@ const routes = [
   'score',
 ].map(name => require(`./endpoints/${name}`));
 
-routes.forEach(route => route.default({ app, db, admins }));
+routes.forEach(route => route.default({ app, db, users: admins }));
 
 /**
  * Catch-all 404 to replace Express default handler
