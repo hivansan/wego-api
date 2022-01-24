@@ -54,6 +54,13 @@ export const search = curry((
   { filter, ...opts }: Options
 ) => {
   // console.log(filter);
+  const collAssetQuery = query?.match(/^\s*([\w-]*)\s+(\d*)\s*$/);
+  const queryByCollAsset: Array<Object> = [];
+  if (collAssetQuery && collAssetQuery.length === 3 ) {
+    queryByCollAsset.push({match: {'slug': collAssetQuery[1] }});
+    queryByCollAsset.push({match: {'tokenId.keyword': collAssetQuery[2] }}); 
+  }
+
   const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
   const q = {
     bool: {
@@ -63,6 +70,15 @@ export const search = curry((
     }
   };
   if (Object.keys(queryObj).length) q.bool['must'] = queryObj;
+  if (queryByCollAsset.length) {
+    // For slug - asset searchs override the multi match query for a direct query
+    q.bool['must'] = queryByCollAsset;
+    // Sort on a collections property brakes the assets direct query
+    delete opts.sort;
+    // Force assets search
+    index = 'assets';
+  }
+
   return find(db, index, q, opts);
 
 });
