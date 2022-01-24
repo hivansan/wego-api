@@ -14,6 +14,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
+import { isAdmin } from '../auth';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -38,7 +39,7 @@ const params = {
   })
 };
 
-export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
+export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, users: string[] }) => {
   app.get('/api/collections', respond(req => {
     const searchFields = [
       'name^4',
@@ -129,14 +130,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * Admin management URLs
    */
 
-  // app.post('/api/collections/:slug/delete', respond(({ params }) => (
-  //   Promise.all([
-  //     db.delete({ index: 'collections', id: params.slug }) as any,
-  //     db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
-  //   ]) as any
-  // )));
+  app.post('/api/collections/:slug/delete', isAdmin({ users }), respond(({ params }) => (
+    Promise.all([
+      db.delete({ index: 'collections', id: params.slug }) as any,
+      db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
+    ]) as any
+  )));
 
-  app.post('/api/collections/:slug/unfeature', respond(req => (
+  app.post('/api/collections/:slug/unfeature', isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,
@@ -146,7 +147,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     }) as any
   )));
 
-  app.post('/api/collections/:slug/feature', respond(req => (
+  app.post('/api/collections/:slug/feature', isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,
