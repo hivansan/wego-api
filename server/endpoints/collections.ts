@@ -14,7 +14,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
-import * as Traits from '../../lib/traits';
+import * as TraitsLoader from '../../lib/traits';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -105,14 +105,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0, source: ['tokenId', 'currentPrice', 'traits'] })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
-        .then(objOf('traits'))
-        .then(({ traits }) => Traits.traits(traits, AssetLoader.getCollection(db, slug, true)
-          .then((body) => body === null ? Promise.reject(error(404, 'Collection not found')) : body)))
+        .then(objOf('assets'))
+        .then(({ assets }) => TraitsLoader.test(assets))
         .then(pipe(objOf('results'), objOf('body')))
-        .catch(handleError(`[/collections/traits error, slug: ${slug}]`));
+        .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
   }));
 

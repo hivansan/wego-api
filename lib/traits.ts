@@ -1,37 +1,28 @@
-function capitalize(value) {
-  return value.split(" ").map(traitValue => traitValue.charAt(0).toUpperCase() + traitValue.slice(1)).join(" ");
-}
+import { clamp, pipe, objOf, always, path, uniq, flatten, tap, equals, last, prop, concat, map, uniqBy, filter, any, has } from 'ramda';
 
-function filterByTraitValue(assets, value) {
-  const assetFilter = assets.filter(asset => (asset.traits.indexOf(value) != -1 && asset.price != 0)).flatMap(asset => asset.price);
-  return { min: Math.min(...assetFilter), max: Math.max(...assetFilter) }
-}
 
-export async function traits(assets: any[], collection: Promise<any>) {
-  const assetsCustom = assets.map(asset => {
+export async function test(assets: any[]) {
+  const customAssets = assets.map(asset => {
     return {
-      token: asset.tokenId,
       price: asset.currentPrice ?? 0,
       traits: asset.traits.map(trait => trait.value)
     }
   });
-  const collectionTraits = await collection.then(collectionTrait => collectionTrait.body.traits);
-  const traits = Object.keys(collectionTraits).flatMap((traitType) => {
-    const traits = Object.entries(collectionTraits[traitType]).map(((trait: any) => { return { traitValue: trait[0], traitCount: trait[1] } }));
-    return traits.map(trait => {
-      const prices: any = filterByTraitValue(assetsCustom, capitalize(trait.traitValue));
-      console.log(prices);
+  const traits = uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`,
+    assets
+      .filter((a: any) => a.traits?.length)
+      .flatMap((a: any) => a.traits))
+    .map(trait => {
       return {
-        trait_type: traitType,
-        value: capitalize(trait.traitValue),
-        display_type: null,
-        max_value: null,
-        trait_count: trait.traitCount,
-        order: null,
-        floor_price: prices.min,
-        top_price: prices.max
+        ...trait,
+        ...filterByTraitValue(customAssets, trait.value)
       }
-    });
-  });
+    })
   return traits;
 }
+
+function filterByTraitValue(customAssets, value) {
+  const assetFilter = customAssets.filter(asset => (asset.traits.indexOf(value) != -1 && asset.price != 0)).flatMap(assetFiltered => assetFiltered.price);
+  return { floor_price: Math.min(...assetFilter), top_price: Math.max(...assetFilter) }
+}
+
