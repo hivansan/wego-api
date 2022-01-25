@@ -110,7 +110,7 @@ export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, us
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
         .then(objOf('assets'))
-        .then(({ assets }) => TraitsLoader.test(assets))
+        .then(({ assets }) => TraitsLoader.loadTraits(assets))
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
