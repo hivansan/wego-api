@@ -15,7 +15,7 @@ import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
 import * as TraitsLoader from '../../lib/traits';
-import { isAdmin } from '../auth';
+import { isAdmin, useSession } from '../auth';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -128,14 +128,14 @@ export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, us
    * Admin management URLs
    */
 
-  app.post('/api/collections/:slug/delete', isAdmin({ users }), respond(({ params }) => (
+  app.post('/api/collections/:slug/delete', useSession, isAdmin({ users }), respond(({ params }) => (
     Promise.all([
       db.delete({ index: 'collections', id: params.slug }) as any,
       db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
     ]) as any
   )));
 
-  app.post('/api/collections/:slug/unfeature', isAdmin({ users }), respond(req => (
+  app.post('/api/collections/:slug/unfeature', useSession, isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,
@@ -145,7 +145,7 @@ export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, us
     }) as any
   )));
 
-  app.post('/api/collections/:slug/feature', isAdmin({ users }), respond(req => (
+  app.post('/api/collections/:slug/feature', useSession, isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,

@@ -23,9 +23,7 @@ export const useSession: RequestHandler = (req, _, next) => {
 };
 
 export const isAdmin: (config: { users: string[] }) => RequestHandler = ({ users }) => (req, res, next) => {
-  let session = (req as any).session.passport.user;
-  session = typeof session === 'string' ? JSON.parse(session) : session;
-  return (users.includes((path(['email'], session) + "").toLowerCase()))
+  (users.includes((path(['session', 'passport', 'user', 'email'], req) + "").toLowerCase()))
     ? next()
     : res.redirect('/unauthorized');
 };
