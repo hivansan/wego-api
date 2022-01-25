@@ -5,11 +5,10 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
-import { match, toInt } from '../../models/util';
+import { toInt } from '../../models/util';
 import { clamp, pipe, always, identity, tap } from 'ramda';
-import * as Query from '../../lib/query';
+
 import { toResult } from './util';
-import { Asset } from '../../models/asset';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain

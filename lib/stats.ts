@@ -94,10 +94,7 @@ export const index = (count: number) => (asset: Asset) => Object.assign(
 );
 
 export const isUnrevealed = (a: Asset): boolean =>
-  (
-    a.description?.toLowerCase().includes('unrevealed') ||
-    a.name?.toLowerCase().includes('unrevealed')
-  ) ||
+  (a.description?.toLowerCase().includes('unrevealed') || a.name?.toLowerCase().includes('unrevealed')) ||
   !a.traits?.length ||
   !a.traitsCount ||
   a.traits.some(t => t.value === '???') ||
