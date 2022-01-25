@@ -107,6 +107,7 @@ const params = {
           Result.ok
         ))
       ), {}),
+    ownerAddress: nullable(string, undefined),
   }),
 };
 
@@ -128,8 +129,8 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, buyNow, priceRangeUSD, rankRange, traitsCountRange }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query, buyNow)
+      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, buyNow, priceRangeUSD, rankRange, traitsCountRange, ownerAddress }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query, buyNow, ownerAddress)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
