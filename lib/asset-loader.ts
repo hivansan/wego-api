@@ -35,6 +35,7 @@ export async function fromDb(
   traitsCountRange?: { lte: number, gte: number } | null,
   query?: string,
   buyNow?: string,
+  ownerAddress?: string,
 ): Promise<any> {
 
   const searchFields = [
@@ -66,11 +67,17 @@ export async function fromDb(
     },
   };
 
-  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } } as any);
-  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any);
-  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any);
-  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } } as any);
-  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } } as any);
+  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } });
+  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } });
+  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } });
+  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } });
+  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } });
+  if (ownerAddress) q.bool.must.push({
+    bool: {
+      should: [{ match: { 'owner.address.keyword': ownerAddress.toLowerCase() } }, { match: { owners: ownerAddress.toLowerCase() } }],
+      minimum_should_match: 1
+    }
+  });
 
   if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
@@ -96,7 +103,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenId,
           contractAddress,
           owners: rari.owners,
-          owner: null,
+          owner: openSea.owner,
           description: openSea.description,              //  rariMeta.description
           imageBig: openSea.image_original_url,       // rariMeta.image.url.BIG,
           imageSmall: openSea.image_preview_url,        // rariMeta.image.url.PREVIEW,

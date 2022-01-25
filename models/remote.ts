@@ -38,6 +38,7 @@ export const openSeaAsset = object('OpenSeaNFT', {
   image_original_url: nullable(string),
   image_preview_url: nullable(string),
   token_metadata: nullable(string),
+  owner: Result.ok,
   traits: nullable(array(Result.ok), []),
 });
 
