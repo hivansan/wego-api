@@ -203,21 +203,18 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
 }
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
-  Query.createWithIndex(db, 'assets', { ...asset, unrevealed: isUnrevealed(asset) }, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+  Query.update(db, 'assets', `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`, { ...asset, unrevealed: isUnrevealed(asset) }, true)
 ));
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => {
-      // console.log('unrevealed and updated -----', body, body._source.unrevealed, now.diff(moment(body._source?.updatedAt), 'minutes') > 5);
-      return body === null || !!!body?._source?.slug || (body._source.unrevealed && now.diff(moment(body._source?.updatedAt), 'minutes') > 5)
+    .then(assetDB => {
+      return assetDB === null || (assetDB._source.unrevealed && now.diff(moment(assetDB._source?.updatedAt), 'minutes') > 5) || now.diff(moment(assetDB._source?.updatedAt), 'hours') > 1
         ? assetFromRemote(contractAddress, tokenId)
-          .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
-          .catch(e => {
-            return error(503, 'Service error');
-          })
-        : { body: body._source } as any
+          .then(assetRemote => assetRemote === null ? null : { body: indexAsset(db)({ ...assetRemote, ...(assetDB !== null && !isUnrevealed(assetDB._source) ? { traits: assetDB._source.traits } : {}) }) } as any)
+          .catch(e => error(503, 'Service error'))
+        : { body: assetDB._source } as any
     })
 }
 
