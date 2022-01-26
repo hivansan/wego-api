@@ -107,7 +107,7 @@ export async function collection(count: number, assets: Asset[], collectionTrait
   const collectionTraitKeys = Object.keys(collectionTraits);
   const allTraits = collectionTraitKeys.map(key => ({
     trait_type: `${key}`,
-    trait_count: (assets || []).filter((a: any) => !a.traits.find((t: any) => t.trait_type === key && t.value)).length,
+    trait_count: (assets || []).filter((a: any) => !(a.traits || []).find((t: any) => t.trait_type === key && t.value)).length,
     value: null
   }));
 
@@ -125,7 +125,7 @@ export async function collection(count: number, assets: Asset[], collectionTrait
         trait_count: (assets || []).filter((a: Asset) => a.traitsCount === assetTraitKeys.length).length,
         value: assetTraitKeys.length
       }];
-    asset.traits = uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)([...extraTraits, ...asset.traits] as any) as any;
+    asset.traits = uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)([...extraTraits, ...(asset.traits || [])] as any) as any;
   }
 
   const collectionStats = assets.map(index(count));
