@@ -14,7 +14,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
-import * as TraitsLoader from '../../lib/traits';
+import * as TraitsUtils from '../../lib/traits';
 import { isAdmin, useSession } from '../auth';
 
 /**
@@ -106,11 +106,17 @@ export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, us
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0, source: ['currentPrice', 'traits'] })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0, source: ['tokenId', 'currentPrice', 'traits'] })
         .then(path(['body', 'hits', 'hits']))
         .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
-        .then(objOf('assets'))
-        .then(({ assets }) => TraitsLoader.loadTraits(assets))
+        .then(filter((a: any) => a.traits?.length))
+        .then((body) => TraitsUtils.getTraitPrices(body))
+        .then(
+          pipe<any, any, any, any>(
+            map((a: any) => a.traits),
+            flatten,
+            uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`))
+        )
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
