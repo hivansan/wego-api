@@ -6,7 +6,7 @@ import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
 import { eventTypes } from '../scraper/event.utils';
 import { cleanEntries, load, openseaAssetMapper } from '../scraper/scraper.utils';
 import moment from 'moment';
-import { forEach, map, path, tap } from 'ramda';
+import { forEach, map, path, tap, uniqBy } from 'ramda';
 
 export type Config = {
   /**
@@ -51,7 +51,8 @@ export class MarketEvents {
     return {
       type: event.event_type,
       time: event.created_date,
-      asset: handler(event, cleanEntries(openseaAssetMapper(event.asset))),
+      /** @TODO maybe move traitsFlat to set it null somewhere else less hacky */
+      asset: handler(event, cleanEntries({ ...openseaAssetMapper(event.asset), traitsFlat: null })),
       collection: {
         name: event.asset.collection.name,
         slug: event.asset.collection.slug
@@ -76,7 +77,14 @@ export class MarketEvents {
     AssetLoader
       .events(args)
       .then(events => events.map(MarketEvents.fromRaw))
-      .then(tap(events => { load(events.map(e => e.asset), 'assets', 'upsert') }))
+      // .then(tap(e => console.log('e -----------', e)))
+      .then(tap(events => {
+        load(
+          uniqBy(e => `${e.type}${e.asset.tokenId}${e.collection.slug}`, events).map(e => e.asset),
+          'assets',
+          'upsert'
+        )
+      }))
       .then(forEach(this.push.bind(this)))
       .catch(e => {
         console.error(
