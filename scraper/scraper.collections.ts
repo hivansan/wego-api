@@ -95,7 +95,9 @@ const loadCollections = () => {
 
 const main = () => {
   const q = { match_all: {} };
-  // this query is just for testing
+  // below queries just for tests
+  // const q = { bool: { must_not: { match: { 'deleted': true } } } };
+  // const q = { bool: { must: { match: { 'slug.keyword': 'boredapeyachtclub' } } } };
   const query = {
     bool: {
       must: [
@@ -109,7 +111,7 @@ const main = () => {
       ]
     }
   }
-  Query.find(db, 'collections', q, { limit: 5000, source: ['slug', 'stats.totalVolume'] })
+  Query.find(db, 'collections', q, { limit: 5000, sort: [{ 'stats.totalVolume': { order: 'desc' } }], source: ['slug', 'deleted', 'stats.totalVolume', 'stats.featuredCollection'] })
     .then(
       ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
         ({ body: { meta: { took, timedOut, total: total.value }, results: hits.map(toResult).map((r: { value: any; }) => r.value), }, })
@@ -124,16 +126,18 @@ const main = () => {
           .then(async (collectionFR) => {
             if (collectionFR !== null) {
               console.log(`${collection.slug}, deleted: ${collectionFR.deleted} \t\t actual Volume: ${collection.stats.totalVolume} os: ${collectionFR.stats.totalVolume}`);
-
+              (collectionFR as any).stats.featuredCollection = collection.stats?.featuredCollection || false;
               try {
                 if (collection.stats.totalVolume === collectionFR.stats.totalVolume) return;
                 console.log(`updating ${collection.slug}`);
-                await Query.update(db, 'collections', collection.slug, collectionFR, true)
-                console.log(`[success updated collection] ${collectionFR.slug}`)
-                await Query.updateByQuery(db, 'assets', { match: { 'slug.keyword': collection.slug } }, { source: `ctx._source['deleted'] = ${collectionFR.deleted}` }, false)
-                console.log(`[success updated assets] ${collectionFR.slug}`)
+                await Query.update(db, 'collections', collection.slug, collectionFR, true);
+                console.log(`[success updated collection] ${collectionFR.slug}`);
+
+                if (collection.deleted === collectionFR.deleted) return;
+                await Query.updateByQuery(db, 'assets', { match: { 'slug.keyword': collection.slug } }, { source: `ctx._source['deleted'] = ${collectionFR.deleted}` }, false);
+                console.log(`[success updated assets] ${collectionFR.slug}`);
               } catch (error) {
-                console.log(error);
+                console.log('error in ', collection.slug, error);
               }
               // .then(u => console.log('[success updated assets by query]', collectionFR.slug))
               // .catch((e) =>
