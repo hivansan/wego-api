@@ -40,6 +40,9 @@ export const openSeaAsset = object('OpenSeaNFT', {
   token_metadata: nullable(string),
   owner: Result.ok,
   traits: nullable(array(Result.ok), []),
+  sell_orders: nullable(Result.ok, []),
+  orders: nullable(Result.ok, []),
+  last_sale: nullable(Result.ok),
 });
 
 export const rarible = object('RaribleNFT', {
@@ -161,6 +164,9 @@ export const openSeaEvent = object('OpenSeaEvent', {
   //     username: nullable(string)
   //   }))
   // })),
+  listing_time: nullable(toDate),
+  duration: nullable(string),
+  starting_price: nullable(string),
   event_type: inList([
     'created',
     'successful',
