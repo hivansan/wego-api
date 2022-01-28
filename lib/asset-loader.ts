@@ -181,11 +181,12 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-export async function events(args: { limit?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
+export async function events(args: { limit?: number, offset?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
   const limit = args.limit || 50;
-
+  const offset = args.offset || 0;
   const query = new URLSearchParams(mergeAll([
     { limit },
+    { offset },
     // { event_type: 'created' },
     // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
     // { token_id: '7898' },
@@ -194,6 +195,7 @@ export async function events(args: { limit?: number, before?: number, after?: nu
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
+  console.log('[market events args ]', args);
   console.log('[market events query]', query.toString());
 
   return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`,
