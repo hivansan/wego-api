@@ -19,6 +19,11 @@ export type Config = {
    */
   interval: number;
 
+  /**
+   * time window (in seconds) to perform each call
+   */
+  timeWidow: number;
+
   autoStart: boolean;
 }
 
@@ -46,6 +51,38 @@ export class MarketEvents {
 
   protected lastTimestamp: number = 0;
 
+  constructor(public config: Config) {
+    this.stream = new Readable({ objectMode: true, read() { } });
+
+    if (config.history > 0) {
+      this.load({ limit: 300, after: moment().unix() - config.history - config.timeWidow, before: moment().unix() - config.history });
+    }
+
+    if (config.autoStart) {
+      this.start();
+    }
+  }
+
+  public start() {
+    if (this.clock) {
+      return;
+    }
+    this.clock = setInterval(() => {
+      console.log('[market events lastTimestamp]', this.lastTimestamp);
+      if (!this.lastTimestamp) {
+        return;
+      }
+      this.load({ limit: 300, after: this.lastTimestamp, before: this.lastTimestamp + this.config.timeWidow });
+    }, this.config.interval * 1000);
+  }
+
+  public stop() {
+    if (this.clock) {
+      clearTimeout(this.clock);
+      this.clock = null;
+    }
+  }
+
   static fromRaw(event: OpenSeaEvent): MarketEvent {
     const handler = eventTypes.getHandler(event.event_type);
     return {
@@ -61,23 +98,11 @@ export class MarketEvents {
     }
   }
 
-  constructor(public config: Config) {
-    this.stream = new Readable({ objectMode: true, read() { } });
-
-    if (config.history > 0) {
-      this.load({ limit: 300, after: moment().unix() - config.history });
-    }
-
-    if (config.autoStart) {
-      this.start();
-    }
-  }
-
   private load(args: Partial<{ limit: number, before: number, after: number }>) {
     AssetLoader
       .events(args)
       .then(events => events.map(MarketEvents.fromRaw))
-      // .then(tap(e => console.log('e -----------', e)))
+      // .then(tap(e => console.log('e -----------', e.length)))
       .then(tap(events => {
         load(
           uniqBy(e => `${e.type}${e.asset.tokenId}${e.collection.slug}`, events).map(e => e.asset),
@@ -99,22 +124,5 @@ export class MarketEvents {
     this.stream.push(e);
   }
 
-  public start() {
-    if (this.clock) {
-      return;
-    }
-    this.clock = setInterval(() => {
-      if (!this.lastTimestamp) {
-        return;
-      }
-      this.load({ limit: 300, after: this.lastTimestamp });
-    }, this.config.interval * 1000);
-  }
 
-  public stop() {
-    if (this.clock) {
-      clearTimeout(this.clock);
-      this.clock = null;
-    }
-  }
 }
