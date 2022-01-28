@@ -245,20 +245,21 @@ const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
+    .then(body => body === null ? null : body._source)
     .then(assetDB => {
-      return assetDB === null || (assetDB._source.unrevealed && now.diff(moment(assetDB._source?.updatedAt), 'minutes') > 5) || now.diff(moment(assetDB._source?.updatedAt), 'hours') > 1
+      return assetDB === null || (assetDB.unrevealed && now.diff(moment(assetDB?.updatedAt), 'minutes') > 5) || now.diff(moment(assetDB?.updatedAt), 'hours') > 1
         ? assetFromRemote(contractAddress, tokenId)
           .then(assetRemote => assetRemote === null
             ? null
             : {
               body: indexAsset(db)({
-                ...(assetDB._source || {}), /* priority to asset db for ranks and stuff */
+                ...(assetDB?._source || {}), /* priority to asset db for ranks and stuff */
                 ...assetRemote, /* then to new data */
-                ...(assetDB !== null && !isUnrevealed(assetDB._source) ? { traits: assetDB._source.traits } : {}) /* if assetdb had traits before, use those */
+                ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
               })
             } as any)
           .catch(e => error(503, 'Service error'))
-        : { body: assetDB._source } as any
+        : { body: assetDB } as any
     })
 }
 
