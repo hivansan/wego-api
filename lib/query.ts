@@ -21,8 +21,8 @@ export const find = curry((
   { limit, offset, sort, asStream, source }: Options
 ): Promise<any> => {
 
-  console.log('query:', query);
-
+  console.log('query:', JSON.stringify(query, null, 2));
+  console.log(`Query Opts: limit: ${limit} offset: ${offset} sort: ${JSON.stringify(sort, null, 2)} asStream: ${asStream} source: ${source}`);
 
   return db.search({
     index: index ? index : ['assets', 'collections'],
