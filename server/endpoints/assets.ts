@@ -135,17 +135,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
               meta: { took, timedOut, total: total.value },
-              results: hits.map(toResult).map((r: any) => r.value)
-              // .map((a: any) => ({
-              //   currentPrice: a.currentPrice,
-              //   currentPriceUSD: a.currentPriceUSD,
-              //   rarityScore: a.rarityScore,
-              //   rarityScoreRank: a.rarityScoreRank,
-              //   tokenId: a.tokenId,
-              //   lastSalePrice: a.lastSalePrice,
-              //   lastSalePriceUSD: a.lastSalePriceUSD,
-              //   traitsCount: a.traitsCount,
-              // })),
+              results: hits.map(toResult).map((r: any) => r.value),
             },
           }))
           .catch((e) => {

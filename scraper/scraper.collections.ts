@@ -134,10 +134,10 @@ const main = () => {
                 console.log(`[success updated collection] ${collectionFR.slug}`);
 
                 if (collection.deleted === collectionFR.deleted) return;
-                await Query.updateByQuery(db, 'assets', { match: { 'slug.keyword': collection.slug } }, { source: `ctx._source['deleted'] = ${collectionFR.deleted}` }, false);
+                await Query.updateByQuery(db, 'assets', { match: { 'slug.keyword': collection.slug } }, { source: `ctx._source['deleted'] = ${collectionFR.deleted}` }, true);
                 console.log(`[success updated assets] ${collectionFR.slug}`);
               } catch (error) {
-                console.log('error in ', collection.slug, error);
+                console.log('error in ', collection.slug, error?.meta?.body ? JSON.stringify(error.meta.body, null, 2) : error);
               }
               // .then(u => console.log('[success updated assets by query]', collectionFR.slug))
               // .catch((e) =>
