@@ -25,7 +25,7 @@ const BASE_URL = 'https://api.opensea.io/api/v1';
 
 export async function fromDb(
   db: ElasticSearch.Client,
-  { offset, limit, sort }: Query.Options,
+  { offset, limit, sort, source }: Query.Options,
   slug?: string,
   tokenId?: string,
   traits?: { [key: string]: (string | number | object | any)[] },
@@ -83,7 +83,7 @@ export async function fromDb(
 
   console.log('Query: ', JSON.stringify(q));
   console.log('sort:  ', sort);
-  return Query.find(db, 'assets', q, { offset, sort, limit });
+  return Query.find(db, 'assets', q, { offset, sort, limit, source });
 }
 
 export async function assetFromRemote(contractAddress: string, tokenId: string): Promise<Asset.Asset | null> {
@@ -187,12 +187,12 @@ export async function events(args: { limit?: number, offset?: number, before?: n
   const query = new URLSearchParams(mergeAll([
     { limit },
     { offset },
-    // { event_type: 'created' },
-    // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
-    // { token_id: '7898' },
+    { event_type: 'created' },
+    { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
+    { token_id: '9100' },
     // { collection_slug: 'social-bees-university' },
-    args.before ? { occurred_before: args.before } : {},
-    args.after ? { occurred_after: args.after } : {},
+    // args.before ? { occurred_before: args.before } : {},
+    // args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
   console.log('[market events args ]', args);
@@ -253,7 +253,7 @@ export async function getAsset(db: ElasticSearch.Client, contractAddress: string
             ? null
             : {
               body: indexAsset(db)({
-                ...(assetDB?._source || {}), /* priority to asset db for ranks and stuff */
+                ...(assetDB || {}), /* priority to asset db for ranks and stuff */
                 ...assetRemote, /* then to new data */
                 ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
               })
