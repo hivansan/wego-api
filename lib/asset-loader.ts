@@ -11,7 +11,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { filter, mergeAll, pipe, prop, tap } from 'ramda';
+import { filter, mergeAll, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
@@ -35,6 +35,7 @@ export async function fromDb(
   traitsCountRange?: { lte: number, gte: number } | null,
   query?: string,
   buyNow?: string,
+  ownerAddress?: string,
 ): Promise<any> {
 
   const searchFields = [
@@ -66,11 +67,17 @@ export async function fromDb(
     },
   };
 
-  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } } as any);
-  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } } as any);
-  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any);
-  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } } as any);
-  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } } as any);
+  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } });
+  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } });
+  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } });
+  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } });
+  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } });
+  if (ownerAddress) q.bool.must.push({
+    bool: {
+      should: [{ match: { 'owner.address.keyword': ownerAddress.toLowerCase() } }, { match: { owners: ownerAddress.toLowerCase() } }],
+      minimum_should_match: 1
+    }
+  });
 
   if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
@@ -86,7 +93,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
     `${BASE_URL}/asset/${contractAddress}/${tokenId}/`,
   ]);
 
-  // console.log('openseaNft --', openseaNft);
+  // console.log('openseaNft --', JSON.stringify(openseaNft, null, 3));
   const asset: Result<any, Asset.Asset> = Remote.openSeaAsset(openseaNft)
     .chain((openSea) =>
       Remote.rarible(rariNft).map((rari) =>
@@ -96,7 +103,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenId,
           contractAddress,
           owners: rari.owners,
-          owner: null,
+          owner: openSea.owner,
           description: openSea.description,              //  rariMeta.description
           imageBig: openSea.image_original_url,       // rariMeta.image.url.BIG,
           imageSmall: openSea.image_preview_url,        // rariMeta.image.url.PREVIEW,
@@ -109,7 +116,31 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
             ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }),
             stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })
           },
-          traitsCount: openSea.traits?.length || 0
+          traitsCount: openSea.traits?.length || 0,
+          // sellOrders: openSea.orders?.filter((o: { side: number; }) => o.side === 1).map(sellOrderMapper) || [],
+          ...(openSea.orders?.filter((o: { side: number; }) => o.side === 1).length
+            ? {
+              sellOrders: openSea.orders.filter((o: { side: number; }) => o.side === 1).map(sellOrderMapper) || [],
+              currentPrice: openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].current_price / 10 ** 18,
+              currentPriceUSD: (openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].current_price / 10 ** 18) * +openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].payment_token_contract?.usd_price,
+            }
+            : {
+              sellOrders: null,
+              currentPrice: null,
+              currentPriceUSD: null,
+            }
+          ),
+          ...(openSea.last_sale
+            ? {
+              lastSale: openSea.last_sale,
+              lastSalePrice: +openSea.last_sale.total_price / 10 ** 18,
+              lastSalePriceUSD: (+openSea.last_sale.total_price / 10 ** 18) * +openSea.last_sale.payment_token?.usd_price,
+            }
+            : {
+              lastSale: null,
+              lastSalePrice: null,
+              lastSalePriceUSD: null,
+            }),
         })
       )
     )
@@ -150,17 +181,21 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-export async function events(args: { limit?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
+export async function events(args: { limit?: number, offset?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
   const limit = args.limit || 50;
-
+  const offset = args.offset || 0;
   const query = new URLSearchParams(mergeAll([
     { limit },
-    // { event_type: 'successful' },
-    // { collection_slug: 'official-dormant-dragons' },
+    { offset },
+    // { event_type: 'created' },
+    // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
+    // { token_id: '7898' },
+    // { collection_slug: 'social-bees-university' },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
+  console.log('[market events args ]', args);
   console.log('[market events query]', query.toString());
 
   return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`,
@@ -184,16 +219,17 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
     .then((collectionDB) => {
       const now = moment();
       return collectionDB === null || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
-        ? collectionFromRemote(slug).then((body) => (
-          body === null
+        ? collectionFromRemote(slug).then((collectionRemote) => (
+          collectionRemote === null
             ? null
             : ({
               body: indexCollection(db)({
-                ...body,
+                ...(collectionDB || {}),
+                ...collectionRemote,
                 addedAt: +new Date(),
                 updatedAt: new Date(),
                 requestedScore: !!requestedScore,
-                traits: cleanTraits(body.traits)
+                traits: cleanTraits(collectionRemote.traits)
               })
             })
         ))
@@ -203,21 +239,27 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
 }
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
-  Query.createWithIndex(db, 'assets', { ...asset, unrevealed: isUnrevealed(asset) }, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+  Query.update(db, 'assets', `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`, { ...asset, unrevealed: isUnrevealed(asset) }, true)
 ));
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => {
-      // console.log('unrevealed and updated -----', body, body._source.unrevealed, now.diff(moment(body._source?.updatedAt), 'minutes') > 5);
-      return body === null || !!!body?._source?.slug || (body._source.unrevealed && now.diff(moment(body._source?.updatedAt), 'minutes') > 5)
+    .then(body => body === null ? null : body._source)
+    .then(assetDB => {
+      return assetDB === null || (assetDB.unrevealed && now.diff(moment(assetDB?.updatedAt), 'minutes') > 5) || now.diff(moment(assetDB?.updatedAt), 'hours') > 1
         ? assetFromRemote(contractAddress, tokenId)
-          .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
-          .catch(e => {
-            return error(503, 'Service error');
-          })
-        : { body: body._source } as any
+          .then(assetRemote => assetRemote === null
+            ? null
+            : {
+              body: indexAsset(db)({
+                ...(assetDB?._source || {}), /* priority to asset db for ranks and stuff */
+                ...assetRemote, /* then to new data */
+                ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
+              })
+            } as any)
+          .catch(e => error(503, 'Service error'))
+        : { body: assetDB } as any
     })
 }
 
@@ -237,6 +279,38 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     return null;
   }
 }
+
+const sellOrderMapper = (order: any) => ({
+  created_date: order.created_date,
+  closing_date: order.closing_date,
+  closing_extendable: order.closing_extendable,
+  expiration_time: order.expiration_time,
+  listing_time: order.listing_time,
+  order_hash: order.order_hash,
+  maker: { address: order.maker.address },
+  taker: { address: order.taker.address },
+  current_price: order.current_price,
+  current_bounty: order.current_bounty,
+  bounty_multiple: order.bounty_multiple,
+  maker_relayer_fee: order.maker_relayer_fee,
+  taker_relayer_fee: order.taker_relayer_fee,
+  maker_protocol_fee: order.maker_protocol_fee,
+  taker_protocol_fee: order.taker_protocol_fee,
+  maker_referrer_fee: order.maker_referrer_fee,
+  fee_method: order.fee_method,
+  side: order.side,
+  sale_kind: order.sale_kind,
+  target: order.target,
+  payment_token_contract: order.payment_token_contract,
+  base_price: order.base_price,
+  extra: order.extra,
+  quantity: order.quantity,
+  approved_on_chain: order.approved_on_chain,
+  cancelled: order.cancelled,
+  finalized: order.finalized,
+  marked_invalid: order.marked_invalid,
+  prefixed_hash: order.prefixed_hash,
+})
 
 const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
   // console.log('[remote collection mapper collection]', collection);
@@ -288,37 +362,3 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   marketCap: stats.market_cap,
   floorPrice: stats.floor_price,
 });
-
-export async function assetsFromRemote(
-  slug?: string | undefined | null,
-  limit?: number,
-  offset?: number,
-  sortBy?: string | null,
-  sortDirection?: string,
-  q?: string | null,
-): Promise<any | null> {
-
-  try {
-    const params: any = {
-      collection: slug,
-      offset,
-      limit,
-    };
-    if (!!sortBy) params.order_by = sortBy;
-    if (!!sortDirection) params.order_direction = sortDirection;
-
-    const queryParams = new URLSearchParams(params).toString();
-    const url = `${BASE_URL}/assets?${queryParams}`;
-
-    console.log('[assets from remote url]', url);
-
-    const { data } = await axios(url);
-    const { assets } = data;
-
-    // if (!assets?.length) return null;
-    return assets;
-  } catch (e) {
-    console.log('[assetsFromRemote err]', JSON.stringify(e));
-    return null;
-  }
-}

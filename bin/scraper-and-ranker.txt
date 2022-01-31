@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+
+rank
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node ./scraper/rank.ts --limitCollections=1 --execrank=run --slug=social-bees-university
+
+scrape
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scraper/scraper.assets.ts  --exec=saveAssets --forceScrape=1 --limitCollections=1 --linear=true --factor=1  --slug=social-bees-university
+
+scrape 10k
+ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scraper/scraper.assets.ts  --exec=saveAssets --forceScrape=1 --limitCollections=1 --linear=true --factor=1 --above10k=1 --slug=cryptopunks

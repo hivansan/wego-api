@@ -45,7 +45,7 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/search', respond(req => (
     searchQuery(req.query).map(({ q, page, limit, tab: index }) =>
-      Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0), sort: [{ 'stats.featuredCollection': { order: 'desc' } }] },)
+      Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ },)
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },

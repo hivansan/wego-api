@@ -3,18 +3,18 @@
 /**
  * this saves the assets
  * Example usage:
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --bots=4 --errsToFile=./data/errors-to-assets.txt`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --bots=4 --errsToFile=./data/errors-to-assets.txt`
  * 
  * only requested via score endpoint
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt`
  * via the built dist
  * `/usr/bin/env node ./dist/scraper/scraper.assets.js --exec=saveAssets --onlyRequested=1 --errsToFile=./errors-to-assets.txt`
  *
  * for just a collection
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --collectionFilter=nfh --bots=1`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --collectionFilter=nfh --bots=1`
  *
  * from a file
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
  */
 
 import fs from 'fs';

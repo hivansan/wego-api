@@ -5,11 +5,10 @@ import Result from '@ailabs/ts-utils/dist/result';
 
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
-import { match, toInt } from '../../models/util';
+import { toInt } from '../../models/util';
 import { clamp, pipe, always, identity, tap } from 'ramda';
-import * as Query from '../../lib/query';
+
 import { toResult } from './util';
-import { Asset } from '../../models/asset';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -108,6 +107,7 @@ const params = {
           Result.ok
         ))
       ), {}),
+    ownerAddress: nullable(string, undefined),
   }),
 };
 
@@ -129,23 +129,13 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
   app.get('/api/assets', respond(req =>
     params
       .getAssets(req.query)
-      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, buyNow, priceRangeUSD, rankRange, traitsCountRange }) => {
-        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query, buyNow)
+      .map(({ query, slug, limit, offset, sortBy, sortDirection, q, traits, priceRange, buyNow, priceRangeUSD, rankRange, traitsCountRange, ownerAddress }) => {
+        return AssetLoader.fromDb(db, { offset, limit, sort: sortBy ? [{ [sortBy]: { order: sortDirection, unmapped_type: 'long' } }] : [] }, slug, undefined, traits, priceRange, priceRangeUSD, rankRange, traitsCountRange, query, buyNow, ownerAddress)
           .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => ({
             body: {
               meta: { took, timedOut, total: total.value },
-              results: hits.map(toResult).map((r: any) => r.value)
-              // .map((a: any) => ({
-              //   currentPrice: a.currentPrice,
-              //   currentPriceUSD: a.currentPriceUSD,
-              //   rarityScore: a.rarityScore,
-              //   rarityScoreRank: a.rarityScoreRank,
-              //   tokenId: a.tokenId,
-              //   lastSalePrice: a.lastSalePrice,
-              //   lastSalePriceUSD: a.lastSalePriceUSD,
-              //   traitsCount: a.traitsCount,
-              // })),
+              results: hits.map(toResult).map((r: any) => r.value),
             },
           }))
           .catch((e) => {

@@ -6,7 +6,7 @@ import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
 import { eventTypes } from '../scraper/event.utils';
 import { cleanEntries, load, openseaAssetMapper } from '../scraper/scraper.utils';
 import moment from 'moment';
-import { forEach, map, path, tap } from 'ramda';
+import { forEach, map, path, tap, uniqBy } from 'ramda';
 
 export type Config = {
   /**
@@ -18,6 +18,11 @@ export type Config = {
    * Interval (in seconds) to check for new events
    */
   interval: number;
+
+  /**
+   * time window (in seconds) to perform each call
+   */
+  timeWidow: number;
 
   autoStart: boolean;
 }
@@ -46,12 +51,45 @@ export class MarketEvents {
 
   protected lastTimestamp: number = 0;
 
+  constructor(public config: Config) {
+    this.stream = new Readable({ objectMode: true, read() { } });
+
+    if (config.history > 0) {
+      this.load({ limit: 300, after: moment().unix() - config.history - config.timeWidow, before: moment().unix() - config.history });
+    }
+
+    if (config.autoStart) {
+      this.start();
+    }
+  }
+
+  public start() {
+    if (this.clock) {
+      return;
+    }
+    this.clock = setInterval(() => {
+      console.log('[market events lastTimestamp]', this.lastTimestamp);
+      if (!this.lastTimestamp) {
+        return;
+      }
+      this.load({ limit: 300, after: this.lastTimestamp, before: this.lastTimestamp + this.config.timeWidow });
+    }, this.config.interval * 1000);
+  }
+
+  public stop() {
+    if (this.clock) {
+      clearTimeout(this.clock);
+      this.clock = null;
+    }
+  }
+
   static fromRaw(event: OpenSeaEvent): MarketEvent {
     const handler = eventTypes.getHandler(event.event_type);
     return {
       type: event.event_type,
       time: event.created_date,
-      asset: handler(event, cleanEntries(openseaAssetMapper(event.asset))),
+      /** @TODO maybe move traitsFlat to set it null somewhere else less hacky */
+      asset: handler(event, cleanEntries({ ...openseaAssetMapper(event.asset), traitsFlat: null })),
       collection: {
         name: event.asset.collection.name,
         slug: event.asset.collection.slug
@@ -60,23 +98,18 @@ export class MarketEvents {
     }
   }
 
-  constructor(public config: Config) {
-    this.stream = new Readable({ objectMode: true, read() { } });
-
-    if (config.history > 0) {
-      this.load({ limit: 300, after: moment().unix() - config.history });
-    }
-
-    if (config.autoStart) {
-      this.start();
-    }
-  }
-
   private load(args: Partial<{ limit: number, before: number, after: number }>) {
     AssetLoader
       .events(args)
       .then(events => events.map(MarketEvents.fromRaw))
-      .then(tap(events => { load(events.map(e => e.asset), 'assets', 'upsert') }))
+      // .then(tap(e => console.log('e -----------', e.length)))
+      .then(tap(events => {
+        load(
+          uniqBy(e => `${e.type}${e.asset.tokenId}${e.collection.slug}`, events).map(e => e.asset),
+          'assets',
+          'upsert'
+        )
+      }))
       .then(forEach(this.push.bind(this)))
       .catch(e => {
         console.error(
@@ -91,22 +124,5 @@ export class MarketEvents {
     this.stream.push(e);
   }
 
-  public start() {
-    if (this.clock) {
-      return;
-    }
-    this.clock = setInterval(() => {
-      if (!this.lastTimestamp) {
-        return;
-      }
-      this.load({ limit: 300, after: this.lastTimestamp });
-    }, this.config.interval * 1000);
-  }
 
-  public stop() {
-    if (this.clock) {
-      clearTimeout(this.clock);
-      this.clock = null;
-    }
-  }
 }

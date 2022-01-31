@@ -5,7 +5,7 @@ export async function fetchNParse<T = unknown>(url: string, options?: any): Prom
 }
 
 export async function arrayFetch<T = unknown>(urls: string[]): Promise<T[]> {
-  return Promise.all(urls.map((url) => fetchNParse(url, {}))) as any as T[];
+  return Promise.all(urls.map((url) => fetchNParse(url, { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } }))) as any as T[];
 }
 
 export async function* paginated<Val>(

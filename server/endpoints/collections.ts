@@ -14,6 +14,8 @@ import Result from '@ailabs/ts-utils/dist/result';
 import * as Stats from '../../lib/stats';
 
 import { COLLECTION_SORTS } from '../../lib/constants';
+import * as TraitsUtils from '../../lib/traits';
+import { isAdmin, useSession } from '../auth';
 
 /**
  * These are 'decoders', higher-order functions that can be composed together to 'decode' plain
@@ -38,7 +40,7 @@ const params = {
   })
 };
 
-export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
+export default ({ app, db, users }: { app: Express, db: ElasticSearch.Client, users: string[] }) => {
   app.get('/api/collections', respond(req => {
     const searchFields = [
       'name^4',
@@ -104,14 +106,17 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/collections/:slug/traits', respond(req => {
     return params.getCollection(req.params).map(({ slug }) => {
-      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0 })
+      return Query.find(db, 'assets', { term: { 'slug.keyword': slug } }, { limit: 13000, offset: 0, from: 0, source: ['tokenId', 'currentPrice', 'traits'] })
         .then(path(['body', 'hits', 'hits']))
-        .then(pipe<any, any, any, any, any>(
-          filter((a: any) => a._source.traits?.length),
-          map((a: any) => a._source.traits),
-          flatten,
-          uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`)
-        ))
+        .then(map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[])
+        .then(filter((a: any) => a.traits?.length))
+        .then((body) => TraitsUtils.getTraitPrices(body))
+        .then(
+          pipe<any, any, any, any>(
+            map((a: any) => a.traits),
+            flatten,
+            uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`))
+        )
         .then(pipe(objOf('results'), objOf('body')))
         .catch(handleError(`[/traits error, slug: ${slug}]`));
     }).defaultTo(error(400, 'Bad request'));
@@ -129,14 +134,14 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
    * Admin management URLs
    */
 
-  // app.post('/api/collections/:slug/delete', respond(({ params }) => (
-  //   Promise.all([
-  //     db.delete({ index: 'collections', id: params.slug }) as any,
-  //     db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
-  //   ]) as any
-  // )));
+  app.post('/api/collections/:slug/delete', useSession, isAdmin({ users }), respond(({ params }) => (
+    Promise.all([
+      db.delete({ index: 'collections', id: params.slug }) as any,
+      db.deleteByQuery({ index: 'assets', body: { query: { match: { 'slug.keyword': params.slug } } } })
+    ]) as any
+  )));
 
-  app.post('/api/collections/:slug/unfeature', respond(req => (
+  app.post('/api/collections/:slug/unfeature', useSession, isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,
@@ -146,7 +151,7 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     }) as any
   )));
 
-  app.post('/api/collections/:slug/feature', respond(req => (
+  app.post('/api/collections/:slug/feature', useSession, isAdmin({ users }), respond(req => (
     db.update({
       index: 'collections',
       id: req.params.slug,
