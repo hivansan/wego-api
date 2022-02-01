@@ -188,12 +188,12 @@ export async function events(args: { limit?: number, offset?: number, before?: n
   const query = new URLSearchParams(mergeAll([
     { limit },
     { offset },
-    { event_type: 'created' },
-    { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
-    { token_id: '9100' },
+    // { event_type: 'created' },
+    // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
+    // { token_id: '9100' },
     // { collection_slug: 'social-bees-university' },
-    // args.before ? { occurred_before: args.before } : {},
-    // args.after ? { occurred_after: args.after } : {},
+    args.before ? { occurred_before: args.before } : {},
+    args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
   console.log('[market events args ]', args);
