@@ -59,20 +59,6 @@ const forceScrape: boolean = !!process.argv.find((s) => s.startsWith('--forceScr
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
-console.log('[scraper assets options]', {
-  exec,
-  bots,
-  errsToFile,
-  errsFromFile,
-  linear,
-  onlyRequested,
-  factor,
-  limitCollections,
-  forceScrape,
-  above10k,
-  slug,
-});
-
 
 let collectionsCounts: any = {};
 
@@ -253,7 +239,21 @@ export const countInDb = (collections: any[]): any => {
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
-const saveAssets = () =>
+const saveAssets = () => {
+  console.log('[scraper assets options]', {
+    exec,
+    bots,
+    errsToFile,
+    errsFromFile,
+    linear,
+    onlyRequested,
+    factor,
+    limitCollections,
+    forceScrape,
+    above10k,
+    slug,
+  });
+
   collectionsData({
     slug, sort: [{ requestedScore: { order: 'desc' } }], query: {
       bool: {
@@ -311,6 +311,7 @@ const saveAssets = () =>
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
+}
 
 const readFilePromise = (path: fs.PathOrFileDescriptor) =>
   new Promise((resolve, reject) => {
