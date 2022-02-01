@@ -5,7 +5,7 @@ import * as Query from '../lib/query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
 import { countInDb } from './scraper.assets';
-import { filter, map, pick, prop, tap, complement, any, pipe } from 'ramda';
+import { filter, map, pick, prop, tap, complement, any, pipe, flatten, uniqBy } from 'ramda';
 import * as Stats from '../lib/stats';
 import { sleep } from '../server/util';
 import { load } from './scraper.utils';
@@ -108,7 +108,18 @@ const run = () => {
               getTraitPrices
             )(body.assets)
           })
-          .then(tap((body) => load(body as any, 'assets', true)))
+          // .then(tap((body) => load(body as any, 'assets', true)))
+          .then(
+            tap(body => {
+              const traits = pipe<any, any, any, any>(
+                map((a: any) => a.traits.map(t => ({ ...t, slug: collection.slug }))),
+                flatten,
+                uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`),
+                // map(t)
+              )(body);
+              load(traits, 'traits', 'upsert');
+            })
+          )
           /** @TODO if there are assets without traits, dont mark as ranked - but only if asset is unrevealed */
           .then(assets => updateCollectionWithRevealedStats(assets, collection.slug))
           .catch(e => {
