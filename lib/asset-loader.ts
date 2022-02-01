@@ -11,7 +11,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { filter, mergeAll, prop, tap } from 'ramda';
+import { filter, map, mergeAll, path, pipe, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
@@ -19,6 +19,7 @@ import { cleanTraits, consecutiveArray } from '../scraper/scraper.utils';
 
 import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
 import dotenv from 'dotenv';
+import { toResult } from '../server/endpoints/util';
 dotenv.config();
 
 const BASE_URL = 'https://api.opensea.io/api/v1';
@@ -187,12 +188,8 @@ export async function events(args: { limit?: number, offset?: number, before?: n
   const query = new URLSearchParams(mergeAll([
     { limit },
     { offset },
-    { event_type: 'created' },
-    { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
-    { token_id: '9100' },
-    // { collection_slug: 'social-bees-university' },
-    // args.before ? { occurred_before: args.before } : {},
-    // args.after ? { occurred_after: args.after } : {},
+    args.before ? { occurred_before: args.before } : {},
+    args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
   console.log('[market events args ]', args);
@@ -202,14 +199,12 @@ export async function events(args: { limit?: number, offset?: number, before?: n
     { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } })
     .then(prop('asset_events') as any)
     .then(filter((event: any) => event.asset && event.asset.permalink.indexOf('/matic/') < 0 && event.asset.asset_contract.schema_name === 'ERC721') as any)
-    // .then(tap(c => console.log(c)) as any)
     .then(array(Remote.openSeaEvent))
     .then(Result.toPromise)
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   Query.update(db, 'collections', `${collection.slug}`, collection, true)
-    // Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
     .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
@@ -242,6 +237,25 @@ const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
   Query.update(db, 'assets', `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`, { ...asset, unrevealed: isUnrevealed(asset) }, true)
 ));
 
+const assetWithTraits = async (db: ElasticSearch.Client, asset: Asset.Asset) => {
+  return asset.traits?.length
+    ? Query.find(db, 'traits', {
+      bool: {
+        must: [
+          { match: { 'slug.keyword': asset.slug } },
+          { terms: { 'key.keyword': asset.traits.map((t: any) => t.key) } }
+        ]
+      }
+    }, { limit: 20 })
+      .then(body => body === null ? Promise.resolve(asset) : body)
+      .then(path(['body', 'hits', 'hits']) as any)
+      .then(map(pipe(toResult, prop('value'))))
+      .then(body => ({ body: { ...asset, traits: body } }))
+      .catch(e => Promise.resolve(asset))
+    : { body: asset }
+}
+
+
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
@@ -251,15 +265,14 @@ export async function getAsset(db: ElasticSearch.Client, contractAddress: string
         ? assetFromRemote(contractAddress, tokenId)
           .then(assetRemote => assetRemote === null
             ? null
-            : {
-              body: indexAsset(db)({
-                ...(assetDB || {}), /* priority to asset db for ranks and stuff */
-                ...assetRemote, /* then to new data */
-                ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
-              })
-            } as any)
+            : assetWithTraits(db, indexAsset(db)({
+              ...(assetDB || {}), /* priority to asset db for ranks and stuff */
+              ...assetRemote, /* then to new data */
+              ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
+            }))
+          )
           .catch(e => error(503, 'Service error'))
-        : { body: assetDB } as any
+        : assetWithTraits(db, assetDB) as any
     })
 }
 

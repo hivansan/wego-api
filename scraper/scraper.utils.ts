@@ -46,8 +46,8 @@ export const maxChop = (array: any[], step = 1_000) => {
 const getDocId = (doc: any, index: string) => {
   if (index == 'collections') return doc.slug;
   if (index === 'assets') return `${doc.contractAddress}:${doc.tokenId}`;
-  if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
-  if (index == 'traits') return `${doc.slug}:${doc.traitType.toLowerCase().split(' ').join('-')}:${doc.value.toString().toLowerCase().split(' ').join('-')}`;
+  // if (index === 'asset_traits') return `${doc.contractAddress}:${doc.traitType}:${doc.value.toLowerCase().split(' ').join('-')}`;
+  if (index == 'traits') return `${doc.slug}:${doc.trait_type.toLowerCase().split(' ').join('-')}:${String(doc.value).toLowerCase().split(' ').join('-')}`;
 };
 
 /**
