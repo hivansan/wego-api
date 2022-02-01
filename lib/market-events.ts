@@ -110,6 +110,53 @@ export class MarketEvents {
           'upsert'
         )
       }))
+      .then(tap(
+        pipe<any, any, any, any, any, any>(
+          filter(({ type }) => type === 'created'),
+          map(prop('asset')),
+          map(pick(['tokenId', 'contractAddress', 'slug', 'currentPriceUSD', 'currentPrice'])),
+          uniqBy(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`),
+          async (eventAssets) => {
+            if (!eventAssets?.length) return;
+            const ids = eventAssets.map(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`)
+
+            // [update traits] - pull db assets for given ids comming from market events. pair that with the price and filter the ones with traits.
+            const assets = await Query.find(db, 'assets', { terms: { _id: ids } }, { limit: ids.length, source: ['traits', 'deleted', '_id', 'tokenId', 'slug', 'contractAddress'] })
+              .then(
+                ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => hits.map(toResult)
+                  .map((r: any) => r.value)
+                  .filter(a => a.traits?.length && !a.deleted)
+                  .map(a => ({
+                    ...a,
+                    ...(eventAssets.find(({ tokenId, contractAddress }) => `${contractAddress}${tokenId}` === `${a.contractAddress}${a.tokenId}`) || {})
+                  }))
+              )
+
+            // [update traits] - filter assets in which price breaks floor or top. and get its traits
+            const traitsToUpdate = pipe<any, any, any, any, any, any>(
+              filter((asset: any) =>
+                asset.traits.filter((t: { floor_price: number; }) => !t.floor_price || t.floor_price > asset.currentPrice).length ||
+                asset.traits.filter((t: { top_price: number; }) => !t.top_price || t.top_price < asset.currentPrice).length
+              ),
+              map((asset: any) => ({
+                traits: asset.traits.map(t => ({
+                  ...t,
+                  slug: asset.slug,
+                  floor_price: t.floor_price > asset.currentPrice ? asset.currentPrice : t.floor_price,
+                  top_price: t.top_price < asset.currentPrice ? asset.currentPrice : t.top_price,
+                })),
+              })),
+              map((a: any) => a.traits),
+              flatten,
+              uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`),
+            )(assets);
+
+            // console.log('traitsToUpdate', JSON.stringify(traitsToUpdate, null, 2));
+            load(traitsToUpdate, 'traits', 'upsert')
+
+          }
+        )
+      ))
       .then(forEach(this.push.bind(this)))
       .catch(e => {
         console.error(
