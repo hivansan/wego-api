@@ -188,10 +188,6 @@ export async function events(args: { limit?: number, offset?: number, before?: n
   const query = new URLSearchParams(mergeAll([
     { limit },
     { offset },
-    // { event_type: 'created' },
-    // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
-    // { token_id: '9100' },
-    // { collection_slug: 'social-bees-university' },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
@@ -203,14 +199,12 @@ export async function events(args: { limit?: number, offset?: number, before?: n
     { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } })
     .then(prop('asset_events') as any)
     .then(filter((event: any) => event.asset && event.asset.permalink.indexOf('/matic/') < 0 && event.asset.asset_contract.schema_name === 'ERC721') as any)
-    // .then(tap(c => console.log(c)) as any)
     .then(array(Remote.openSeaEvent))
     .then(Result.toPromise)
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
   Query.update(db, 'collections', `${collection.slug}`, collection, true)
-    // Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
     .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
