@@ -6,7 +6,11 @@ import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
 import { eventTypes } from '../scraper/event.utils';
 import { cleanEntries, load, openseaAssetMapper } from '../scraper/scraper.utils';
 import moment from 'moment';
-import { forEach, map, path, tap, uniqBy } from 'ramda';
+import { filter, flatten, forEach, map, objOf, path, pick, pipe, prop, tap, uniq, uniqBy } from 'ramda';
+import * as Query from './query';
+import { db } from '../bootstrap';
+import { toResult } from '../server/endpoints/util';
+
 
 export type Config = {
   /**
