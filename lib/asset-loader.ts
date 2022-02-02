@@ -243,7 +243,7 @@ const assetWithTraits = async (db: ElasticSearch.Client, asset: Asset.Asset) => 
       bool: {
         must: [
           { match: { 'slug.keyword': asset.slug } },
-          { terms: { 'key.keyword': asset.traits.map((t: any) => t.key) } }
+          { terms: { 'key.keyword': (asset as any).traitsFlat } }
         ]
       }
     }, { limit: 20 })
