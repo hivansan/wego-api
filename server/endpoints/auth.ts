@@ -25,23 +25,6 @@ export default ({ app, users }: { app: Express, users: string[] }) => {
   app.get('/api/user/isLogged', passport.authenticate('jwt', { session: false }),
     respond(req => ({ body: { isLogged: !!req.user } }))
   );
-  // app.get('/api/user/isLogged', (req, res) =>
-  //   passport.authenticate('jwt', (err, user) =>
-  //     err
-  //       ? res.status(401).send({ msg: 'Unauthorized' })
-  //       : res.send({ body: { isLogged: !!user } })
-  //   )(req, res)
-  // );
-
-  // app.post('/api/user/login', passport.authenticate('login'),
-  //   respond((req) => req.user
-  //     ? req.login(
-  //       req.user,
-  //       (err) => err
-  //         ? error(401, 'Unauthorized')
-  //         : Promise.resolve({ body: { token: jwt.sign({ user: req.user }, 'TOP_SECRET') } }))
-  //     : error(401, 'Unauthorized'))
-  // );
 
   app.post('/api/user/login', passport.authenticate('login'), (req, res) =>
     req.user
