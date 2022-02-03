@@ -54,6 +54,7 @@ export const search = curry((
   { filter, ...opts }: Options
 ) => {
   // console.log(filter);
+
   const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
   const q = {
     bool: {
@@ -63,10 +64,40 @@ export const search = curry((
     }
   };
   if (Object.keys(queryObj).length) q.bool['must'] = queryObj;
+
   return find(db, index, q, opts);
 
 });
 
+
+/**
+ * Special search for assets by collection slug and token id
+ */
+ export const searchBySlugToken = curry((
+  db: ElasticSearch.Client,
+  index: string,
+  slug: string,
+  tokenId: string,
+  { filter, ...opts }: Options
+) => {
+
+  const q = {
+    bool: {
+      must_not: [{
+        match: { deleted: true }
+      }],
+      must: [
+        {match: {slug}},
+        {match: {'tokenId.keyword': tokenId }}
+      ],
+      filter
+    }
+  };
+
+
+  return find(db, index, q, opts);
+
+});
 
 // Example:
 // const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
