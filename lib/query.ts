@@ -80,14 +80,13 @@ export const search = curry((
   tokenId: string,
   { filter, ...opts }: Options
 ) => {
-  console.log("this is collection tokenId query");
   
   const queryObj = {
-    match: {
+    match: { 
       slug: {
-        query: slug,
+        query: slug, 
         fuzziness: 6
-      }
+      } 
     }
   };
   const must: Array<object> = [];
