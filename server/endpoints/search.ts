@@ -47,7 +47,7 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
     searchQuery(req.query).map(({ q, page, limit, tab: index }) => {
       const collAssetQuery = q?.match(/^\s*([\w-]*)\s+(\d*)\s*$/);
       return (collAssetQuery 
-        ? Query.searchBySlugToken(db, 'assets', collAssetQuery[1], collAssetQuery[2], { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ }) 
+        ? Query.searchBySlugToken(db, 'assets', collAssetQuery[1], collAssetQuery[2], { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ })
         : Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ },))
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
           body: {

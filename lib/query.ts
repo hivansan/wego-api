@@ -80,20 +80,28 @@ export const search = curry((
   tokenId: string,
   { filter, ...opts }: Options
 ) => {
+  console.log("this is collection tokenId query");
+  
+  const queryObj = {
+    match: {
+      slug: {
+        query: slug,
+        fuzziness: 6
+      }
+    }
+  };
+  const must: Array<object> = [];
+  if (Object.keys(queryObj).length) must.push(queryObj);
+  must.push({match: {'tokenId.keyword': tokenId }});
 
   const q = {
     bool: {
       must_not: [{
         match: { deleted: true }
       }],
-      must: [
-        {match: {slug}},
-        {match: {'tokenId.keyword': tokenId }}
-      ],
-      filter
+      must
     }
   };
-
 
   return find(db, index, q, opts);
 
