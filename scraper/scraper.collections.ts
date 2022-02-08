@@ -5,11 +5,11 @@
  * Example usage:
  *
  * save collections from scraped opensea.io/rankings
- * `./node_modules/.bin/ts-node ./scraper/scraper.collections.ts --dir=./data/slugs --errsToFile=./data/errors-to.txt`
- * `./node_modules/.bin/ts-node ./scraper/scraper.collections.ts --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=./data/errors-to.txt`
+ * `npx ts-node ./scraper/scraper.collections.ts --dir=./data/slugs --errsToFile=./data/errors-to.txt`
+ * `npx ts-node ./scraper/scraper.collections.ts --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=./data/errors-to.txt`
  * 
  * 
- * ES_CLIENT=https://localhost:9200 NODE_TLS_REJECT_UNAUTHORIZED=0 npx ts-node scraper/scraper.collections.ts
+ * npx ts-node scraper/scraper.collections.ts
  */
 
 import { sleep } from '../server/util';
@@ -120,7 +120,7 @@ const main = () => {
 
       const collections = fromDB.body.results
       for (const collection of collections) {
-        await sleep(0.3);
+        await sleep(0.8);
         AssetLoader.collectionFromRemote(collection.slug)
           // colection from remote
           .then(async (collectionFR) => {
