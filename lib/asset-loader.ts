@@ -13,7 +13,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { filter, map, mergeAll, path, pipe, prop, tap } from 'ramda';
+import { filter, map, mergeAll, path, pipe, prop, tap, uniq } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
@@ -295,31 +295,6 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   }
 }
 
-export async function toggleFavorite({ db, address, slug, tokenId, value }): Promise<any> {
-  return value === true
-    ? tokenId
-      ? Query.create(db, 'favorites', { slug, user: address, tokenId, createdAt: moment() })
-      : Query.create(db, 'favorites', { slug, user: address, createdAt: moment() })
-    : tokenId
-      ? Query.deleteByQuery(db, 'favorites', {
-        bool: {
-          must: [
-            { match: { 'slug.keyword': slug } },
-            { match: { 'user.keyword': address } },
-            { match: { 'tokenId.keyword': tokenId } },
-          ]
-        }
-      })
-      : Query.deleteByQuery(db, 'favorites', {
-        bool: {
-          must: [
-            { match: { 'slug.keyword': slug } },
-            { match: { 'user.keyword': address } },
-          ],
-          must_not: { exists: { field: "tokenId" } },
-        }
-      })
-}
 
 export function fromOwner(db: ElasticSearch.Client, contractAddress: string) {
   return rawAssetsFromRemoteFromOwner(contractAddress)
@@ -354,6 +329,63 @@ export function pairAssetWithExisting(db: ElasticSearch.Client, assets: any[]) {
           ...(assets.find(({ tokenId, contractAddress }) => `${contractAddress}${tokenId}` === `${a.contractAddress}${a.tokenId}`) || {})
         }))
     )
+}
+export async function toggleFavorite({ db, address, slug, tokenId, value, contractAddress }): Promise<any> {
+  return value === true
+    ? tokenId
+      ? Query.create(db, 'favorites', { slug, contractAddress, user: address, tokenId, createdAt: moment() })
+      : Query.create(db, 'favorites', { slug, user: address, createdAt: moment() })
+    : tokenId
+      ? Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+            { match: { 'tokenId.keyword': tokenId } },
+          ]
+        }
+      })
+      : Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+          ],
+          must_not: { exists: { field: "tokenId" } },
+        }
+      })
+}
+
+
+export async function favorites(db: ElasticSearch.Client, index: string, address: string): Promise<any> {
+  const q: any = {
+    bool: {
+      must: [
+        { match: { 'user.keyword': address } },
+      ]
+    }
+  };
+  if (index === 'assets') q.bool.must.push({ exists: { field: 'tokenId' } });
+  if (index === 'collections') q.bool.must_not = [{ exists: { field: 'tokenId' } }, { exists: { field: 'contractAddress' } }];
+
+  return Query.find(db, 'favorites', q, { limit: 1000 })
+    .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
+    .then(({ body: { hits: { hits }, }, }) => hits.map(toResult).map((r: any) => r.value))
+    .then(favs => favs.map((f: { slug: any; contractAddress: any; tokenId: any; }) => toId(f, index)))
+    .then(uniq)
+    .then(tap(x => console.log(x)))
+    .then(ids =>
+      Query.find(db, index, { terms: { _id: ids } }, { limit: ids.length })
+        .then(({ body: { hits: { hits }, }, }) => ({ body: hits.map(toResult).map((r: any) => r.value) })))
+
+
+    .then(tap(x => console.log(x)))
+}
+
+function toId(fav: { slug: any; contractAddress: any; tokenId: any; }, index: string) {
+  if (index === 'collections') return fav.slug
+  if (index === 'assets') return `${fav.contractAddress}:${fav.tokenId}`
+  return null;
 }
 
 const sellOrderMapper = (order: any) => ({
