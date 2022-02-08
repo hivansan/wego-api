@@ -108,7 +108,7 @@ const run = () => {
               getTraitPrices
             )(body.assets)
           })
-          // .then(tap((body) => load(body as any, 'assets', true)))
+          .then(tap((body) => load(body as any, 'assets', true)))
           .then(
             tap(body => {
               const traits = pipe<any, any, any, any>(

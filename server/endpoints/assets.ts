@@ -145,6 +145,21 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
       })
       .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity)
   ));
+
+  app.get('/api/assets/fromOwner', respond(req =>
+    params
+      .getAssets(req.query)
+      .map(({ ownerAddress }) =>
+        AssetLoader.fromOwner(db, ownerAddress as string)
+          .then(body => body === null ? error(404, 'Not found') : body as any)
+          .then(body => ({ body }))
+          .catch(e => {
+            console.error('[get asset]', e);
+            return error(503, 'Service error');
+          })
+      )
+      .fold((err) => error(400, 'Bad request', { error: err.toString().replace('Decode Error: ', '') }), identity)
+  ));
 };
 
 export const meta = {

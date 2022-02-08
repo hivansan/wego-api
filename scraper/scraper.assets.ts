@@ -36,7 +36,7 @@ import * as AssetLoader from '../lib/asset-loader';
 
 import { db } from '../bootstrap';
 import * as Scrape10K from './scrape10k+';
-
+import { OPENSEA_API } from '../lib/constants';
 
 
 // add SocksPort mac: /usr/local/etc/tor/torrc linux: /etc/tor/torrc
@@ -63,8 +63,9 @@ const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='
 let collectionsCounts: any = {};
 
 export const saveAssetsFromUrl = async (
-  { url, i, tor, torInstance, sleepFactor, slug, factor, collectionData }: { url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number, slug?: string, factor: number, collectionData?: object }
-): Promise<void> => {
+  { url, i, tor, torInstance, sleepFactor, slug, factor, collectionData }:
+    { url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number, slug?: string, factor: number, collectionData?: object }
+): Promise<any[]> => {
   // const SLEEP = (ports.length - 1) * .8;
   // await sleep(linear ? i / factor : (sleepFactor as number * SLEEP));
   await sleep(i / factor);
@@ -85,16 +86,10 @@ export const saveAssetsFromUrl = async (
         const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
         if (assets?.length) {
-          const content = JSON.stringify(
-            assets.map((asset: any) =>
-            ({
-              ...asset,
-              collection: collectionData
-                ? collectionData
-                : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
-            })
-            ).map(openseaAssetMapper)
-          ) as any;
+          const content = JSON.stringify(assets.map((asset: any) => ({
+            ...asset,
+            collection: collectionData ? collectionData : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
+          })).map(openseaAssetMapper)) as any;
 
           load(JSON.parse(content), 'assets');
           if (isLastUrlOfCollection || assets.length < (+limit || 20)) {
@@ -151,7 +146,7 @@ const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[
   c.count = 0; // c.count || 0;
   const startingOffset = 0; // Math.floor(c.count / 50) || 0;
   return [...Array(Math.ceil((c.totalSupply - c.count) / 50)).keys()].map((i) =>
-    `https://api.opensea.io/api/v1/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
+    `${OPENSEA_API}/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
 }
 
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
