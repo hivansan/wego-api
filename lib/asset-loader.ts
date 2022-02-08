@@ -293,6 +293,32 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   }
 }
 
+export async function toggleFavorite({ db, address, slug, tokenId, value }): Promise<any> {
+  return value === true
+    ? tokenId
+      ? Query.create(db, 'favorites', { slug, user: address, tokenId, createdAt: moment() })
+      : Query.create(db, 'favorites', { slug, user: address, createdAt: moment() })
+    : tokenId
+      ? Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+            { match: { 'tokenId.keyword': tokenId } },
+          ]
+        }
+      })
+      : Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+          ],
+          must_not: { exists: { field: "tokenId" } },
+        }
+      })
+}
+
 const sellOrderMapper = (order: any) => ({
   created_date: order.created_date,
   closing_date: order.closing_date,
