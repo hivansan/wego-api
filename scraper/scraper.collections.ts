@@ -1,19 +1,11 @@
 #!/usr/bin/env node
 
 /**
- * this saves the assets
  * Example usage:
- *
- * save collections from scraped opensea.io/rankings
- * `npx ts-node ./scraper/scraper.collections.ts --dir=./data/slugs --errsToFile=./data/errors-to.txt`
- * `npx ts-node ./scraper/scraper.collections.ts --dir=/Users/ivanflores/dev/projects/py/data/slugs --errsToFile=./data/errors-to.txt`
- * 
- * 
  * npx ts-node scraper/scraper.collections.ts
  */
 
 import { sleep } from '../server/util';
-import { readPromise } from './scraper.utils';
 import * as Query from '../lib/query';
 import { toResult } from '../server/endpoints/util';
 import * as AssetLoader from '../lib/asset-loader';
@@ -98,19 +90,7 @@ const main = () => {
   // below queries just for tests
   // const q = { bool: { must_not: { match: { 'deleted': true } } } };
   // const q = { bool: { must: { match: { 'slug.keyword': 'boredapeyachtclub' } } } };
-  const query = {
-    bool: {
-      must: [
-        {
-          range: {
-            "stats.totalVolume": {
-              gte: 50
-            }
-          }
-        }
-      ]
-    }
-  }
+
   Query.find(db, 'collections', q, { limit: 5000, sort: [{ 'stats.totalVolume': { order: 'desc' } }], source: ['slug', 'deleted', 'stats.totalVolume', 'stats.featuredCollection'] })
     .then(
       ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) =>
@@ -139,17 +119,7 @@ const main = () => {
               } catch (error) {
                 console.log('error in ', collection.slug, error?.meta?.body ? JSON.stringify(error.meta.body, null, 2) : error);
               }
-              // .then(u => console.log('[success updated assets by query]', collectionFR.slug))
-              // .catch((e) =>
-              //   console.log(`[e updating assets by query]`, e)
-              // );
-              // .then(u => {
 
-              //   console.log(`[success updated collection] ${u.body._id}`)
-              // })
-              // .catch((e) =>
-              //   console.log(`[e updating collection]`, e)
-              // );
             }
           });
       }
