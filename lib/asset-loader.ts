@@ -190,6 +190,7 @@ export async function events(args: { limit?: number, offset?: number, before?: n
   const query = new URLSearchParams(mergeAll([
     { limit },
     { offset },
+    // { collection_slug: 'social-bees-university' },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
