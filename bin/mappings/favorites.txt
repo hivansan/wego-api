@@ -40,7 +40,7 @@ curl --location --request PUT 'http://localhost:9200/traits' \
           }
         }
       },
-      "created_date": {
+      "createdAt": {
         "type": "date"
       }
     }
