@@ -1,6 +1,8 @@
 import * as ElasticSearch from '@elastic/elasticsearch';
 import axios from 'axios';
 import moment from 'moment';
+import queryString from 'query-string';
+
 
 import * as Network from './network';
 import * as Asset from '../models/asset';
@@ -15,9 +17,9 @@ import { filter, map, mergeAll, path, pipe, prop, tap } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
-import { cleanTraits, consecutiveArray } from '../scraper/scraper.utils';
+import { cleanTraits, consecutiveArray, openseaAssetMapper } from '../scraper/scraper.utils';
 
-import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH } from './constants';
+import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH, OPENSEA_API } from './constants';
 import dotenv from 'dotenv';
 import { toResult } from '../server/endpoints/util';
 dotenv.config();
@@ -291,6 +293,41 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     console.log('[collection from remote err]', slug, JSON.stringify(e), e);
     return null;
   }
+}
+
+export function fromOwner(db: ElasticSearch.Client, contractAddress: string) {
+  return rawAssetsFromRemoteFromOwner(contractAddress)
+    .then((raw: any[]) => {
+      console.log(JSON.stringify(raw, null, 3));
+
+      return raw.map(openseaAssetMapper)
+    })
+    .then(assets => pairAssetWithExisting(db, assets))
+}
+
+export function rawAssetsFromRemoteFromOwner(contractAddress: string): Promise<any[]> {
+  const size = 50;
+  const params = { owner: contractAddress, limit: size, format: 'json' }
+  const getAssets: any = async ({ offset }) => {
+    const url = `${OPENSEA_API}/assets?${queryString.stringify({ ...params, offset })}`;
+    const { assets } = (await Network.fetchNParse(url, { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY }, }) as any);
+    return assets.length < size ? assets : assets.concat(await getAssets({ offset: offset + size }))
+  }
+  return getAssets({ offset: 0 })/* .then((assets: any[]) => ({ body: assets })) */;
+}
+
+export function pairAssetWithExisting(db: ElasticSearch.Client, assets: any[]) {
+  const ids = assets.map(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`);
+  return Query.find(db, 'assets', { terms: { _id: ids } }, { limit: ids.length })
+    .then(
+      ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => hits.map(toResult)
+        .map((r: any) => r.value)
+        .filter(a => a.traits?.length && !a.deleted)
+        .map(a => ({
+          ...a,
+          ...(assets.find(({ tokenId, contractAddress }) => `${contractAddress}${tokenId}` === `${a.contractAddress}${a.tokenId}`) || {})
+        }))
+    )
 }
 
 const sellOrderMapper = (order: any) => ({
