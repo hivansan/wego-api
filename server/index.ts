@@ -32,6 +32,7 @@ const routes = [
   'match',
   'search',
   'score',
+  'favorites',
 ].map(name => require(`./endpoints/${name}`));
 
 routes.forEach(route => route.default({ app, db, users: admins }));
