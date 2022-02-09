@@ -10,7 +10,8 @@ import { openseaAssetMapper, cleanEntries, load } from './scraper.utils';
 
 import dotenv from 'dotenv';
 import { eventTypes } from './event.utils';
-const BASE_URL = 'https://api.opensea.io/api/v1';
+import { OPENSEA_API } from '../lib/constants';
+const BASE_URL = OPENSEA_API;
 dotenv.config();
 
 const limit: number = Number(process.argv.find((s) => s.startsWith('--limit='))?.replace('--limit=', '') || 300);

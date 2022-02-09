@@ -11,6 +11,7 @@ import * as AssetLoader from '../lib/asset-loader';
 import { db } from '../bootstrap';
 import { tap } from 'ramda';
 import { saveAssetsFromUrl } from './scraper.assets';
+import { OPENSEA_API } from '../lib/constants';
 
 const file: string = process.argv.find((s) => s.startsWith('--file='))?.replace('--file=', '') || '';
 // const collection: string = process.argv.find((s) => s.startsWith('--collection='))?.replace('--collection=', '') || '';
@@ -19,7 +20,7 @@ const exec: string | undefined = process.argv.find((s) => s.startsWith('--exec='
 
 const MAX_IDS = 20;
 
-const baseUrl = 'https://api.opensea.io/api/v1';
+const baseUrl = OPENSEA_API;
 
 const getUrl = ({ contractAddress, firstId }: { contractAddress: string, firstId: number }) => {
   console.log(' first id ', firstId);

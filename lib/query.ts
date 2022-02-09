@@ -182,3 +182,6 @@ export const count = curry((
 ): Promise<{ count: number }> => (
   db.count({ index, body: { query }, ...opts }).then(prop('body')) as Promise<{ count: number }>
 ));
+
+export const deleteByQuery = (db: ElasticSearch.Client, index: string, query: any) =>
+  db.deleteByQuery({ index, body: { query } })
