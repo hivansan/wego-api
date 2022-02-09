@@ -10,6 +10,7 @@ import { filter, flatten, forEach, map, objOf, path, pick, pipe, prop, tap, uniq
 import * as Query from './query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
+import * as Historicals from './historicals.utils';
 
 
 export type Config = {
@@ -72,7 +73,7 @@ export class MarketEvents {
       return;
     }
     this.clock = setInterval(() => {
-      console.log('[market events lastTimestamp]', this.lastTimestamp);
+      console.log('[market events lastTimestamp]', moment.unix(this.lastTimestamp), this.lastTimestamp);
       if (!this.lastTimestamp) {
         return;
       }
@@ -160,6 +161,14 @@ export class MarketEvents {
 
             if (traitsToUpdate?.length) {
               load(traitsToUpdate, 'traits', 'upsert')
+
+              Historicals.load(traitsToUpdate
+                .map((t: { slug: any; key: any; top_price: any; floor_price: any; }) =>
+                  ({ index: 'traits', id: `${t.slug}:${t.key}`, slug: t.slug, data: { top_price: t.top_price, floor_price: t.floor_price }, date: moment.unix(args.before as number) })));
+
+              Historicals.load(eventAssets
+                .map((a: { contractAddress: any; tokenId: any; slug: any; currentPrice: any; }) =>
+                  ({ index: 'assets', id: `${a.contractAddress}:${a.tokenId}`, slug: a.slug, data: { price: a.currentPrice }, date: moment.unix(args.before as number) })));
 
             }
 
