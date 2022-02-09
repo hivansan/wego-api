@@ -26,7 +26,7 @@ export default class TelegramUtils {
         map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[],
         async (collections) => {
           if (!collections?.length) return;
-          return await Promise.all(collections.map(async collection => {
+          return Promise.all(collections.map(async collection => {
             const chat_id = collection.telegram.split('/').pop();
             const telegramRes = await axios.get(baseURL + `/getChatMembersCount?chat_id=@${chat_id}`)
               .then(result => result.data)
