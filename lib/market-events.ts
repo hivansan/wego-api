@@ -106,7 +106,10 @@ export class MarketEvents {
     AssetLoader
       .events(args)
       .then(events => events.map(MarketEvents.fromRaw))
-      // .then(tap(e => console.log('e -----------', e.length)))
+      .then(tap(e => {
+        if (!e.length) this.lastTimestamp = args.before as number;
+        console.log('MarketEvents.length -----------', e.length)
+      }))
       .then(tap(events => {
         load(
           uniqBy(e => `${e.type}${e.asset.tokenId}${e.collection.slug}`, events).map(e => e.asset),
@@ -155,8 +158,10 @@ export class MarketEvents {
               uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`),
             )(assets);
 
-            // console.log('traitsToUpdate', JSON.stringify(traitsToUpdate, null, 2));
-            load(traitsToUpdate, 'traits', 'upsert')
+            if (traitsToUpdate?.length) {
+              load(traitsToUpdate, 'traits', 'upsert')
+
+            }
 
           }
         )
