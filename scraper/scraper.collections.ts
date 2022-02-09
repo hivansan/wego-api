@@ -10,7 +10,7 @@ import * as Query from '../lib/query';
 import { toResult } from '../server/endpoints/util';
 import * as AssetLoader from '../lib/asset-loader';
 import { db } from '../bootstrap';
-// import * as Historicals from '../lib/historicals.utils';
+import * as Historicals from '../lib/historicals.utils';
 
 const main = () => {
   const q = { match_all: {} };
@@ -32,7 +32,7 @@ const main = () => {
           // colection from remote
           .then(async (collectionFR) => {
             if (collectionFR !== null) {
-              // Historicals.load('collections', collectionFR.slug, collectionFR.slug, collectionFR.stats)
+              Historicals.load({ index: 'collections', id: collectionFR.slug, slug: collectionFR.slug, data: collectionFR.stats })
               console.log(`${collection.slug}, deleted: ${collectionFR.deleted} \t\t actual Volume: ${collection.stats.totalVolume} os: ${collectionFR.stats.totalVolume}`);
               (collectionFR as any).stats.featuredCollection = collection.stats?.featuredCollection || false;
               try {
