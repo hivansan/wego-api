@@ -1,7 +1,7 @@
 'use strict';
 
 import axios from 'axios';
-import { flatten, map, path, pipe, prop, splitEvery, tap } from 'ramda';
+import { filter, flatten, map, path, pipe, prop, props, splitEvery, tap } from 'ramda';
 import * as Query from './query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
@@ -18,11 +18,11 @@ const main = async () =>
     'bool': {
       'must': [
         { 'exists': { 'field': 'twitter' } },
-        // { 'match': { 'twitter.keyword': '_sangokushi' } }
+        { 'match': { 'twitter.keyword': '@Worldreservebtc' } }
       ]
     }
   },
-    { limit: 5000, source: ['slug', 'twitter', 'stats'] })
+    { limit: 15, source: ['slug', 'twitter', 'stats'] })
     .then(pipe<any, any, any, any>(
       path(['body', 'hits', 'hits']),
       map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[],
@@ -35,16 +35,18 @@ const main = async () =>
             baseURL + `/users/by?usernames=${usernames}&user.fields=public_metrics`,
             { headers: { Authorization: `Bearer ${bearer_token}` } }
           )
-            .then(({ data }: any) => (
-              Object.keys(data).map(key => {
-                return data[key].map(twitterObj => {
-                  const c = collections.find(c => c.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '').toLowerCase() === ((twitterObj.username || twitterObj.value).toLowerCase()));
-                  return {
-                    ...c,
-                    stats: { ...c.stats, twitter_users: twitterObj.public_metrics?.followers_count || 0 }
-                  }
-                })
-              })))
+            .then(prop('data'))
+            .then(props(['data', 'errors']))
+            .then(flatten)
+            .then(filter((user: any) => !!user))
+            // .then(tap(x => console.log('x -------', x)))
+            .then(map((twitterObj: any) => {
+              const c = collections.find((c: { twitter: string; }) => c.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '').toLowerCase() === ((twitterObj.username || twitterObj.value).toLowerCase()));
+              return {
+                ...c,
+                stats: { ...c.stats, twitter_users: twitterObj.public_metrics?.followers_count || 0 }
+              }
+            }))
             .catch(e => {
               console.log(`[error axios twitter]`, e);
             });
