@@ -1,5 +1,3 @@
-'use strict';
-
 import axios from 'axios';
 import { filter, flatten, map, path, pipe, prop, props, splitEvery, tap } from 'ramda';
 import * as Query from './query';
@@ -29,7 +27,7 @@ const main = async () =>
       (collections) => {
         if (!collections?.length) return;
         return Promise.all(splitEvery(100, collections).map(chunk => {
-          const usernames = chunk.map((collection: any) => collection.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '')).join(',');
+          const usernames = chunk.map((collection: any) => collection.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '')).filter(username => username.match(/^[A-Za-z0-9_]{1,15}$/g)).join(',');
 
           return axios.get(
             baseURL + `/users/by?usernames=${usernames}&user.fields=public_metrics`,
