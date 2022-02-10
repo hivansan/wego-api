@@ -18,11 +18,11 @@ const main = async () =>
     'bool': {
       'must': [
         { 'exists': { 'field': 'twitter' } },
-        { 'match': { 'twitter.keyword': '@Worldreservebtc' } }
+        // { 'match': { 'twitter.keyword': '@Worldreservebtc' } }
       ]
     }
   },
-    { limit: 15, source: ['slug', 'twitter', 'stats'] })
+    { limit: 5000, source: ['slug', 'twitter', 'stats'] })
     .then(pipe<any, any, any, any>(
       path(['body', 'hits', 'hits']),
       map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[],
