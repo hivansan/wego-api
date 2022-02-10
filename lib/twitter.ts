@@ -35,14 +35,16 @@ const main = async () =>
             baseURL + `/users/by?usernames=${usernames}&user.fields=public_metrics`,
             { headers: { Authorization: `Bearer ${bearer_token}` } }
           )
-            .then((result: any) => result.data.data)
-            .then(map((data: any) => {
-              const c = collections.find(c => c.twitter.toLowerCase() == data.username.toLowerCase());
-              return {
-                ...c,
-                stats: { ...c.stats, twitter_users: data.public_metrics.followers_count }
-              }
-            }))
+            .then(({ data }: any) => (
+              Object.keys(data).map(key => {
+                return data[key].map(twitterObj => {
+                  const c = collections.find(c => c.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '').toLowerCase() === ((twitterObj.username || twitterObj.value).toLowerCase()));
+                  return {
+                    ...c,
+                    stats: { ...c.stats, twitter_users: twitterObj.public_metrics?.followers_count || 0 }
+                  }
+                })
+              })))
             .catch(e => {
               console.log(`[error axios twitter]`, e);
             });
