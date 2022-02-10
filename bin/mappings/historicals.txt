@@ -1,0 +1,45 @@
+curl --location --request PUT 'http://localhost:9200/historicals' \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data-raw '{
+  "mappings": {
+    "properties": {
+      "index": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "id": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "slug": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "date": {
+        "type": "date"
+      },
+      "start": {
+        "type": "date"
+      },
+      "end": {
+        "type": "date"
+      }
+    }
+  }    
+}'
