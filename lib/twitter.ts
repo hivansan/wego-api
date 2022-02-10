@@ -1,61 +1,54 @@
 'use strict';
 
 import axios from 'axios';
-import { flatten, map, path, pipe, prop, splitEvery } from 'ramda';
+import { flatten, map, path, pipe, prop, splitEvery, tap } from 'ramda';
 import * as Query from './query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
 import dotenv from 'dotenv';
+import { load } from '../scraper/scraper.utils';
+
 
 dotenv.config();
 const baseURL = 'https://api.twitter.com/2';
 const bearer_token = process.env.TWITTER_BEARER_TOKEN;
 
-export default class TwitterUtils {
+const main = async () =>
+  Query.find(db, 'collections', {
+    'bool': {
+      'must': [
+        { 'exists': { 'field': 'twitter' } },
+        // { 'match': { 'twitter.keyword': '_sangokushi' } }
+      ]
+    }
+  },
+    { limit: 5000, source: ['slug', 'twitter', 'stats'] })
+    .then(pipe<any, any, any, any>(
+      path(['body', 'hits', 'hits']),
+      map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[],
+      (collections) => {
+        if (!collections?.length) return;
+        return Promise.all(splitEvery(100, collections).map(chunk => {
+          const usernames = chunk.map((collection: any) => collection.twitter.replace(/[^[A-Za-z0-9_]{1,15}/g, '')).join(',');
 
-  private config = {
-    headers: { Authorization: `Bearer ${bearer_token}` }
-  };
-
-  async getFollowersByUsernames() {
-    const collections = await Query.find(db, 'collections', {
-      'bool': {
-        'must': [
-          { 'exists': { 'field': 'twitter' } }
-        ]
-      }
-    },
-      { limit: 15000, source: ['slug', 'twitter'] })
-      .then(pipe<any, any, any, any>(
-        path(['body', 'hits', 'hits']),
-        map(pipe(toResult, prop('value'))) as unknown as (v: any) => any[],
-        async (collections) => {
-          if (!collections?.length) return;
-          return await Promise.all(splitEvery(100, collections).map(async chunk => {
-            const usernames = chunk.map((collection: any) => collection.twitter).join(',');
-            return await axios.get(
-              baseURL + `/users/by?usernames=${usernames}&user.fields=public_metrics`,
-              this.config
-            )
-              .then(result => result.data.data)
-              .then(map((data: any) => {
-                return {
-                  ...collections.find(c => c.twitter.toLowerCase() == data.username.toLowerCase()),
-                  twitter_users: data.public_metrics.followers_count
-                }
-              }))
-              .catch(e => {
-                console.log(e);
-              });
-          }))
+          return axios.get(
+            baseURL + `/users/by?usernames=${usernames}&user.fields=public_metrics`,
+            { headers: { Authorization: `Bearer ${bearer_token}` } }
+          )
+            .then((result: any) => result.data.data)
+            .then(map((data: any) => {
+              const c = collections.find(c => c.twitter.toLowerCase() == data.username.toLowerCase());
+              return {
+                ...c,
+                stats: { ...c.stats, twitter_users: data.public_metrics.followers_count }
+              }
+            }))
+            .catch(e => {
+              console.log(`[error axios twitter]`, e);
+            });
         }))
-      .then(flatten)
-    return collections
-  }
-}
+      }))
+    .then(flatten)
+    .then(tap(collections => load(collections, 'collections', 'upsert')))
 
-const main = async () => {
-  const twitter = new TwitterUtils();
-  console.log(await twitter.getFollowersByUsernames());
-};
 if (require.main === module) main();
