@@ -1,0 +1,393 @@
+{
+  "collections": {
+    "aliases": {},
+    "mappings": {
+      "properties": {
+        "addedAt": {
+          "type": "long"
+        },
+        "contractAddresses": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "damagedCollection": {
+          "type": "boolean"
+        },
+        "deleted": {
+          "type": "boolean"
+        },
+        "discord": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "imgLarge": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "imgMain": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "imgPortrait": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "instagram": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "lastRankedAt": {
+          "type": "date"
+        },
+        "lastScrapedAt": {
+          "type": "date"
+        },
+        "name": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "primaryAssetConctracts": {
+          "properties": {
+            "address": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "asset_contract_type": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "buyer_fee_basis_points": {
+              "type": "long"
+            },
+            "created_date": {
+              "type": "date"
+            },
+            "default_to_fiat": {
+              "type": "boolean"
+            },
+            "description": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "dev_buyer_fee_basis_points": {
+              "type": "long"
+            },
+            "dev_seller_fee_basis_points": {
+              "type": "long"
+            },
+            "external_link": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "image_url": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "nft_version": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "only_proxied_transfers": {
+              "type": "boolean"
+            },
+            "opensea_buyer_fee_basis_points": {
+              "type": "long"
+            },
+            "opensea_seller_fee_basis_points": {
+              "type": "long"
+            },
+            "opensea_version": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "owner": {
+              "type": "long"
+            },
+            "payout_address": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "schema_name": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "seller_fee_basis_points": {
+              "type": "long"
+            },
+            "symbol": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "total_supply": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            }
+          }
+        },
+        "ranked": {
+          "type": "boolean"
+        },
+        "releaseDate": {
+          "type": "date"
+        },
+        "released": {
+          "type": "boolean"
+        },
+        "requestedScore": {
+          "type": "boolean"
+        },
+        "revealedAssets": {
+          "type": "long"
+        },
+        "revealedPercentage": {
+          "type": "long"
+        },
+        "scoreRequests": {
+          "type": "long"
+        },
+        "slug": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "stats": {
+          "properties": {
+            "averagePrice": {
+              "type": "float"
+            },
+            "count": {
+              "type": "long"
+            },
+            "featuredCollection": {
+              "type": "boolean"
+            },
+            "featuredScore": {
+              "type": "long"
+            },
+            "floorPrice": {
+              "type": "float"
+            },
+            "marketCap": {
+              "type": "long"
+            },
+            "numOwners": {
+              "type": "long"
+            },
+            "numReports": {
+              "type": "long"
+            },
+            "oneDayAveragePrice": {
+              "type": "long"
+            },
+            "oneDayChange": {
+              "type": "long"
+            },
+            "oneDaySales": {
+              "type": "long"
+            },
+            "oneDayVolume": {
+              "type": "long"
+            },
+            "sevenDayAveragePrice": {
+              "type": "long"
+            },
+            "sevenDayChange": {
+              "type": "long"
+            },
+            "sevenDaySales": {
+              "type": "long"
+            },
+            "sevenDayVolume": {
+              "type": "long"
+            },
+            "slug": {
+              "type": "text",
+              "fields": {
+                "keyword": {
+                  "type": "keyword",
+                  "ignore_above": 256
+                }
+              }
+            },
+            "thirtyDayAveragePrice": {
+              "type": "float"
+            },
+            "thirtyDayChange": {
+              "type": "float"
+            },
+            "thirtyDaySales": {
+              "type": "long"
+            },
+            "thirtyDayVolume": {
+              "type": "float"
+            },
+            "totalSales": {
+              "type": "long"
+            },
+            "totalSupply": {
+              "type": "long"
+            },
+            "totalVolume": {
+              "type": "float"
+            },
+            "wegoScore": {
+              "type": "long"
+            }
+          }
+        },
+        "telegram": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "traits": {
+          "type": "object",
+          "dynamic": "false"
+        },
+        "twitter": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "unrevealedAssets": {
+          "type": "long"
+        },
+        "updatedAt": {
+          "type": "date"
+        },
+        "website": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "index": {
+        "creation_date": "1637696704596",
+        "number_of_shards": "5",
+        "number_of_replicas": "1",
+        "uuid": "A98PoacnRviqnfIHU6d_gw",
+        "version": {
+          "created": "7100299"
+        },
+        "provided_name": "collections"
+      }
+    }
+  }
+}
