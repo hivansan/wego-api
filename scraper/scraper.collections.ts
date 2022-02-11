@@ -40,7 +40,7 @@ const main = () => {
           .then(async (collectionFR) => {
             if (collectionFR !== null) {
               Historicals.load({ index: 'collections', id: collectionFR.slug, slug: collectionFR.slug, data: collectionFR.stats, date: moment() })
-              console.log(`${collection.slug}, deleted: ${collectionFR.deleted} \t\t actual Volume: ${collection.stats.totalVolume} os: ${collectionFR.stats.totalVolume}`);
+              console.log(`${collection.slug}, deleted: ${collectionFR.deleted} \t\t actual Volume: ${collection.stats?.totalVolume} os: ${collectionFR.stats.totalVolume}`);
               (collectionFR as any).stats.featuredCollection = collection.stats?.featuredCollection || false;
               try {
                 if (collection.stats?.totalVolume === collectionFR.stats.totalVolume) return;

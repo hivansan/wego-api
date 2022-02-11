@@ -9,6 +9,9 @@ HOST2="${HOST2:-wego-scraper-10k}"
 # ssh -t wego-scraper "cd api && git pull && npm run build"
 npm run build 
 cp ./*.json ${DIST_DIR}
+
+cp ~/Dropbox/_digitalhedge/envs/wego-prod-env.txt ${DIST_DIR}/.env
+
 rsync -azP ${DIST_DIR}/ ${HOST1}:/home/ubuntu/api/ --exclude public
 rsync -azP ${DIST_DIR}/ ${HOST2}:/home/ubuntu/api/ --exclude public
 

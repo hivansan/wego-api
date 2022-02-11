@@ -10,9 +10,8 @@ import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
 import { load } from './scraper.utils';
 
-
-
 puppeteer.use(StealthPlugin());
+
 const main = async () => {
   const browser = await puppeteer.launch({
     headless: true

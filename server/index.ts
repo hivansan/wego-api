@@ -8,7 +8,6 @@ import { respond } from './util';
 import * as Auth from './auth';
 import { db } from '../bootstrap';
 import { MarketEvents, MarketEvent } from '../lib/market-events';
-import * as traitsFile from '../lib/traitsFile.loader';
 const adminsFilePath = process.env.ADMINS as string || './admins.json';
 const admins = JSON.parse(fs.readFileSync(adminsFilePath).toString()).map(toLower);
 if (process.env.DO_MARKETEVENTS === 'true') {
