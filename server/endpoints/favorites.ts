@@ -40,7 +40,9 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
 
   app.get('/api/favorites', passport.authenticate('jwt', { session: false }), respond(req =>
     params.getFavorites(req.query).map(({ index, slug, limit, offset }) =>
-      AssetLoader.favorites(db, index, { limit, offset }, (req.user as any).publicAddress, slug)
+      req.headers.authorization?.match(/^0x[a-f0-9]{40}$/g)
+        ? AssetLoader.favorites(db, index, { limit, offset }, (req.user as any).publicAddress, slug)
+        : error(401, 'unauthorized')
     ).defaultTo(error(400, 'Bad request'))
   ));
 
