@@ -13,11 +13,9 @@ import { load } from './scraper.utils';
 
 
 puppeteer.use(StealthPlugin());
-const debug = true;
-
 const main = async () => {
   const browser = await puppeteer.launch({
-    headless: !debug
+    headless: true
   });
   const page = await browser.newPage();
   const url = 'https://opensea.io/rankings?category=collectibles&chain=ethereum&sortBy=thirty_day_volume';
