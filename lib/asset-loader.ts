@@ -219,7 +219,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
     .then(body => body === null ? null : body._source)
     .then((collectionDB) => {
       const now = moment();
-      return collectionDB === null || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
+      return collectionDB === null || !collectionDB.updatedAt || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
         ? collectionFromRemote(slug).then((collectionRemote) => (
           collectionRemote === null
             ? null
@@ -361,7 +361,13 @@ export async function toggleFavorite({ db, address, slug, tokenId, value, contra
 }
 
 
-export async function favorites(db: ElasticSearch.Client, index: string, address: string): Promise<any> {
+export async function favorites(
+  db: ElasticSearch.Client,
+  index: string,
+  { offset, limit, sort, source }: Query.Options,
+  address: string,
+  slug?: string,
+): Promise<any> {
   const q: any = {
     bool: {
       must: [
@@ -370,6 +376,7 @@ export async function favorites(db: ElasticSearch.Client, index: string, address
     }
   };
   if (index === 'assets') q.bool.must.push({ exists: { field: 'tokenId' } });
+  if (index === 'assets' && slug) q.bool.must.push({ match: { 'slug.keyword': slug } });
   if (index === 'collections') q.bool.must_not = [{ exists: { field: 'tokenId' } }, { exists: { field: 'contractAddress' } }];
 
   return Query.find(db, 'favorites', q, { limit: 1000 })
@@ -379,11 +386,9 @@ export async function favorites(db: ElasticSearch.Client, index: string, address
     .then(uniq)
     .then(tap(x => console.log(x)))
     .then(ids =>
-      Query.find(db, index, { terms: { _id: ids } }, { limit: ids.length })
+      Query.find(db, index, { terms: { _id: ids } }, { offset, limit: limit || ids.length })
         .then(({ body: { hits: { hits }, }, }) => ({ body: hits.map(toResult).map((r: any) => r.value) })))
-
-
-    .then(tap(x => console.log(x)))
+  // .then(tap(favs => console.log(`[favs]`, favs)))
 }
 
 function toId(fav: { slug: any; contractAddress: any; tokenId: any; }, index: string) {

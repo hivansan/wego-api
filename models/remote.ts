@@ -175,7 +175,8 @@ export const openSeaEvent = object('OpenSeaEvent', {
     'bid_entered',
     'bid_withdrawn',
     'transfer',
-    'approve'
+    'approve',
+    'custom',
   ] as const)
 });
 

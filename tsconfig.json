@@ -1,6 +1,6 @@
 {
   "exclude": ["dist", "data", "bin", "sessions", "slugs", "system", "tests", "public", "node_modules"],
-  "include": ["server/index.ts", "server/endpoints/**.ts", "scraper/**.ts"],
+  "include": ["server/index.ts", "server/endpoints/**.ts", "scraper/**.ts", "lib/**.ts"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
     /* Basic Options */

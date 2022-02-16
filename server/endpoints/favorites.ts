@@ -6,7 +6,7 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { error, respond } from '../util';
 import * as AssetLoader from '../../lib/asset-loader';
 import { toInt } from '../../models/util';
-import { match, pipe } from 'ramda';
+import { clamp, match, pipe } from 'ramda';
 
 import { toResult } from './util';
 import passport from 'passport';
@@ -24,6 +24,9 @@ const params = {
   }),
   getFavorites: object('AssetParams', {
     index: nullable(inList(['assets', 'collections']), 'assets'),
+    slug: nullable(string, undefined),
+    limit: nullable(pipe(toInt, Result.map(clamp(1, 300))), 10),
+    offset: nullable(pipe(toInt, Result.map(clamp(0, 10000))), 0),
   }),
 }
 
@@ -35,9 +38,11 @@ export default ({ app, db }: { app: Express, db: ElasticSearch.Client }) => {
     ).defaultTo(error(400, 'Bad request'))
   ));
 
-  app.get('/api/favorites', passport.authenticate('jwt', { session: false }), respond(req =>
-    params.getFavorites(req.query).map(({ index }) =>
-      AssetLoader.favorites(db, index, (req.user as any).publicAddress)
+  app.get('/api/favorites', respond(req =>
+    params.getFavorites(req.query).map(({ index, slug, limit, offset }) =>
+      req.headers.authorization?.match(/^0x[a-f0-9]{40}$/g)
+        ? AssetLoader.favorites(db, index, { limit, offset }, req.headers.authorization, slug)
+        : error(401, 'unauthorized')
     ).defaultTo(error(400, 'Bad request'))
   ));
 
