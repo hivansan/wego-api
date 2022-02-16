@@ -219,7 +219,7 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
     .then(body => body === null ? null : body._source)
     .then((collectionDB) => {
       const now = moment();
-      return collectionDB === null || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
+      return collectionDB === null || !collectionDB.updatedAt || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
         ? collectionFromRemote(slug).then((collectionRemote) => (
           collectionRemote === null
             ? null
