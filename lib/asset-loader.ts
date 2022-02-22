@@ -22,6 +22,7 @@ import { cleanTraits, consecutiveArray, openseaAssetMapper } from '../scraper/sc
 import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH, OPENSEA_API } from './constants';
 import dotenv from 'dotenv';
 import { toResult } from '../server/endpoints/util';
+import { flattenTraits } from '../models/util';
 dotenv.config();
 
 const BASE_URL = 'https://api.opensea.io/api/v1';
@@ -115,6 +116,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenMetadata: openSea.token_metadata,
           rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits: openSea.traits,
+          traitsFlat: flattenTraits(openSea.traits),
           collection: {
             ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }),
             stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })
@@ -241,23 +243,27 @@ export async function getCollection(db: ElasticSearch.Client, slug: string, requ
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
   Query.update(db, 'assets', `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`, { ...asset, unrevealed: isUnrevealed(asset) }, true)
+    .then(tap(x => console.log('indexAsset', x)))
+    .catch(e => console.log('[error index asset]', e))
 ));
 
 const assetWithTraits = async (db: ElasticSearch.Client, asset: Asset.Asset) => {
+  const q: any = {
+    bool: {
+      must: [
+        { match: { 'slug.keyword': asset.slug } },
+        // { terms: { 'key.keyword': (asset as any).traitsFlat } }
+      ]
+    }
+  };
+  if ((asset as any).traitsFlat?.length) { q.bool.must.push({ terms: { 'key.keyword': (asset as any).traitsFlat } }) }
   return asset.traits?.length
-    ? Query.find(db, 'traits', {
-      bool: {
-        must: [
-          { match: { 'slug.keyword': asset.slug } },
-          { terms: { 'key.keyword': (asset as any).traitsFlat } }
-        ]
-      }
-    }, { limit: 20 })
+    ? Query.find(db, 'traits', q, { limit: 20 })
       .then(body => body === null ? Promise.resolve(asset) : body)
       .then(path(['body', 'hits', 'hits']) as any)
       .then(map(pipe(toResult, prop('value'))))
       .then(body => ({ body: { ...asset, traits: body } }))
-      .catch(e => Promise.resolve(asset))
+      .catch(e => { console.log('[error assetWithTraits]', e); return Promise.resolve({ body: asset }) })
     : { body: asset }
 }
 

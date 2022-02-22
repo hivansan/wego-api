@@ -50,6 +50,7 @@ export const asset = object('Asset', {
   lastSalePriceUSD: nullable(number),
   currentPrice: nullable(number),
   currentPriceUSD: nullable(number),
+  traitsFlat: nullable(Result.ok),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {
