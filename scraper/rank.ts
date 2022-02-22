@@ -5,12 +5,15 @@ import * as Query from '../lib/query';
 import { db } from '../bootstrap';
 import { toResult } from '../server/endpoints/util';
 import { countInDb } from './scraper.assets';
-import { filter, map, pick, prop, tap, complement } from 'ramda';
+import { filter, map, pick, prop, tap, complement, any, pipe, flatten, uniqBy } from 'ramda';
 import * as Stats from '../lib/stats';
 import { sleep } from '../server/util';
 import { load } from './scraper.utils';
 import * as AssetLoader from '../lib/asset-loader';
 import { Asset } from '../models/asset';
+import { flattenTraits } from '../models/util';
+import { MAX_TOTAL_SUPPLY } from '../lib/constants';
+import { getTraitPrices } from '../lib/traits';
 
 const execrank: string | undefined = process.argv.find((s) => s.startsWith('--execrank='))?.replace('--execrank=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
@@ -27,7 +30,7 @@ const collectionData = (slug?: string) =>
             { 'match': { 'deleted': true } },
           ],
           'must': [
-            { 'range': { 'stats.totalSupply': { 'lte': 13000, } } },
+            { 'range': { 'stats.totalSupply': { 'lte': MAX_TOTAL_SUPPLY, } } },
             { 'exists': { 'field': 'slug' } }
           ]
         }
@@ -82,8 +85,8 @@ const run = () => {
       for (const collection of collections) {
         console.log('ranking collection.slug', collection.slug);
         Query.find(db, 'assets', { term: { 'slug.keyword': collection.slug } }, {
-          limit: 13000,
-          source: ['tokenId', 'updatedAt', 'traits', 'traitsCount', 'contractAddress']
+          limit: MAX_TOTAL_SUPPLY,
+          source: ['tokenId', 'updatedAt', 'traits', 'traitsCount', 'contractAddress', 'currentPrice']
         })
           .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
             body: {
@@ -93,14 +96,30 @@ const run = () => {
           }))
           .then(({ body }) => Stats.collection(collection.count, body.results, collection.traits).then(ranks => ({ assets: body.results, ranks })))
           // .then(tap(x => console.log('x ==========', x)) as any)
-          .then((body) =>
-            body.assets.map((asset: Asset) => ({
-              ...asset,
-              ...body.ranks.find(x => x.id === asset.tokenId),
-              unrevealed: Stats.isUnrevealed(asset),
-            }))
-          )
+          .then((body) => {
+            // const assets = getTraitPrices(body.assets);
+            return pipe<any, any, any>(
+              map((asset: any) => ({
+                ...asset,
+                ...body.ranks.find(x => x.id === asset.tokenId),
+                unrevealed: Stats.isUnrevealed(asset),
+                traitsFlat: flattenTraits(asset.traits as any[]),
+              })),
+              getTraitPrices
+            )(body.assets)
+          })
           .then(tap((body) => load(body as any, 'assets', true)))
+          .then(
+            tap(body => {
+              const traits = pipe<any, any, any, any>(
+                map((a: any) => a.traits.map(t => ({ ...t, slug: collection.slug }))),
+                flatten,
+                uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`),
+                // map(t)
+              )(body);
+              load(traits, 'traits', 'upsert');
+            })
+          )
           /** @TODO if there are assets without traits, dont mark as ranked - but only if asset is unrevealed */
           .then(assets => updateCollectionWithRevealedStats(assets, collection.slug))
           .catch(e => {
@@ -114,4 +133,4 @@ const run = () => {
   // .catch(e => console.log('e =========', e))
 }
 
-if (execrank) eval(`${execrank}()`);
+if (require.main === module) if (execrank) eval(`${execrank}()`);

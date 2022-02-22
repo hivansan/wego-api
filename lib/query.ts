@@ -19,17 +19,23 @@ export const find = curry((
   index: string,
   query: any,
   { limit, offset, sort, asStream, source }: Options
-): Promise<any> => db.search({
-  index: index ? index : ['assets', 'collections'],
-  from: offset || 0,
-  size: limit,
-  // sort: sort || ([] as any[]),
-  body: {
-    ...(query && Object.keys(query).length ? { query } : {}),
-    sort,
-    _source: source
-  },
-}, { asStream }));
+): Promise<any> => {
+
+  console.log('query:', JSON.stringify(query, null, 2));
+  console.log(`Query Opts: limit: ${limit} offset: ${offset} sort: ${JSON.stringify(sort, null, 2)} asStream: ${asStream} source: ${source}`);
+
+  return db.search({
+    index: index ? index : ['assets', 'collections'],
+    from: offset || 0,
+    size: limit,
+    // sort: sort || ([] as any[]),
+    body: {
+      ...(query && Object.keys(query).length ? { query } : {}),
+      sort,
+      _source: source
+    },
+  }, { asStream })
+});
 
 export const findOne = curry((db: ElasticSearch.Client, index: string, query: any) => (
   find(db, index, query, { limit: 1 }).then(({ body: { hits: { hits: toMatch } } }) => (
@@ -46,19 +52,52 @@ export const search = curry((
   fields: string[],
   query: string | null,
   { filter, ...opts }: Options
-) => (
-  find(db, index, mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {}), opts)
-));
+) => {
+  // console.log(filter);
+
+  const queryObj = mergeDeepRight(!query ? {} : { multi_match: { query, fuzziness: 6, fields } }, filter || {});
+  const q = {
+    bool: {
+      must_not: [{
+        match: { deleted: true }
+      }]
+    }
+  };
+  if (Object.keys(queryObj).length) q.bool['must'] = queryObj;
+
+  return find(db, index, q, opts);
+
+});
+
 
 /**
- * @HACK Example of query composition without actually doing the query
+ * Special search for assets by collection slug and token id
  */
-export const search2 = curry((
-  fields: string[],
-  query: string | null,
-) => (
-  !query ? {} : { multi_match: { query, fuzziness: 6, fields } }
-));
+ export const searchBySlugToken = curry((
+  db: ElasticSearch.Client,
+  index: string,
+  slug: string,
+  tokenId: string,
+  { filter, ...opts }: Options
+) => {
+
+  const q = {
+    bool: {
+      must_not: [{
+        match: { deleted: true }
+      }],
+      must: [
+        {match: {slug}},
+        {match: {'tokenId.keyword': tokenId }}
+      ],
+      filter
+    }
+  };
+
+
+  return find(db, index, q, opts);
+
+});
 
 // Example:
 // const actualQuery = mergeDeepRight(search(['fields'], 'Fluffy'), byTraits('cats-collection', { Fur: 'Red' }));
@@ -112,14 +151,22 @@ export const createWithIndex = curry(<Doc>(db: ElasticSearch.Client, index: stri
 export const update = curry(<Doc>(
   db: ElasticSearch.Client,
   index: string,
-  idOrQuery: string | { [key: string]: any },
+  id: string, // | { [key: string]: any },
   doc: Doc,
   docAsUpsert: boolean,
 ) => (
-  typeof idOrQuery === 'string'
-    ? db.update({ refresh: true, index, id: idOrQuery, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
-    : db.updateByQuery({ refresh: true, index, body: { query: idOrQuery, doc } }))
-);
+  db.update({ refresh: true, index, id, body: { doc, ...(docAsUpsert ? { doc_as_upsert: true } : {}) } })
+));
+
+export const updateByQuery = curry(<Doc>(
+  db: ElasticSearch.Client,
+  index: string,
+  query: object,
+  script: object,
+  refresh: boolean,
+) => (
+  db.updateByQuery({ refresh, index, body: { query, script } })
+));
 
 export type CountOptions = {
   q?: string,
@@ -135,3 +182,6 @@ export const count = curry((
 ): Promise<{ count: number }> => (
   db.count({ index, body: { query }, ...opts }).then(prop('body')) as Promise<{ count: number }>
 ));
+
+export const deleteByQuery = (db: ElasticSearch.Client, index: string, query: any) =>
+  db.deleteByQuery({ index, body: { query } })

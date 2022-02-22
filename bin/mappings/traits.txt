@@ -1,0 +1,60 @@
+curl --location --request PUT 'http://localhost:9200/traits' \
+--header 'Content-Type: application/json' \
+--header 'Accept: application/json' \
+--data-raw '{
+    "mappings": {
+        "properties": {
+            "floor_price": {
+                "type": "float"
+            },
+            "key": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "slug": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "top_price": {
+                "type": "float"
+            },
+            "traitScore": {
+                "type": "float"
+            },
+            "traitStat": {
+                "type": "float"
+            },
+            "trait_count": {
+                "type": "long"
+            },
+            "trait_type": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            },
+            "value": {
+                "type": "text",
+                "fields": {
+                    "keyword": {
+                        "type": "keyword",
+                        "ignore_above": 256
+                    }
+                }
+            }
+        }
+    }
+}'

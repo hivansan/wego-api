@@ -16,6 +16,7 @@ echo "Building API..."
 npm run build
 cp ./*.json ${DIST_DIR}
 cp ./admins.json ${DIST_DIR}/server
+cp ~/Dropbox/_digitalhedge/envs/wego-prod-env.txt ${DIST_DIR}/.env
 cp -R ./admin ${DIST_DIR}
 cp ${APP_DIR}/ecosystem.config.js ${DIST_DIR}
 
@@ -25,9 +26,6 @@ rsync -azP ${DIST_DIR}/ ${HOST2}:~/api
 
 echo "Installing dependencies..."
 # ssh ${HOST} 'bash -s' < ${SCRIPT_DIR}/depends.sh
-
-scp ~/Dropbox/_digitalhedge/envs/wego-prod-env.txt ${HOST1}:~/api/.env
-scp ~/Dropbox/_digitalhedge/envs/wego-prod-env.txt ${HOST2}:~/api/.env
 
 echo "Restarting service..."
 HOST=${HOST1} ${SCRIPT_DIR}/restart-ng.sh

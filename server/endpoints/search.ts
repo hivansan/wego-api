@@ -1,4 +1,4 @@
-import { clamp, pipe } from 'ramda';
+import { clamp, pipe, ifElse } from 'ramda';
 import { isExact, toResult } from './util';
 import * as ElasticSearch from '@elastic/elasticsearch';
 import { Express } from 'express';
@@ -17,17 +17,20 @@ import * as Query from '../../lib/query';
  * show up in the search.
  */
 const searchFields = [
-  'name^4',
-  'traits.trait_type^4',
-  'traits.value^4',
+  'name^6',
+  'tokenId^6',
+  // 'traits.trait_type^3',
+  // 'traits.value^3',
   'description^2',
-  'collection.description'
+  'collection.description',
+  'contractAddresses',
+  'contractAddress'
 ];
 
 const searchQuery = object('Search', {
-  q: nullable(string),
+  q: nullable(string, ''),
   page: nullable(toInt, 1),
-  tab: nullable(inList(['collections', 'assets']), ''),
+  tab: nullable(inList(['collections', 'assets']), 'collections,assets'),
   /**
    * Default to 10 results, limit max result size to 50.
    */
@@ -41,8 +44,11 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
   const exactMatchFields = searchFields.map(s => s.replace(/\^\d+/, '').split('.'));
 
   app.get('/api/search', respond(req => (
-    searchQuery(req.query).map(({ q, page, limit, tab: index }) =>
-      Query.search(db, index, searchFields, q || '', { limit, offset: Math.max(limit * (page - 1), 0) })
+    searchQuery(req.query).map(({ q, page, limit, tab: index }) => {
+      const collAssetQuery = q?.match(/^\s*([\w-]*)\s+(\d*)\s*$/);
+      return (collAssetQuery 
+        ? Query.searchBySlugToken(db, 'assets', collAssetQuery[1], collAssetQuery[2], { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ }) 
+        : Query.search(db, index, searchFields, q, { limit, offset: Math.max(limit * (page - 1), 0), /* sort: [{ 'stats.featuredCollection': { order: 'desc' } }] */ },))
         .then(({ body: { took, timed_out: timedOut, hits: { total, hits } } }: any) => ({
           body: {
             meta: { q, took, timedOut, total: total.value },
@@ -53,7 +59,8 @@ export default ({ db, app }: { app: Express, db: ElasticSearch.Client }) => {
           console.error('[Bad query]', e);
           return queryError;
         })
-    ).defaultTo(queryError)
+    }).defaultTo(queryError)
+
   )));
 
 };

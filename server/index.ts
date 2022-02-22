@@ -8,11 +8,10 @@ import { respond } from './util';
 import * as Auth from './auth';
 import { db } from '../bootstrap';
 import { MarketEvents, MarketEvent } from '../lib/market-events';
-import * as traitsFile from '../lib/traitsFile.loader';
 const adminsFilePath = process.env.ADMINS as string || './admins.json';
 const admins = JSON.parse(fs.readFileSync(adminsFilePath).toString()).map(toLower);
 if (process.env.DO_MARKETEVENTS === 'true') {
-  const events = new MarketEvents({ autoStart: true, history: 600, interval: 3 });
+  const events = new MarketEvents({ autoStart: true, history: 1600000, timeWidow: 5, interval: 3 });
   events.stream.on('data', (e: MarketEvent) => {
     /**
      * @TODO ADD DB INDEX AND SAVE EVENT
@@ -32,9 +31,10 @@ const routes = [
   'match',
   'search',
   'score',
+  'favorites',
 ].map(name => require(`./endpoints/${name}`));
 
-routes.forEach(route => route.default({ app, db, admins }));
+routes.forEach(route => route.default({ app, db, users: admins }));
 
 /**
  * Catch-all 404 to replace Express default handler

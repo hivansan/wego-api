@@ -6,7 +6,12 @@ import { DecodeError } from '@ailabs/ts-utils/dist/decoder';
 import { eventTypes } from '../scraper/event.utils';
 import { cleanEntries, load, openseaAssetMapper } from '../scraper/scraper.utils';
 import moment from 'moment';
-import { forEach, map, path, tap } from 'ramda';
+import { filter, flatten, forEach, map, objOf, path, pick, pipe, prop, tap, uniq, uniqBy } from 'ramda';
+import * as Query from './query';
+import { db } from '../bootstrap';
+import { toResult } from '../server/endpoints/util';
+import * as Historicals from './historicals.utils';
+
 
 export type Config = {
   /**
@@ -18,6 +23,11 @@ export type Config = {
    * Interval (in seconds) to check for new events
    */
   interval: number;
+
+  /**
+   * time window (in seconds) to perform each call
+   */
+  timeWidow: number;
 
   autoStart: boolean;
 }
@@ -46,12 +56,45 @@ export class MarketEvents {
 
   protected lastTimestamp: number = 0;
 
+  constructor(public config: Config) {
+    this.stream = new Readable({ objectMode: true, read() { } });
+
+    if (config.history > 0) {
+      this.load({ limit: 300, after: moment().unix() - config.history - config.timeWidow, before: moment().unix() - config.history });
+    }
+
+    if (config.autoStart) {
+      this.start();
+    }
+  }
+
+  public start() {
+    if (this.clock) {
+      return;
+    }
+    this.clock = setInterval(() => {
+      console.log('[market events lastTimestamp]', moment.unix(this.lastTimestamp), this.lastTimestamp);
+      if (!this.lastTimestamp) {
+        return;
+      }
+      this.load({ limit: 300, after: this.lastTimestamp, before: this.lastTimestamp + this.config.timeWidow });
+    }, this.config.interval * 1000);
+  }
+
+  public stop() {
+    if (this.clock) {
+      clearTimeout(this.clock);
+      this.clock = null;
+    }
+  }
+
   static fromRaw(event: OpenSeaEvent): MarketEvent {
     const handler = eventTypes.getHandler(event.event_type);
     return {
       type: event.event_type,
       time: event.created_date,
-      asset: handler(event, cleanEntries(openseaAssetMapper(event.asset))),
+      /** @TODO maybe move traitsFlat to set it null somewhere else less hacky */
+      asset: handler(event, cleanEntries({ ...openseaAssetMapper(event.asset), traitsFlat: null })),
       collection: {
         name: event.asset.collection.name,
         slug: event.asset.collection.slug
@@ -60,23 +103,78 @@ export class MarketEvents {
     }
   }
 
-  constructor(public config: Config) {
-    this.stream = new Readable({ objectMode: true, read() { } });
-
-    if (config.history > 0) {
-      this.load({ limit: 300, after: moment().unix() - config.history });
-    }
-
-    if (config.autoStart) {
-      this.start();
-    }
-  }
-
   private load(args: Partial<{ limit: number, before: number, after: number }>) {
     AssetLoader
       .events(args)
       .then(events => events.map(MarketEvents.fromRaw))
-      .then(tap(events => { load(events.map(e => e.asset), 'assets', 'upsert') }))
+      .then(tap(e => {
+        if (!e.length) this.lastTimestamp = args.before as number;
+        console.log('MarketEvents.length -----------', e.length)
+      }))
+      .then(tap(events => {
+        load(
+          uniqBy(e => `${e.type}${e.asset.tokenId}${e.collection.slug}`, events).map(e => e.asset),
+          'assets',
+          'upsert'
+        )
+      }))
+      .then(tap(
+        pipe<any, any, any, any, any, any>(
+          filter(({ type }) => type === 'created'),
+          map(prop('asset')),
+          map(pick(['tokenId', 'contractAddress', 'slug', 'currentPriceUSD', 'currentPrice'])),
+          uniqBy(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`),
+          async (eventAssets) => {
+            if (!eventAssets?.length) return;
+            const ids = eventAssets.map(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`)
+
+            // [update traits] - pull db assets for given ids comming from market events. pair that with the price and filter the ones with traits.
+            const assets = await Query.find(db, 'assets', { terms: { _id: ids } }, { limit: ids.length, source: ['traits', 'deleted', '_id', 'tokenId', 'slug', 'contractAddress'] })
+              .then(
+                ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => hits.map(toResult)
+                  .map((r: any) => r.value)
+                  .filter(a => a.traits?.length && !a.deleted)
+                  .map(a => ({
+                    ...a,
+                    ...(eventAssets.find(({ tokenId, contractAddress }) => `${contractAddress}${tokenId}` === `${a.contractAddress}${a.tokenId}`) || {})
+                  }))
+              )
+
+            // [update traits] - filter assets in which price breaks floor or top. and get its traits
+            const traitsToUpdate = pipe<any, any, any, any, any, any>(
+              filter((asset: any) =>
+                asset.traits.filter((t: { floor_price: number; }) => !t.floor_price || t.floor_price > asset.currentPrice).length ||
+                asset.traits.filter((t: { top_price: number; }) => !t.top_price || t.top_price < asset.currentPrice).length
+              ),
+              map((asset: any) => ({
+                traits: asset.traits.map(t => ({
+                  ...t,
+                  slug: asset.slug,
+                  floor_price: t.floor_price > asset.currentPrice ? asset.currentPrice : t.floor_price,
+                  top_price: t.top_price < asset.currentPrice ? asset.currentPrice : t.top_price,
+                })),
+              })),
+              map((a: any) => a.traits),
+              flatten,
+              uniqBy(({ trait_type, value }: any) => `${trait_type}:${value}`),
+            )(assets);
+
+            if (traitsToUpdate?.length) {
+              load(traitsToUpdate, 'traits', 'upsert')
+
+              Historicals.load(traitsToUpdate
+                .map((t: { slug: any; key: any; top_price: any; floor_price: any; }) =>
+                  ({ index: 'traits', id: `${t.slug}:${t.key}`, slug: t.slug, data: { top_price: t.top_price, floor_price: t.floor_price }, date: moment.unix(args.before as number) })));
+
+              Historicals.load(eventAssets
+                .map((a: { contractAddress: any; tokenId: any; slug: any; currentPrice: any; }) =>
+                  ({ index: 'assets', id: `${a.contractAddress}:${a.tokenId}`, slug: a.slug, data: { price: a.currentPrice }, date: moment.unix(args.before as number) })));
+
+            }
+
+          }
+        )
+      ))
       .then(forEach(this.push.bind(this)))
       .catch(e => {
         console.error(
@@ -91,22 +189,5 @@ export class MarketEvents {
     this.stream.push(e);
   }
 
-  public start() {
-    if (this.clock) {
-      return;
-    }
-    this.clock = setInterval(() => {
-      if (!this.lastTimestamp) {
-        return;
-      }
-      this.load({ limit: 300, after: this.lastTimestamp });
-    }, this.config.interval * 1000);
-  }
 
-  public stop() {
-    if (this.clock) {
-      clearTimeout(this.clock);
-      this.clock = null;
-    }
-  }
 }

@@ -1,0 +1,2937 @@
+{
+    "assets": {
+        "aliases": {},
+        "mappings": {
+            "properties": {
+                "_lastSalePrice": {
+                    "type": "float"
+                },
+                "addedAt": {
+                    "type": "long"
+                },
+                "animationUrl": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "animation_original_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "animation_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "asset_contract": {
+                    "properties": {
+                        "address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "asset_contract_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "default_to_fiat": {
+                            "type": "boolean"
+                        },
+                        "description": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "dev_buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "dev_seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "external_link": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "name": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "nft_version": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "only_proxied_transfers": {
+                            "type": "boolean"
+                        },
+                        "opensea_buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "opensea_seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "opensea_version": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "owner": {
+                            "type": "long"
+                        },
+                        "payout_address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "schema_name": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "symbol": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "total_supply": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        }
+                    }
+                },
+                "avgTraitRarity": {
+                    "type": "float"
+                },
+                "avgTraitRarityRank": {
+                    "type": "long"
+                },
+                "background_color": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "collection": {
+                    "properties": {
+                        "banner_image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "contractAddress": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "default_to_fiat": {
+                            "type": "boolean"
+                        },
+                        "deleted": {
+                            "type": "boolean"
+                        },
+                        "description": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "dev_buyer_fee_basis_points": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "dev_seller_fee_basis_points": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "discord_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "display_data": {
+                            "properties": {
+                                "card_display_style": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "external_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "featured": {
+                            "type": "boolean"
+                        },
+                        "featured_image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "hidden": {
+                            "type": "boolean"
+                        },
+                        "image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "instagram_username": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "is_subject_to_whitelist": {
+                            "type": "boolean"
+                        },
+                        "large_image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "medium_username": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "name": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "only_proxied_transfers": {
+                            "type": "boolean"
+                        },
+                        "opensea_buyer_fee_basis_points": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "opensea_seller_fee_basis_points": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payout_address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "released": {
+                            "type": "boolean"
+                        },
+                        "require_email": {
+                            "type": "boolean"
+                        },
+                        "safelist_request_status": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "slug": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "stats": {
+                            "properties": {
+                                "averagePrice": {
+                                    "type": "float"
+                                },
+                                "average_price": {
+                                    "type": "float"
+                                },
+                                "contractAddress": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "count": {
+                                    "type": "long"
+                                },
+                                "featuredCollection": {
+                                    "type": "boolean"
+                                },
+                                "featuredScore": {
+                                    "type": "long"
+                                },
+                                "floorPrice": {
+                                    "type": "float"
+                                },
+                                "floor_price": {
+                                    "type": "float"
+                                },
+                                "marketCap": {
+                                    "type": "float"
+                                },
+                                "market_cap": {
+                                    "type": "float"
+                                },
+                                "numOwners": {
+                                    "type": "long"
+                                },
+                                "numReports": {
+                                    "type": "long"
+                                },
+                                "num_owners": {
+                                    "type": "long"
+                                },
+                                "num_reports": {
+                                    "type": "long"
+                                },
+                                "oneDayAveragePrice": {
+                                    "type": "float"
+                                },
+                                "oneDayChange": {
+                                    "type": "float"
+                                },
+                                "oneDaySales": {
+                                    "type": "long"
+                                },
+                                "oneDayVolume": {
+                                    "type": "float"
+                                },
+                                "one_day_average_price": {
+                                    "type": "float"
+                                },
+                                "one_day_change": {
+                                    "type": "float"
+                                },
+                                "one_day_sales": {
+                                    "type": "long"
+                                },
+                                "one_day_volume": {
+                                    "type": "float"
+                                },
+                                "sevenDayAveragePrice": {
+                                    "type": "float"
+                                },
+                                "sevenDayChange": {
+                                    "type": "float"
+                                },
+                                "sevenDaySales": {
+                                    "type": "long"
+                                },
+                                "sevenDayVolume": {
+                                    "type": "float"
+                                },
+                                "seven_day_average_price": {
+                                    "type": "float"
+                                },
+                                "seven_day_change": {
+                                    "type": "float"
+                                },
+                                "seven_day_sales": {
+                                    "type": "long"
+                                },
+                                "seven_day_volume": {
+                                    "type": "float"
+                                },
+                                "slug": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "thirtyDayAveragePrice": {
+                                    "type": "float"
+                                },
+                                "thirtyDayChange": {
+                                    "type": "long"
+                                },
+                                "thirtyDaySales": {
+                                    "type": "long"
+                                },
+                                "thirtyDayVolume": {
+                                    "type": "float"
+                                },
+                                "thirty_day_average_price": {
+                                    "type": "float"
+                                },
+                                "thirty_day_change": {
+                                    "type": "float"
+                                },
+                                "thirty_day_sales": {
+                                    "type": "long"
+                                },
+                                "thirty_day_volume": {
+                                    "type": "float"
+                                },
+                                "totalSales": {
+                                    "type": "long"
+                                },
+                                "totalSupply": {
+                                    "type": "long"
+                                },
+                                "totalVolume": {
+                                    "type": "float"
+                                },
+                                "total_sales": {
+                                    "type": "long"
+                                },
+                                "total_supply": {
+                                    "type": "long"
+                                },
+                                "total_volume": {
+                                    "type": "float"
+                                },
+                                "wegoScore": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "telegram_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "twitter_username": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        }
+                    }
+                },
+                "contractAddress": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "contractAddresses": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "createdAt": {
+                    "type": "date"
+                },
+                "creator": {
+                    "properties": {
+                        "address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "config": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "profile_img_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "user": {
+                            "properties": {
+                                "username": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "currentPrice": {
+                    "type": "float"
+                },
+                "currentPriceUSD": {
+                    "type": "float"
+                },
+                "decimals": {
+                    "type": "long"
+                },
+                "deleted": {
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "discord": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "duration": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "external_link": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "id": {
+                    "type": "long"
+                },
+                "imageBig": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "imageSmall": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "image_original_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "image_preview_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "image_thumbnail_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "image_url": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "imgLarge": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "imgMain": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "imgPortrait": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "is_presale": {
+                    "type": "boolean"
+                },
+                "lastSale": {
+                    "properties": {
+                        "asset": {
+                            "properties": {
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "token_id": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "asset_bundle": {
+                            "properties": {
+                                "slug": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "auction_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "event_timestamp": {
+                            "type": "date"
+                        },
+                        "event_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "eth_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "image_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "symbol": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "usd_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "quantity": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "total_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "transaction": {
+                            "properties": {
+                                "block_hash": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "block_number": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "from_account": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "config": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "profile_img_url": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "username": {
+                                                    "type": "text",
+                                                    "fields": {
+                                                        "keyword": {
+                                                            "type": "keyword",
+                                                            "ignore_above": 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "timestamp": {
+                                    "type": "date"
+                                },
+                                "to_account": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "config": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "profile_img_url": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "username": {
+                                                    "type": "text",
+                                                    "fields": {
+                                                        "keyword": {
+                                                            "type": "keyword",
+                                                            "ignore_above": 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "transaction_hash": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "transaction_index": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "lastSalePrice": {
+                    "type": "long"
+                },
+                "lastSalePriceUSD": {
+                    "type": "float"
+                },
+                "lastScoreRequestedAt": {
+                    "type": "date"
+                },
+                "last_sale": {
+                    "properties": {
+                        "asset": {
+                            "properties": {
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "token_id": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "auction_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "event_timestamp": {
+                            "type": "date"
+                        },
+                        "event_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "eth_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "image_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "symbol": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "usd_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "quantity": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "total_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "transaction": {
+                            "properties": {
+                                "block_hash": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "block_number": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "from_account": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "config": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "profile_img_url": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "username": {
+                                                    "type": "text",
+                                                    "fields": {
+                                                        "keyword": {
+                                                            "type": "keyword",
+                                                            "ignore_above": 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "timestamp": {
+                                    "type": "date"
+                                },
+                                "to_account": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "config": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "profile_img_url": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "user": {
+                                            "properties": {
+                                                "username": {
+                                                    "type": "text",
+                                                    "fields": {
+                                                        "keyword": {
+                                                            "type": "keyword",
+                                                            "ignore_above": 256
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "transaction_hash": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "transaction_index": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "listingTime": {
+                    "type": "date"
+                },
+                "name": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "numSales": {
+                    "type": "long"
+                },
+                "num_sales": {
+                    "type": "long"
+                },
+                "owner": {
+                    "properties": {
+                        "address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "config": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "profile_img_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "user": {
+                            "properties": {
+                                "username": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "owners": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "permalink": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "primaryAssetConctracts": {
+                    "properties": {
+                        "address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "asset_contract_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "default_to_fiat": {
+                            "type": "boolean"
+                        },
+                        "description": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "dev_buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "dev_seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "external_link": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "image_url": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "name": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "nft_version": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "only_proxied_transfers": {
+                            "type": "boolean"
+                        },
+                        "opensea_buyer_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "opensea_seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "owner": {
+                            "type": "long"
+                        },
+                        "payout_address": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "schema_name": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "seller_fee_basis_points": {
+                            "type": "long"
+                        },
+                        "symbol": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "total_supply": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        }
+                    }
+                },
+                "rariScore": {
+                    "type": "float"
+                },
+                "rarityScore": {
+                    "type": "float"
+                },
+                "rarityScoreRank": {
+                    "type": "long"
+                },
+                "releaseDate": {
+                    "type": "date"
+                },
+                "released": {
+                    "type": "boolean"
+                },
+                "requestedScore": {
+                    "type": "boolean"
+                },
+                "scoreRequests": {
+                    "type": "long"
+                },
+                "sellOrders": {
+                    "properties": {
+                        "approved_on_chain": {
+                            "type": "boolean"
+                        },
+                        "base_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "bounty_multiple": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "calldata": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "cancelled": {
+                            "type": "boolean"
+                        },
+                        "closing_date": {
+                            "type": "date"
+                        },
+                        "closing_extendable": {
+                            "type": "boolean"
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "current_bounty": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "current_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "exchange": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "expiration_time": {
+                            "type": "long"
+                        },
+                        "extra": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "fee_method": {
+                            "type": "long"
+                        },
+                        "fee_recipient": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "finalized": {
+                            "type": "boolean"
+                        },
+                        "how_to_call": {
+                            "type": "long"
+                        },
+                        "listing_time": {
+                            "type": "long"
+                        },
+                        "maker": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "maker_protocol_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "maker_referrer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "maker_relayer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "marked_invalid": {
+                            "type": "boolean"
+                        },
+                        "metadata": {
+                            "properties": {
+                                "asset": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "id": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "quantity": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "order_hash": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token_contract": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "eth_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "image_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "symbol": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "usd_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "prefixed_hash": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "quantity": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "r": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "replacement_pattern": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "s": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "sale_kind": {
+                            "type": "long"
+                        },
+                        "salt": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "side": {
+                            "type": "long"
+                        },
+                        "static_extradata": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "static_target": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "taker": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "taker_protocol_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "taker_relayer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "target": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "v": {
+                            "type": "long"
+                        }
+                    }
+                },
+                "sell_orders": {
+                    "properties": {
+                        "approved_on_chain": {
+                            "type": "boolean"
+                        },
+                        "base_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "bounty_multiple": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "calldata": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "cancelled": {
+                            "type": "boolean"
+                        },
+                        "closing_date": {
+                            "type": "date"
+                        },
+                        "closing_extendable": {
+                            "type": "boolean"
+                        },
+                        "created_date": {
+                            "type": "date"
+                        },
+                        "current_bounty": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "current_price": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "exchange": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "expiration_time": {
+                            "type": "long"
+                        },
+                        "extra": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "fee_method": {
+                            "type": "long"
+                        },
+                        "fee_recipient": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "finalized": {
+                            "type": "boolean"
+                        },
+                        "how_to_call": {
+                            "type": "long"
+                        },
+                        "listing_time": {
+                            "type": "long"
+                        },
+                        "maker": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "maker_protocol_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "maker_referrer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "maker_relayer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "marked_invalid": {
+                            "type": "boolean"
+                        },
+                        "metadata": {
+                            "properties": {
+                                "asset": {
+                                    "properties": {
+                                        "address": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "id": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        },
+                                        "quantity": {
+                                            "type": "text",
+                                            "fields": {
+                                                "keyword": {
+                                                    "type": "keyword",
+                                                    "ignore_above": 256
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "order_hash": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "payment_token_contract": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "decimals": {
+                                    "type": "long"
+                                },
+                                "eth_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "id": {
+                                    "type": "long"
+                                },
+                                "image_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "name": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "symbol": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "usd_price": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "prefixed_hash": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "quantity": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "r": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "replacement_pattern": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "s": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "sale_kind": {
+                            "type": "long"
+                        },
+                        "salt": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "side": {
+                            "type": "long"
+                        },
+                        "static_extradata": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "static_target": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "taker": {
+                            "properties": {
+                                "address": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "config": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "profile_img_url": {
+                                    "type": "text",
+                                    "fields": {
+                                        "keyword": {
+                                            "type": "keyword",
+                                            "ignore_above": 256
+                                        }
+                                    }
+                                },
+                                "user": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "taker_protocol_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "taker_relayer_fee": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "target": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "v": {
+                            "type": "long"
+                        }
+                    }
+                },
+                "singleTraitRarity": {
+                    "type": "float"
+                },
+                "singleTraitRarityRank": {
+                    "type": "long"
+                },
+                "slug": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "statisticalRarity": {
+                    "type": "float"
+                },
+                "statisticalRarityRank": {
+                    "type": "long"
+                },
+                "stats": {
+                    "properties": {
+                        "averagePrice": {
+                            "type": "float"
+                        },
+                        "count": {
+                            "type": "long"
+                        },
+                        "featuredCollection": {
+                            "type": "boolean"
+                        },
+                        "featuredScore": {
+                            "type": "long"
+                        },
+                        "floorPrice": {
+                            "type": "float"
+                        },
+                        "marketCap": {
+                            "type": "long"
+                        },
+                        "numOwners": {
+                            "type": "long"
+                        },
+                        "numReports": {
+                            "type": "long"
+                        },
+                        "oneDayAveragePrice": {
+                            "type": "long"
+                        },
+                        "oneDayChange": {
+                            "type": "long"
+                        },
+                        "oneDaySales": {
+                            "type": "long"
+                        },
+                        "oneDayVolume": {
+                            "type": "long"
+                        },
+                        "sevenDayAveragePrice": {
+                            "type": "long"
+                        },
+                        "sevenDayChange": {
+                            "type": "long"
+                        },
+                        "sevenDaySales": {
+                            "type": "long"
+                        },
+                        "sevenDayVolume": {
+                            "type": "long"
+                        },
+                        "slug": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "thirtyDayAveragePrice": {
+                            "type": "float"
+                        },
+                        "thirtyDayChange": {
+                            "type": "float"
+                        },
+                        "thirtyDaySales": {
+                            "type": "long"
+                        },
+                        "thirtyDayVolume": {
+                            "type": "float"
+                        },
+                        "totalSales": {
+                            "type": "long"
+                        },
+                        "totalSupply": {
+                            "type": "long"
+                        },
+                        "totalVolume": {
+                            "type": "float"
+                        },
+                        "wegoScore": {
+                            "type": "long"
+                        }
+                    }
+                },
+                "tokenId": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "tokenMetadata": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "token_id": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "token_metadata": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "topBid": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "traits": {
+                    "properties": {
+                        "Element": {
+                            "properties": {
+                                "fire": {
+                                    "type": "long"
+                                },
+                                "water": {
+                                    "type": "long"
+                                },
+                                "wind": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Eyes": {
+                            "properties": {
+                                "crossed": {
+                                    "type": "long"
+                                },
+                                "dot": {
+                                    "type": "long"
+                                },
+                                "evil": {
+                                    "type": "long"
+                                },
+                                "fire": {
+                                    "type": "long"
+                                },
+                                "googly": {
+                                    "type": "long"
+                                },
+                                "slit": {
+                                    "type": "long"
+                                },
+                                "star": {
+                                    "type": "long"
+                                },
+                                "x": {
+                                    "type": "long"
+                                },
+                                "zombie": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Mouth": {
+                            "properties": {
+                                "broken teeth": {
+                                    "type": "long"
+                                },
+                                "circle": {
+                                    "type": "long"
+                                },
+                                "cute": {
+                                    "type": "long"
+                                },
+                                "fang": {
+                                    "type": "long"
+                                },
+                                "fire breathing": {
+                                    "type": "long"
+                                },
+                                "gold teeth": {
+                                    "type": "long"
+                                },
+                                "razor teeth": {
+                                    "type": "long"
+                                },
+                                "stitched": {
+                                    "type": "long"
+                                },
+                                "wolf": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Platform": {
+                            "properties": {
+                                "broken": {
+                                    "type": "long"
+                                },
+                                "copper": {
+                                    "type": "long"
+                                },
+                                "devil": {
+                                    "type": "long"
+                                },
+                                "diamond": {
+                                    "type": "long"
+                                },
+                                "dirt": {
+                                    "type": "long"
+                                },
+                                "gold": {
+                                    "type": "long"
+                                },
+                                "neon": {
+                                    "type": "long"
+                                },
+                                "silver": {
+                                    "type": "long"
+                                },
+                                "wood": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Pure": {
+                            "properties": {
+                                "no": {
+                                    "type": "long"
+                                },
+                                "yes": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Special": {
+                            "properties": {
+                                "bow tie": {
+                                    "type": "long"
+                                },
+                                "brains": {
+                                    "type": "long"
+                                },
+                                "crown": {
+                                    "type": "long"
+                                },
+                                "devil horns": {
+                                    "type": "long"
+                                },
+                                "fin": {
+                                    "type": "long"
+                                },
+                                "tentacles": {
+                                    "type": "long"
+                                },
+                                "unicorn horn": {
+                                    "type": "long"
+                                },
+                                "wings": {
+                                    "type": "long"
+                                },
+                                "wolf ears": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "Type": {
+                            "properties": {
+                                "demon": {
+                                    "type": "long"
+                                },
+                                "dragon": {
+                                    "type": "long"
+                                },
+                                "jellyfish": {
+                                    "type": "long"
+                                },
+                                "shark": {
+                                    "type": "long"
+                                },
+                                "skeleton": {
+                                    "type": "long"
+                                },
+                                "unicorn": {
+                                    "type": "long"
+                                },
+                                "vampire": {
+                                    "type": "long"
+                                },
+                                "werewolf": {
+                                    "type": "long"
+                                },
+                                "zombie": {
+                                    "type": "long"
+                                }
+                            }
+                        },
+                        "display_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "floor_price": {
+                            "type": "float"
+                        },
+                        "key": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "max_value": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "order": {
+                            "type": "long"
+                        },
+                        "top_price": {
+                            "type": "long"
+                        },
+                        "traitScore": {
+                            "type": "float"
+                        },
+                        "traitStat": {
+                            "type": "float"
+                        },
+                        "trait_count": {
+                            "type": "long"
+                        },
+                        "trait_type": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        },
+                        "value": {
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword",
+                                    "ignore_above": 256
+                                }
+                            }
+                        }
+                    }
+                },
+                "traitsCount": {
+                    "type": "long"
+                },
+                "traitsFlat": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "traitsFlattened": {
+                    "type": "object",
+                    "dynamic": "false"
+                },
+                "twitter": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                },
+                "unrevealed": {
+                    "type": "boolean"
+                },
+                "updatedAt": {
+                    "type": "date"
+                },
+                "website": {
+                    "type": "text",
+                    "fields": {
+                        "keyword": {
+                            "type": "keyword",
+                            "ignore_above": 256
+                        }
+                    }
+                }
+            }
+        },
+        "settings": {
+            "index": {
+                "mapping": {
+                    "total_fields": {
+                        "limit": "2000"
+                    }
+                },
+                "number_of_shards": "5",
+                "blocks": {
+                    "read_only_allow_delete": "false",
+                    "write": "false"
+                },
+                "provided_name": "assets",
+                "max_result_window": "3000000",
+                "creation_date": "1634852575412",
+                "number_of_replicas": "1",
+                "uuid": "ROovloaiQG2HNbDzVF21_Q",
+                "version": {
+                    "created": "7100299"
+                }
+            }
+        }
+    }
+}

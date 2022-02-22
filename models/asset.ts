@@ -2,6 +2,7 @@ import { mergeLeft, pick, pipe } from 'ramda';
 import { array, Decoded, nullable, number, object, string } from '@ailabs/ts-utils/dist/decoder';
 import { trait } from './trait';
 import { addProps, match, toDate } from './util';
+import { Result } from '@ailabs/ts-utils';
 
 export type Stats = {
   statisticalRarity: number;
@@ -43,6 +44,13 @@ export const asset = object('Asset', {
   tokenMetadata: nullable(string),
   collection: nullable(Object),
   traitsCount: nullable(number),
+  sellOrders: nullable(Result.ok),
+  lastSale: nullable(Result.ok),
+  lastSalePrice: nullable(number),
+  lastSalePriceUSD: nullable(number),
+  currentPrice: nullable(number),
+  currentPriceUSD: nullable(number),
+  traitsFlat: nullable(Result.ok),
 });
 
 export const init = (val: Omit<Asset, 'createdAt' | 'updatedAt'>): Asset => mergeLeft(val, {

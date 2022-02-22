@@ -4,8 +4,16 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import session from 'express-session';
 import { path } from 'ramda';
 import { v4 as uuid } from 'uuid';
+import { Strategy as localStrategy } from 'passport-local';
+import { Strategy as JWTstrategy, ExtractJwt } from 'passport-jwt';
+import Web3 from 'web3';
+import { WEB3_PROVIDER } from '../lib/constants';
+const web3 = new Web3(new Web3.providers.HttpProvider(WEB3_PROVIDER));
+
 
 const FileStore = require('session-file-store')(session);
+
+
 
 type GenericObject = { [key: string]: any };
 type Callback = <Val>(err: GenericObject | string | null, val: Val) => void;
@@ -57,6 +65,32 @@ export const init = (app: Express, { callbackURL }: { callbackURL: string }) => 
       photo: photos![0]!.value
     })))
   );
+
+  passport.use(new JWTstrategy({
+    secretOrKey: 'TOP_SECRET',
+    jwtFromRequest: ExtractJwt.fromHeader('authorization'),
+  }, (token, done) => {
+    try {
+      return done(null, token.user);
+    } catch (error) {
+      done(error);
+    }
+  }));
+
+  passport.use('login', new localStrategy({
+    usernameField: 'publicAddress',
+    passwordField: 'signature',
+  }, (publicAddress, signature, done) => {
+    const rawTx = 'Sign your login';
+    try {
+      const decripted = (web3 as any).eth.accounts.recover(rawTx, signature);
+      return publicAddress.toLocaleLowerCase() === decripted.toLocaleLowerCase()
+        ? done(null, { publicAddress: publicAddress.toLocaleLowerCase() })
+        : done(false)
+    } catch (e) {
+      return done(e);
+    }
+  }));
 
   passport.serializeUser((user, done) => {
     done(null, JSON.stringify(user))

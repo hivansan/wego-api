@@ -3,18 +3,18 @@
 /**
  * this saves the assets
  * Example usage:
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --bots=4 --errsToFile=./data/errors-to-assets.txt`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --bots=4 --errsToFile=./data/errors-to-assets.txt`
  * 
  * only requested via score endpoint
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --onlyRequested=1 --errsToFile=./data/errors-to-assets.txt`
  * via the built dist
  * `/usr/bin/env node ./dist/scraper/scraper.assets.js --exec=saveAssets --onlyRequested=1 --errsToFile=./errors-to-assets.txt`
  *
  * for just a collection
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=saveAssets --collectionFilter=nfh --bots=1`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=saveAssets --collectionFilter=nfh --bots=1`
  *
  * from a file
- * `./node_modules/.bin/ts-node ./scraper/scraper.assets.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
+ * `npx ts-node ./scraper/scraper.assets.ts --exec=fromFile --errsFromFile=./data/errors-from.txt --bots=6`
  */
 
 import fs from 'fs';
@@ -36,7 +36,7 @@ import * as AssetLoader from '../lib/asset-loader';
 
 import { db } from '../bootstrap';
 import * as Scrape10K from './scrape10k+';
-
+import { OPENSEA_API } from '../lib/constants';
 
 
 // add SocksPort mac: /usr/local/etc/tor/torrc linux: /etc/tor/torrc
@@ -59,26 +59,13 @@ const forceScrape: boolean = !!process.argv.find((s) => s.startsWith('--forceScr
 const above10k: boolean = !!process.argv.find((s) => s.startsWith('--above10k='))?.replace('--above10k=', '');
 const slug: string | undefined = process.argv.find((s) => s.startsWith('--slug='))?.replace('--slug=', '');
 
-console.log('[scraper assets options]', {
-  exec,
-  bots,
-  errsToFile,
-  errsFromFile,
-  linear,
-  onlyRequested,
-  factor,
-  limitCollections,
-  forceScrape,
-  above10k,
-  slug,
-});
-
 
 let collectionsCounts: any = {};
 
 export const saveAssetsFromUrl = async (
-  { url, i, tor, torInstance, sleepFactor, slug, factor, collectionData }: { url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number, slug?: string, factor: number, collectionData?: object }
-): Promise<void> => {
+  { url, i, tor, torInstance, sleepFactor, slug, factor, collectionData }:
+    { url: string, i: number, tor?: any, torInstance?: any, sleepFactor?: number, slug?: string, factor: number, collectionData?: object }
+): Promise<any[]> => {
   // const SLEEP = (ports.length - 1) * .8;
   // await sleep(linear ? i / factor : (sleepFactor as number * SLEEP));
   await sleep(i / factor);
@@ -86,7 +73,7 @@ export const saveAssetsFromUrl = async (
   console.log(`[attempting] ${url} ${i}`);
   return promiseRetry({ retries: 5, randomize: true, factor: 2 }, (retry: any, number: any) =>
     // torInstance.get(url)
-    axios(url)
+    axios(url, { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY }, })
       .then(({ data }: any) => ({
         assets: data.assets,
         slug: slug ? slug : queryString.parseUrl(url).query.collection,
@@ -99,16 +86,10 @@ export const saveAssetsFromUrl = async (
         const isLastUrlOfCollection = (+offset + 50) >= +collectionsCounts[slug]?.supply;
 
         if (assets?.length) {
-          const content = JSON.stringify(
-            assets.map((asset: any) =>
-            ({
-              ...asset,
-              collection: collectionData
-                ? collectionData
-                : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
-            })
-            ).map(openseaAssetMapper)
-          ) as any;
+          const content = JSON.stringify(assets.map((asset: any) => ({
+            ...asset,
+            collection: collectionData ? collectionData : { ...asset.collection, stats: { totalSupply: collectionsCounts[slug]?.supply } }
+          })).map(openseaAssetMapper)) as any;
 
           load(JSON.parse(content), 'assets');
           if (isLastUrlOfCollection || assets.length < (+limit || 20)) {
@@ -127,7 +108,7 @@ export const saveAssetsFromUrl = async (
     .then((result: any) => result.assets)
     .catch(async (e: any) => {
       console.log(`[error catch PR] ${e} ${url}`);
-      const collection = slug ? slug : queryString.parseUrl(url).query?.collection;
+      const collection = slug ? slug : queryString.parseUrl(url).query?.collection as string;
       if (collection) {
         Query.update(db, 'collections', collection, { lastScrapedAt: new Date(), updatedAt: new Date(), requestedScore: false, damagedCollection: true }, true)
           .catch((e) => console.log(`[error update collection] url: ${url} ${e}`));
@@ -165,7 +146,7 @@ const getLinks = (c: { totalSupply: number; slug: any, count: number }): string[
   c.count = 0; // c.count || 0;
   const startingOffset = 0; // Math.floor(c.count / 50) || 0;
   return [...Array(Math.ceil((c.totalSupply - c.count) / 50)).keys()].map((i) =>
-    `https://api.opensea.io/api/v1/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
+    `${OPENSEA_API}/assets?format=json&limit=50&offset=${(i + startingOffset) * 50}&collection=${c.slug}`);
 }
 
 const toLinks = map((c): string[] => [...getLinks(Object(c))]);
@@ -253,7 +234,21 @@ export const countInDb = (collections: any[]): any => {
 
 const assignSupplies = (x: any[]) => (collectionsCounts = x.reduce((obj, cur, i) => ((obj[cur.slug] = { supply: cur.totalSupply }), obj), {}));
 
-const saveAssets = () =>
+const saveAssets = () => {
+  console.log('[scraper assets options]', {
+    exec,
+    bots,
+    errsToFile,
+    errsFromFile,
+    linear,
+    onlyRequested,
+    factor,
+    limitCollections,
+    forceScrape,
+    above10k,
+    slug,
+  });
+
   collectionsData({
     slug, sort: [{ requestedScore: { order: 'desc' } }], query: {
       bool: {
@@ -311,6 +306,7 @@ const saveAssets = () =>
     .catch((e) => {
       console.error('[save assets from collections]', e);
     });
+}
 
 const readFilePromise = (path: fs.PathOrFileDescriptor) =>
   new Promise((resolve, reject) => {
@@ -327,4 +323,5 @@ const fromFile = () =>
     .then(distributeToHttpClients)
     .catch((e) => console.log(`[err] ${e}`));
 
-if (exec) eval(`${exec}()`);
+
+if (require.main === module) if (exec) eval(`${exec}()`);

@@ -5,6 +5,7 @@
 import { Result } from '@ailabs/ts-utils';
 import { curry, mergeRight, pipe, prop, tap } from 'ramda';
 import { parse, string } from '@ailabs/ts-utils/dist/decoder';
+import { Trait } from './asset';
 
 export const date = (val: string): Result<Error, Date> => (
   isNaN(Date.parse(val))
@@ -48,3 +49,5 @@ export const maybe = curry(<Val, New>(fn: (val: Val) => New, val: Val | null): N
 export const orElse = curry(<Val, New>(fn: () => New, val: Val): Val | New => (
   val === undefined || val === null ? fn() : val
 ));
+
+export const flattenTraits = (traits: Trait[]) => traits.map((t: Trait) => `${t.trait_type}:${t.value}`);

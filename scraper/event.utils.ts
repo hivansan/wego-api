@@ -5,11 +5,21 @@ import { cleanEntries } from './scraper.utils';
 
 export const eventTypes = {
   /**
-   * Takes a create event and update it in elastic search.
+   * Takes a created event and update it in elastic search.
    * @param event create event from opensea
    */
   created(event: any, asset: any) {
-    asset.topBid = event.auction_type === 'dutch' ? event.starting_price : 0;
+    // asset.topBid = event.auction_type === 'dutch' ? event.starting_price : 0;
+    asset.listingTime = event.listing_time;
+    asset.duration = event.duration;
+
+    asset.sellOrders = [{
+      current_price: event.starting_price,
+      payment_token_contract: event.payment_token,
+    }];
+
+    asset.currentPrice = asset.sellOrders[0].current_price / 10 ** 18;
+    asset.currentPriceUSD = (asset.sellOrders[0].current_price / 10 ** 18) * +asset.sellOrders[0].payment_token_contract?.usd_price;
     return asset;
   },
 

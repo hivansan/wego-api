@@ -1,6 +1,8 @@
 import * as ElasticSearch from '@elastic/elasticsearch';
 import axios from 'axios';
 import moment from 'moment';
+import queryString from 'query-string';
+
 
 import * as Network from './network';
 import * as Asset from '../models/asset';
@@ -11,27 +13,44 @@ import Result from '@ailabs/ts-utils/dist/result';
 import { array } from '@ailabs/ts-utils/dist/decoder';
 
 import { URLSearchParams } from 'url';
-import { filter, mergeAll, pipe, prop, tap } from 'ramda';
+import { filter, map, mergeAll, path, pipe, prop, tap, uniq } from 'ramda';
 
 import { error } from '../server/util';
 import { isUnrevealed } from './stats';
-import { cleanTraits } from '../scraper/scraper.utils';
+import { cleanTraits, consecutiveArray, openseaAssetMapper } from '../scraper/scraper.utils';
 
+import { MAX_TOTAL_SUPPLY, MIN_TOTAL_VOLUME_COLLECTIONS_ETH, OPENSEA_API } from './constants';
 import dotenv from 'dotenv';
+import { toResult } from '../server/endpoints/util';
+import { flattenTraits } from '../models/util';
 dotenv.config();
 
 const BASE_URL = 'https://api.opensea.io/api/v1';
 
 export async function fromDb(
   db: ElasticSearch.Client,
-  { offset, limit, sort }: Query.Options,
+  { offset, limit, sort, source }: Query.Options,
   slug?: string,
   tokenId?: string,
-  traits?: { [key: string]: string | number | (string | number)[] },
+  traits?: { [key: string]: (string | number | object | any)[] },
   priceRange?: { lte: number, gte: number } | null,
+  priceRangeUSD?: { lte: number, gte: number } | null,
   rankRange?: { lte: number, gte: number } | null,
+  traitsCountRange?: { lte: number, gte: number } | null,
+  query?: string,
+  buyNow?: string,
+  ownerAddress?: string,
 ): Promise<any> {
-  const q = {
+
+  const searchFields = [
+    'name^6',
+    'tokenId^6',
+    'traits.trait_type^3',
+    'traits.value^3',
+    'description^2',
+  ];
+
+  const q: any = {
     bool: {
       must: [
         slug ? { term: { 'slug.keyword': slug } } : null,
@@ -39,32 +58,36 @@ export async function fromDb(
          * @TODO Either get rid of tokenId or also take contract address
          */
         // tokenId ? { "match": { tokenId } } : null,
-        ...Object.entries(traits || {}).map(([type, value]) => {
-          return Array.isArray(value)
-            ? {
-              bool: {
-                must: [{ match: { 'traits.trait_type.keyword': type } }],
-                should: value.map((val) => ({ match: { 'traits.value.keyword': val } })),
-                minimum_should_match: 1,
-              },
-            }
-            : {
-              bool: {
-                must: [
-                  { match: { 'traits.trait_type.keyword': type } },
-                  { match: { 'traits.value.keyword': value } }
-                ],
-              },
-            };
-        }),
+        ...Object.entries(traits || {}).map(([type, value]) => ({
+          bool: {
+            should: typeof value[0] === 'string' || value[0] === null
+              ? value.map((val) => ({ match: { 'traitsFlat.keyword': `${type}:${val}` } }))
+              : consecutiveArray(value[0]['gte'], value[0]['lte'] - value[0]['gte'] + 1)
+                .map(val => ({ match: { 'traitsFlat.keyword': `${type}:${val}` } })),
+            minimum_should_match: typeof value[0] === 'string' || value[0] === null ? 1 : 0,
+          },
+        })),
       ],
     },
   };
-  priceRange && Object.keys(priceRange as {}).length ? q.bool.must.push({ range: { currentPriceUSD: priceRange } } as any) : null;
-  rankRange && Object.keys(rankRange as {}).length ? q.bool.must.push({ range: { rarityScoreRank: rankRange } } as any) : null;
+
+  if (priceRange && Object.keys(priceRange as {}).length) q.bool.must.push({ range: { currentPrice: priceRange } });
+  if (priceRangeUSD && Object.keys(priceRangeUSD as {}).length) q.bool.must.push({ range: { currentPriceUSD: priceRangeUSD } });
+  if (rankRange && Object.keys(rankRange as {}).length) q.bool.must.push({ range: { rarityScoreRank: rankRange } });
+  if (buyNow) q.bool.must.unshift({ range: { currentPrice: { gt: 0 } } });
+  if (traitsCountRange && Object.keys(traitsCountRange as {}).length) q.bool.must.push({ range: { traitsCount: traitsCountRange } });
+  if (ownerAddress) q.bool.must.push({
+    bool: {
+      should: [{ match: { 'owner.address.keyword': ownerAddress.toLowerCase() } }, { match: { owners: ownerAddress.toLowerCase() } }],
+      minimum_should_match: 1
+    }
+  });
+
+  if (query) q.bool['must'].push({ multi_match: { query, fuzziness: 1, fields: searchFields } });
 
   console.log('Query: ', JSON.stringify(q));
-  return Query.find(db, 'assets', q, { offset, sort, limit });
+  console.log('sort:  ', sort);
+  return Query.find(db, 'assets', q, { offset, sort, limit, source });
 }
 
 export async function assetFromRemote(contractAddress: string, tokenId: string): Promise<Asset.Asset | null> {
@@ -74,7 +97,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
     `${BASE_URL}/asset/${contractAddress}/${tokenId}/`,
   ]);
 
-  // console.log('openseaNft --', openseaNft);
+  // console.log('openseaNft --', JSON.stringify(openseaNft, null, 3));
   const asset: Result<any, Asset.Asset> = Remote.openSeaAsset(openseaNft)
     .chain((openSea) =>
       Remote.rarible(rariNft).map((rari) =>
@@ -84,7 +107,7 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenId,
           contractAddress,
           owners: rari.owners,
-          owner: null,
+          owner: openSea.owner,
           description: openSea.description,              //  rariMeta.description
           imageBig: openSea.image_original_url,       // rariMeta.image.url.BIG,
           imageSmall: openSea.image_preview_url,        // rariMeta.image.url.PREVIEW,
@@ -93,11 +116,36 @@ export async function assetFromRemote(contractAddress: string, tokenId: string):
           tokenMetadata: openSea.token_metadata,
           rarityScore: !openSea.traits.length || !openSea.collection.stats.total_supply ? null : openSea.traits.reduce((acc, t) => acc + 1 / (t.trait_count / openSea.collection.stats.total_supply), 0),
           traits: openSea.traits,
+          traitsFlat: flattenTraits(openSea.traits),
           collection: {
             ...remoteCollectionMapper({ collection: openSea.collection, contractAddress }),
             stats: remoteCollectionStatsMapper({ stats: openSea.collection.stats, contractAddress, slug: openSea.collection.slug })
           },
-          traitsCount: openSea.traits?.length || 0
+          traitsCount: openSea.traits?.length || 0,
+          // sellOrders: openSea.orders?.filter((o: { side: number; }) => o.side === 1).map(sellOrderMapper) || [],
+          ...(openSea.orders?.filter((o: { side: number; }) => o.side === 1).length
+            ? {
+              sellOrders: openSea.orders.filter((o: { side: number; }) => o.side === 1).map(sellOrderMapper) || [],
+              currentPrice: openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].current_price / 10 ** 18,
+              currentPriceUSD: (openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].current_price / 10 ** 18) * +openSea.orders.filter((o: { side: number; }) => o.side === 1)[0].payment_token_contract?.usd_price,
+            }
+            : {
+              sellOrders: null,
+              currentPrice: null,
+              currentPriceUSD: null,
+            }
+          ),
+          ...(openSea.last_sale
+            ? {
+              lastSale: openSea.last_sale,
+              lastSalePrice: +openSea.last_sale.total_price / 10 ** 18,
+              lastSalePriceUSD: (+openSea.last_sale.total_price / 10 ** 18) * +openSea.last_sale.payment_token?.usd_price,
+            }
+            : {
+              lastSale: null,
+              lastSalePrice: null,
+              lastSalePriceUSD: null,
+            }),
         })
       )
     )
@@ -138,71 +186,105 @@ export async function fromCollection(contractAddress: Asset.Address, tokenId?: n
   }
 }
 
-export async function events(args: { limit?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
+export async function events(args: { limit?: number, offset?: number, before?: number, after?: number }): Promise<Remote.OpenSeaEvent[]> {
   const limit = args.limit || 50;
-
+  const offset = args.offset || 0;
   const query = new URLSearchParams(mergeAll([
     { limit },
-    // { event_type: 'successful' },
-    // { collection_slug: 'official-dormant-dragons' },
+    { offset },
+    // { collection_slug: 'social-bees-university' },
+    // { event_type: 'created' },
+    // { asset_contract_address: '0x4848a07744e46bb3ea93ad4933075a4fa47b1162' },
+    // { token_id: 9612 },
     args.before ? { occurred_before: args.before } : {},
     args.after ? { occurred_after: args.after } : {},
   ]) as { [key: string]: any });
 
+  console.log('[market events args ]', args);
   console.log('[market events query]', query.toString());
 
   return Network.fetchNParse(`${BASE_URL}/events?${query.toString()}`,
     { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY } })
     .then(prop('asset_events') as any)
     .then(filter((event: any) => event.asset && event.asset.permalink.indexOf('/matic/') < 0 && event.asset.asset_contract.schema_name === 'ERC721') as any)
-    // .then(tap(c => console.log(c)) as any)
     .then(array(Remote.openSeaEvent))
     .then(Result.toPromise)
 }
 
 const indexCollection = (db: ElasticSearch.Client) => tap((collection: any) => (
-  Query.createWithIndex(db, 'collections', collection, `${collection.slug}`)
+  Query.update(db, 'collections', `${collection.slug}`, collection, true)
     .catch(error => console.log('[error index collection]', error?.meta?.body?.error, `slug: ${collection.slug}`))
 ));
 
 export async function getCollection(db: ElasticSearch.Client, slug: string, requestedScore?: boolean): Promise<any> {
   return Query.findOne(db, 'collections', { term: { _id: slug } })
-    .then((body) =>
-      body === null
-        ? collectionFromRemote(slug).then((body) => (
-          body === null
+    .then(body => body === null ? null : body._source)
+    .then((collectionDB) => {
+      const now = moment();
+      return collectionDB === null || !collectionDB.updatedAt || (collectionDB.updatedAt && now.diff(moment(collectionDB?.updatedAt), 'hours') > 3)
+        ? collectionFromRemote(slug).then((collectionRemote) => (
+          collectionRemote === null
             ? null
             : ({
               body: indexCollection(db)({
-                ...body,
+                ...(collectionDB || {}),
+                ...collectionRemote,
                 addedAt: +new Date(),
                 updatedAt: new Date(),
                 requestedScore: !!requestedScore,
-                traits: cleanTraits(body.traits)
+                traits: cleanTraits(collectionRemote.traits)
               })
-            } as any)
+            })
         ))
-        : { body: body._source }
-    )
+        : { body: collectionDB }
+    })
     .catch(e => Promise.reject(error(503, 'Service error')));
 }
 
 const indexAsset = (db: ElasticSearch.Client) => tap((asset: Asset.Asset) => (
-  Query.createWithIndex(db, 'assets', { ...asset, unrevealed: isUnrevealed(asset) }, `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`)
+  Query.update(db, 'assets', `${asset.contractAddress.toLowerCase()}:${asset.tokenId}`, { ...asset, unrevealed: isUnrevealed(asset) }, true)
+    .then(tap(x => console.log('indexAsset', x)))
+    .catch(e => console.log('[error index asset]', e))
 ));
+
+const assetWithTraits = async (db: ElasticSearch.Client, asset: Asset.Asset) => {
+  const q: any = {
+    bool: {
+      must: [
+        { match: { 'slug.keyword': asset.slug } },
+        // { terms: { 'key.keyword': (asset as any).traitsFlat } }
+      ]
+    }
+  };
+  if ((asset as any).traitsFlat?.length) { q.bool.must.push({ terms: { 'key.keyword': (asset as any).traitsFlat } }) }
+  return asset.traits?.length
+    ? Query.find(db, 'traits', q, { limit: 20 })
+      .then(body => body === null ? Promise.resolve(asset) : body)
+      .then(path(['body', 'hits', 'hits']) as any)
+      .then(map(pipe(toResult, prop('value'))))
+      .then(body => ({ body: { ...asset, traits: body } }))
+      .catch(e => { console.log('[error assetWithTraits]', e); return Promise.resolve({ body: asset }) })
+    : { body: asset }
+}
+
 
 export async function getAsset(db: ElasticSearch.Client, contractAddress: string, tokenId: string): Promise<any> {
   const now = moment();
   return Query.findOne(db, 'assets', { term: { _id: `${contractAddress.toLowerCase()}:${tokenId}` } })
-    .then(body => {
-      // console.log('unrevealed and updated -----', body, body._source.unrevealed, now.diff(moment(body._source?.updatedAt), 'minutes') > 5);
-      return body === null || !!!body?._source?.slug || (body._source.unrevealed && now.diff(moment(body._source?.updatedAt), 'minutes') > 5)
+    .then(body => body === null ? null : body._source)
+    .then(assetDB => {
+      return assetDB === null || (assetDB.unrevealed && now.diff(moment(assetDB?.updatedAt), 'minutes') > 5) || now.diff(moment(assetDB?.updatedAt), 'hours') > 1
         ? assetFromRemote(contractAddress, tokenId)
-          .then(body => body === null ? null : { body: indexAsset(db)(body) } as any)
-          .catch(e => {
-            return error(503, 'Service error');
-          })
-        : { body: body._source } as any
+          .then(assetRemote => assetRemote === null
+            ? null
+            : assetWithTraits(db, indexAsset(db)({
+              ...(assetDB || {}), /* priority to asset db for ranks and stuff */
+              ...assetRemote, /* then to new data */
+              ...(assetDB !== null && !isUnrevealed(assetDB) ? { traits: assetDB.traits } : {}) /* if assetdb had traits before, use those */
+            }))
+          )
+          .catch(e => error(503, 'Service error'))
+        : assetWithTraits(db, assetDB) as any
     })
 }
 
@@ -211,9 +293,9 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
     const os: any = await Network.fetchNParse(`${BASE_URL}/collection/${slug}?format=json`)
       .then(Remote.openSeaCollection)
       .then(Result.toPromise);
-    console.log('[os collection]', os);
+
+    // console.log('[os collection]', os);
     const collection: Collection.Collection = remoteCollectionMapper({ collection: os.collection });
-    console.log('[os collection]', os);
     const stats: Collection.CollectionStats = remoteCollectionStatsMapper({ slug, stats: os.collection.stats });
 
     return Object.assign(collection, { stats });
@@ -223,8 +305,138 @@ export async function collectionFromRemote(slug: string): Promise<Collection.Col
   }
 }
 
+
+export function fromOwner(db: ElasticSearch.Client, contractAddress: string) {
+  return rawAssetsFromRemoteFromOwner(contractAddress)
+    .then((raw: any[]) => {
+      console.log(JSON.stringify(raw, null, 3));
+
+      return raw.map(openseaAssetMapper)
+    })
+    .then(assets => pairAssetWithExisting(db, assets))
+}
+
+export function rawAssetsFromRemoteFromOwner(contractAddress: string): Promise<any[]> {
+  const size = 50;
+  const params = { owner: contractAddress, limit: size, format: 'json' }
+  const getAssets: any = async ({ offset }) => {
+    const url = `${OPENSEA_API}/assets?${queryString.stringify({ ...params, offset })}`;
+    const { assets } = (await Network.fetchNParse(url, { headers: { Accept: 'application/json', 'X-API-KEY': process.env.OPENSEA_API_KEY }, }) as any);
+    return assets.length < size ? assets : assets.concat(await getAssets({ offset: offset + size }))
+  }
+  return getAssets({ offset: 0 })/* .then((assets: any[]) => ({ body: assets })) */;
+}
+
+export function pairAssetWithExisting(db: ElasticSearch.Client, assets: any[]) {
+  const ids = assets.map(({ tokenId, contractAddress }) => `${contractAddress}:${tokenId}`);
+  return Query.find(db, 'assets', { terms: { _id: ids } }, { limit: ids.length })
+    .then(
+      ({ body: { took, timed_out: timedOut, hits: { total, hits }, }, }) => hits.map(toResult)
+        .map((r: any) => r.value)
+        .filter(a => a.traits?.length && !a.deleted)
+        .map(a => ({
+          ...a,
+          ...(assets.find(({ tokenId, contractAddress }) => `${contractAddress}${tokenId}` === `${a.contractAddress}${a.tokenId}`) || {})
+        }))
+    )
+}
+export async function toggleFavorite({ db, address, slug, tokenId, value, contractAddress }): Promise<any> {
+  return value === true
+    ? tokenId
+      ? Query.create(db, 'favorites', { slug, contractAddress, user: address, tokenId, createdAt: moment() })
+      : Query.create(db, 'favorites', { slug, user: address, createdAt: moment() })
+    : tokenId
+      ? Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+            { match: { 'tokenId.keyword': tokenId } },
+          ]
+        }
+      })
+      : Query.deleteByQuery(db, 'favorites', {
+        bool: {
+          must: [
+            { match: { 'slug.keyword': slug } },
+            { match: { 'user.keyword': address } },
+          ],
+          must_not: { exists: { field: "tokenId" } },
+        }
+      })
+}
+
+
+export async function favorites(
+  db: ElasticSearch.Client,
+  index: string,
+  { offset, limit, sort, source }: Query.Options,
+  address: string,
+  slug?: string,
+): Promise<any> {
+  const q: any = {
+    bool: {
+      must: [
+        { match: { 'user.keyword': address } },
+      ]
+    }
+  };
+  if (index === 'assets') q.bool.must.push({ exists: { field: 'tokenId' } });
+  if (index === 'assets' && slug) q.bool.must.push({ match: { 'slug.keyword': slug } });
+  if (index === 'collections') q.bool.must_not = [{ exists: { field: 'tokenId' } }, { exists: { field: 'contractAddress' } }];
+
+  return Query.find(db, 'favorites', q, { limit: 1000 })
+    .then((body) => (body === null ? error(404, 'Not found') : (body as any)))
+    .then(({ body: { hits: { hits }, }, }) => hits.map(toResult).map((r: any) => r.value))
+    .then(favs => favs.map((f: { slug: any; contractAddress: any; tokenId: any; }) => toId(f, index)))
+    .then(uniq)
+    .then(tap(x => console.log(x)))
+    .then(ids =>
+      Query.find(db, index, { terms: { _id: ids } }, { offset, limit: limit || ids.length })
+        .then(({ body: { hits: { hits }, }, }) => ({ body: hits.map(toResult).map((r: any) => r.value) })))
+  // .then(tap(favs => console.log(`[favs]`, favs)))
+}
+
+function toId(fav: { slug: any; contractAddress: any; tokenId: any; }, index: string) {
+  if (index === 'collections') return fav.slug
+  if (index === 'assets') return `${fav.contractAddress}:${fav.tokenId}`
+  return null;
+}
+
+const sellOrderMapper = (order: any) => ({
+  created_date: order.created_date,
+  closing_date: order.closing_date,
+  closing_extendable: order.closing_extendable,
+  expiration_time: order.expiration_time,
+  listing_time: order.listing_time,
+  order_hash: order.order_hash,
+  maker: { address: order.maker.address },
+  taker: { address: order.taker.address },
+  current_price: order.current_price,
+  current_bounty: order.current_bounty,
+  bounty_multiple: order.bounty_multiple,
+  maker_relayer_fee: order.maker_relayer_fee,
+  taker_relayer_fee: order.taker_relayer_fee,
+  maker_protocol_fee: order.maker_protocol_fee,
+  taker_protocol_fee: order.taker_protocol_fee,
+  maker_referrer_fee: order.maker_referrer_fee,
+  fee_method: order.fee_method,
+  side: order.side,
+  sale_kind: order.sale_kind,
+  target: order.target,
+  payment_token_contract: order.payment_token_contract,
+  base_price: order.base_price,
+  extra: order.extra,
+  quantity: order.quantity,
+  approved_on_chain: order.approved_on_chain,
+  cancelled: order.cancelled,
+  finalized: order.finalized,
+  marked_invalid: order.marked_invalid,
+  prefixed_hash: order.prefixed_hash,
+})
+
 const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
-  console.log('[remote collection mapper collection]', collection);
+  // console.log('[remote collection mapper collection]', collection);
   return {
     contractAddresses: collection.primary_asset_contracts?.length ? collection.primary_asset_contracts.map((x: any) => x.address) : null,
     slug: collection.slug,
@@ -241,6 +453,7 @@ const remoteCollectionMapper = ({ collection }: any): Collection.Collection => {
     website: collection.external_url,
     traits: collection.traits ? cleanTraits(collection.traits) as any : null,
     primaryAssetConctracts: collection.primary_asset_contracts || null,
+    deleted: collection?.stats?.total_volume < MIN_TOTAL_VOLUME_COLLECTIONS_ETH || collection?.stats?.total_supply > MAX_TOTAL_SUPPLY
   }
 };
 
@@ -248,7 +461,7 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   // contractAddress,
   slug,
   wegoScore: 0,
-  featuredCollection: false,
+  // featuredCollection: false,
   featuredScore: 0,
   oneDayVolume: stats.one_day_volume,
   oneDayChange: stats.one_day_change,
@@ -272,37 +485,3 @@ const remoteCollectionStatsMapper = ({ stats, slug }: any): Collection.Collectio
   marketCap: stats.market_cap,
   floorPrice: stats.floor_price,
 });
-
-export async function assetsFromRemote(
-  slug?: string | undefined | null,
-  limit?: number,
-  offset?: number,
-  sortBy?: string | null,
-  sortDirection?: string,
-  q?: string | null,
-): Promise<any | null> {
-
-  try {
-    const params: any = {
-      collection: slug,
-      offset,
-      limit,
-    };
-    if (!!sortBy) params.order_by = sortBy;
-    if (!!sortDirection) params.order_direction = sortDirection;
-
-    const queryParams = new URLSearchParams(params).toString();
-    const url = `${BASE_URL}/assets?${queryParams}`;
-
-    console.log('[assets from remote url]', url);
-
-    const { data } = await axios(url);
-    const { assets } = data;
-
-    // if (!assets?.length) return null;
-    return assets;
-  } catch (e) {
-    console.log('[assetsFromRemote err]', JSON.stringify(e));
-    return null;
-  }
-}
